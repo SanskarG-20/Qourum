@@ -47,36 +47,36 @@ export function IntroSplashBubble({ onComplete }) {
     const currentTarget = PHRASES[phraseIndex];
 
     if (!isDeleting) {
-      // Typing phase
+      // Typing phase (relaxed cadence)
       if (displayText.length < currentTarget.length) {
         loopTimerRef.current = setTimeout(() => {
           setDisplayText(currentTarget.slice(0, displayText.length + 1));
-        }, 55);
+        }, 95); // Slowed down from 55ms to 95ms
       } else {
-        // Full phrase typed: pause to read
-        const pauseTime = phraseIndex === 0 ? 800 : 900;
+        // Full phrase typed: pause comfortably to read
+        const pauseTime = phraseIndex === 0 ? 1000 : 1150;
         loopTimerRef.current = setTimeout(() => {
           setIsDeleting(true);
         }, pauseTime);
       }
     } else {
-      // Deleting phase
+      // Deleting phase (smooth backspace)
       if (displayText.length > 0) {
         loopTimerRef.current = setTimeout(() => {
           setDisplayText(currentTarget.slice(0, displayText.length - 1));
-        }, 32);
+        }, 48); // Slowed down from 32ms to 48ms
       } else {
         // Fully deleted
         if (phraseIndex < PHRASES.length - 1) {
           loopTimerRef.current = setTimeout(() => {
             setIsDeleting(false);
             setPhraseIndex((prev) => prev + 1);
-          }, 200);
+          }, 260);
         } else {
           // Both phrases typed & deleted: dissolve out
           loopTimerRef.current = setTimeout(() => {
             handleDismiss();
-          }, 150);
+          }, 180);
         }
       }
     }
