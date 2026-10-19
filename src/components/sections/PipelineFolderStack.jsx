@@ -19,7 +19,8 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
     {
       id: 'mod-01',
       tabLabel: 'MODULE 01',
-      tabOffsetDesktop: '0%',
+      tabLeft: '0%',
+      tabWidth: '25.5%',
       flushLeft: true,
       reqCode: 'FR-001 TO FR-004 • MODULE A',
       title: 'Schema & Anonymization',
@@ -49,7 +50,8 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
     {
       id: 'mod-02',
       tabLabel: 'MODULE 02',
-      tabOffsetDesktop: '23%',
+      tabLeft: '21.5%',
+      tabWidth: '26.5%',
       flushLeft: false,
       reqCode: 'FR-005 TO FR-008 • MODULES B & C',
       title: 'Hard Filter & Preference Model',
@@ -79,7 +81,8 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
     {
       id: 'mod-03',
       tabLabel: 'MODULE 03',
-      tabOffsetDesktop: '48%',
+      tabLeft: '44.5%',
+      tabWidth: '26.5%',
       flushLeft: false,
       reqCode: 'FR-009 TO FR-015 • MODULES D & E',
       title: 'Group Aggregation & Fairness',
@@ -109,7 +112,8 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
     {
       id: 'mod-04',
       tabLabel: 'MODULE 04',
-      tabOffsetDesktop: '71%',
+      tabLeft: '67.5%',
+      tabWidth: '26.5%',
       flushLeft: false,
       reqCode: 'FR-016 TO FR-018 • MODULE F',
       title: 'Seeded Synthetic & Eval Harness',
@@ -192,11 +196,13 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
 
         {/* Sticky Folder-Tab Project Cards Stack (frame_033 - frame_035) */}
         <div
+          className="folder-cards-stack-container"
           style={{
             position: 'relative',
             display: 'flex',
             flexDirection: 'column',
-            gap: '32px',
+            gap: '80px',
+            paddingBottom: '360px',
           }}
         >
           {cards.map((card, index) => {
@@ -204,29 +210,43 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
             return (
               <article
                 key={card.id}
+                id={`folder-card-${card.id}`}
+                className="folder-card-sticky-wrapper"
                 style={{
                   position: 'sticky',
-                  top: '104px',
-                  zIndex: 10 + index,
+                  top: '96px',
+                  zIndex: 10 + index * 2,
                   width: '100%',
                 }}
               >
-                {/* Staggered Top Chamfered Folder Tab (Columns 1..4 so all 4 stay visible side-by-side!) */}
+                {/* Staggered Top Chamfered Folder Tab (Transparent row so all 4 tabs remain visible side-by-side!) */}
                 <div
                   className="folder-tab-row"
                   style={{
-                    display: 'flex',
+                    position: 'relative',
                     width: '100%',
-                    paddingLeft: card.tabOffsetDesktop,
+                    height: '68px',
+                    pointerEvents: 'none',
                   }}
                 >
                   <div
-                    onClick={() => onInspectModuleInDemo(card.demoTargetTab)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const el = document.getElementById(`folder-card-${card.id}`);
+                      if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }
+                    }}
                     className={`folder-tab-top ${card.flushLeft ? 'folder-tab-top--flush-left' : ''}`}
                     style={{
+                      position: 'absolute',
+                      left: card.tabLeft,
+                      width: card.tabWidth,
+                      height: '68px',
                       backgroundColor: card.bgColor,
                       color: card.textColor,
-                      minWidth: '280px',
+                      pointerEvents: 'auto',
+                      minWidth: '180px',
                     }}
                   >
                     <NavTabIcon type="stairs" />
@@ -240,12 +260,12 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
                     backgroundColor: card.bgColor,
                     color: card.textColor,
                     padding: '44px 48px',
-                    minHeight: '590px',
+                    minHeight: '580px',
                     display: 'grid',
                     gridTemplateColumns: 'minmax(280px, 42%) minmax(320px, 58%)',
                     gap: '44px',
                     alignItems: 'center',
-                    boxShadow: index > 0 ? '0 -8px 28px rgba(0, 0, 0, 0.14)' : 'none',
+                    boxShadow: index > 0 ? '0 -10px 32px rgba(0, 0, 0, 0.16), 0 -2px 6px rgba(0, 0, 0, 0.08)' : 'none',
                   }}
                   className="folder-card-grid"
                 >
@@ -524,8 +544,20 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
             padding: 28px 24px !important;
             gap: 28px !important;
           }
+        }
+        @media (max-width: 809px) {
           .folder-tab-row {
-            padding-left: 0 !important;
+            height: 52px !important;
+          }
+          .folder-tab-top {
+            height: 52px !important;
+            min-width: 110px !important;
+            padding: 0 10px !important;
+            font-size: 11px !important;
+            clip-path: polygon(18px 0%, calc(100% - 18px) 0%, 100% 100%, 0% 100%) !important;
+          }
+          .folder-tab-top--flush-left {
+            clip-path: polygon(0% 0%, calc(100% - 18px) 0%, 100% 100%, 0% 100%) !important;
           }
         }
       `}</style>

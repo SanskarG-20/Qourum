@@ -9,12 +9,12 @@ html {
   font-family: var(--font-sans);
   color: var(--color-text-primary);
   background-color: var(--color-bg-canvas);
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -89,25 +89,31 @@ body {
 
 /* 3. Chamfered File-Folder Tab Geometry (design.md Section E.5) */
 .folder-tab-top {
-  height: 80px;
-  padding: 0 42px;
+  height: 68px;
+  padding: 0 24px;
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  gap: 10px;
   font-family: var(--font-mono);
-  font-size: var(--text-mono-ui);
+  font-size: var(--text-mono-ui, 13px);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  clip-path: polygon(48px 0%, calc(100% - 48px) 0%, 100% 100%, 0% 100%);
+  clip-path: polygon(32px 0%, calc(100% - 32px) 0%, 100% 100%, 0% 100%);
   cursor: pointer;
   user-select: none;
+  transition: filter 160ms ease;
+}
+
+.folder-tab-top:hover {
+  filter: brightness(1.08);
 }
 
 .folder-tab-top--flush-left {
-  padding-left: 28px;
-  padding-right: 52px;
-  clip-path: polygon(0% 0%, calc(100% - 54px) 0%, 100% 100%, 0% 100%);
+  padding-left: 20px;
+  padding-right: 32px;
+  clip-path: polygon(0% 0%, calc(100% - 32px) 0%, 100% 100%, 0% 100%);
 }
 
 /* Folder-shaped capability pill */
@@ -285,12 +291,12 @@ select:focus-visible,
 @keyframes quorumCharArrive {
   0% {
     opacity: 0;
-    transform: translateY(-30px) scale(0.68);
-    filter: blur(4px);
+    transform: translateY(-24px) scale(0.85);
+    filter: blur(2px);
   }
-  65% {
+  60% {
     opacity: 1;
-    transform: translateY(4px) scale(1.06);
+    transform: translateY(3px) scale(1.03);
     filter: blur(0);
   }
   100% {
@@ -301,27 +307,7 @@ select:focus-visible,
 }
 
 .quorum-char-arrive {
-  animation: quorumCharArrive 600ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-@keyframes selectionBoxArrive {
-  0% {
-    opacity: 0.6;
-    transform: scale(0.96);
-    box-shadow: 0 0 0 rgba(66, 210, 237, 0);
-  }
-  45% {
-    box-shadow: 0 0 32px rgba(66, 210, 237, 0.45);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-    box-shadow: 0 0 0 rgba(66, 210, 237, 0);
-  }
-}
-
-.selection-box-arrive {
-  animation: selectionBoxArrive 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: quorumCharArrive 550ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 /* Responsive visibility helpers */

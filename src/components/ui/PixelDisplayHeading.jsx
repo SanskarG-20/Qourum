@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from 'react';
 // Authentic Nudge 5x7 Modular Rounded-Pixel Stencil Glyph Map (A-Z, 0-9, &, ', -)
 const PIXEL_GLYPHS = {
   A: [
-    '01110',
+    '11111',
     '10001',
     '10001',
     '11111',
@@ -21,13 +21,13 @@ const PIXEL_GLYPHS = {
     '11110',
   ],
   C: [
-    '01110',
+    '11111',
     '10001',
     '10000',
     '10000',
     '10000',
     '10001',
-    '01110',
+    '11111',
   ],
   D: [
     '11110',
@@ -57,13 +57,13 @@ const PIXEL_GLYPHS = {
     '10000',
   ],
   G: [
-    '01111',
+    '11111',
     '10000',
     '10000',
     '10111',
     '10001',
     '10001',
-    '01110',
+    '11111',
   ],
   H: [
     '10001',
@@ -90,7 +90,7 @@ const PIXEL_GLYPHS = {
     '00010',
     '00010',
     '10010',
-    '01100',
+    '11111',
   ],
   K: [
     '10001',
@@ -129,13 +129,13 @@ const PIXEL_GLYPHS = {
     '10001',
   ],
   O: [
-    '01110',
+    '11111',
     '10001',
     '10001',
     '10001',
     '10001',
     '10001',
-    '01110',
+    '11111',
   ],
   P: [
     '11110',
@@ -147,31 +147,31 @@ const PIXEL_GLYPHS = {
     '10000',
   ],
   Q: [
-    '01110',
+    '11111',
     '10001',
     '10001',
     '10001',
     '10101',
     '10010',
-    '01101',
+    '11111',
   ],
   R: [
-    '11110',
+    '11111',
     '10001',
     '10001',
-    '11110',
+    '11111',
     '10100',
     '10010',
     '10001',
   ],
   S: [
-    '01111',
+    '11111',
     '10000',
     '10000',
-    '01110',
+    '11111',
     '00001',
     '00001',
-    '11110',
+    '11111',
   ],
   T: [
     '11111',
@@ -189,7 +189,7 @@ const PIXEL_GLYPHS = {
     '10001',
     '10001',
     '10001',
-    '01110',
+    '11111',
   ],
   V: [
     '10001',
@@ -348,11 +348,11 @@ function PixelGlyphSvg({ char, color = '#111111' }) {
         strokes.push(
           <rect
             key={`c-${r}-${c}`}
-            x={c * 10}
-            y={r * 10}
-            width="10"
-            height="10"
-            rx="4.8"
+            x={c * 10 - 0.2}
+            y={r * 10 - 0.2}
+            width="10.4"
+            height="10.4"
+            rx="1.5"
             fill={color}
           />
         );
@@ -376,11 +376,11 @@ function PixelGlyphSvg({ char, color = '#111111' }) {
     >
       <defs>
         <filter id={`stencil-fillet-${upper}`} x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="1.2" result="blur" />
+          <feGaussianBlur in="SourceGraphic" stdDeviation="0.8" result="blur" />
           <feColorMatrix
             in="blur"
             type="matrix"
-            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -9"
+            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -9"
             result="goo"
           />
         </filter>
@@ -401,6 +401,7 @@ export function PixelDisplayHeading({
   color = '#111111',
   style = {},
   animateArrival = false,
+  waitingForArrival = false,
 }) {
   const containerRef = useRef(null);
   const fullLabel = lines.join(' ');
@@ -487,7 +488,7 @@ export function PixelDisplayHeading({
                 data-char-pos={normalizedPos}
                 className={animateArrival ? 'quorum-char-arrive' : ''}
                 style={{
-                  opacity: 1,
+                  opacity: waitingForArrival && !animateArrival ? 0 : 1,
                   transition: 'opacity 120ms linear',
                   display: 'inline-block',
                   animationDelay: animateArrival ? `${chIdx * 65}ms` : undefined,
