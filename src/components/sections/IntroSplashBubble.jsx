@@ -136,7 +136,8 @@ export function IntroSplashBubble({ onComplete }) {
           opacity: isExiting || !entered ? 0 : 1,
           transition:
             'opacity 400ms cubic-bezier(0.16, 1, 0.3, 1), transform 400ms cubic-bezier(0.16, 1, 0.3, 1)',
-          minWidth: 'clamp(280px, 46vw, 560px)',
+          minWidth: '88px',
+          width: 'fit-content',
           minHeight: '84px',
           maxWidth: '92vw',
           display: 'inline-flex',
