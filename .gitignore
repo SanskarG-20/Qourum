@@ -48,3 +48,8 @@ ENV/
 
 # Documentation / Specs
 design.md
+*.tmp
+*.bak
+
+# Build helper scripts & internal tooling
+scripts/

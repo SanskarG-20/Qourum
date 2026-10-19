@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "python3 scripts/build_bundle.py",
-    "preview": "python3 -m http.server 4173 --directory dist"
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "react": "^18.3.1",
