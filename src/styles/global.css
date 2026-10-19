@@ -234,6 +234,37 @@ select:focus-visible,
   animation: pulseCyan 2.2s infinite ease-in-out;
 }
 
+/* 8. Intro Splash Transitions (Smoothed speech-bubble preloader) */
+@keyframes introTextGlider {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes introBubbleFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.intro-text-animate {
+  animation: introTextGlider 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.intro-floating-bubble {
+  animation: introBubbleFloat 3.2s ease-in-out infinite;
+}
+
 /* Responsive visibility helpers */
 @media (max-width: 1100px) {
   .hide-tablet {
