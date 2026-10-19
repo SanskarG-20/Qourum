@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 const PHRASES = [
-  'Hey there!',
-  'Welcome!',
+  'Planning a club event?',
+  'Welcome to Qourum',
 ];
 
 export function IntroSplashBubble({ onComplete }) {
@@ -47,14 +47,14 @@ export function IntroSplashBubble({ onComplete }) {
     const currentTarget = PHRASES[phraseIndex];
 
     if (!isDeleting) {
-      // Typing phase (relaxed cadence)
+      // Typing phase (natural keystroke rhythm)
       if (displayText.length < currentTarget.length) {
         loopTimerRef.current = setTimeout(() => {
           setDisplayText(currentTarget.slice(0, displayText.length + 1));
-        }, 95); // Slowed down from 55ms to 95ms
+        }, 75);
       } else {
         // Full phrase typed: pause comfortably to read
-        const pauseTime = phraseIndex === 0 ? 1000 : 1150;
+        const pauseTime = phraseIndex === 0 ? 1100 : 1250;
         loopTimerRef.current = setTimeout(() => {
           setIsDeleting(true);
         }, pauseTime);
@@ -64,19 +64,19 @@ export function IntroSplashBubble({ onComplete }) {
       if (displayText.length > 0) {
         loopTimerRef.current = setTimeout(() => {
           setDisplayText(currentTarget.slice(0, displayText.length - 1));
-        }, 48); // Slowed down from 32ms to 48ms
+        }, 40);
       } else {
         // Fully deleted
         if (phraseIndex < PHRASES.length - 1) {
           loopTimerRef.current = setTimeout(() => {
             setIsDeleting(false);
             setPhraseIndex((prev) => prev + 1);
-          }, 260);
+          }, 240);
         } else {
           // Both phrases typed & deleted: dissolve out
           loopTimerRef.current = setTimeout(() => {
             handleDismiss();
-          }, 180);
+          }, 160);
         }
       }
     }
@@ -98,7 +98,7 @@ export function IntroSplashBubble({ onComplete }) {
   return (
     <div
       role="dialog"
-      aria-label="Welcome to Quorum Introduction"
+      aria-label="Welcome to Qourum Introduction"
       onClick={handleDismiss}
       style={{
         position: 'fixed',
@@ -135,8 +135,9 @@ export function IntroSplashBubble({ onComplete }) {
           opacity: isExiting || !entered ? 0 : 1,
           transition:
             'opacity 400ms cubic-bezier(0.16, 1, 0.3, 1), transform 400ms cubic-bezier(0.16, 1, 0.3, 1)',
-          minWidth: 'clamp(260px, 34vw, 380px)',
-          minHeight: '86px',
+          minWidth: 'clamp(280px, 46vw, 560px)',
+          minHeight: '84px',
+          maxWidth: '92vw',
           display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -147,7 +148,7 @@ export function IntroSplashBubble({ onComplete }) {
         <span
           style={{
             fontFamily: 'var(--font-sans)',
-            fontSize: 'clamp(2.4rem, 4.2vw, 3.2rem)',
+            fontSize: 'clamp(1.75rem, 3.5vw, 2.75rem)',
             fontWeight: 500,
             letterSpacing: '-0.02em',
             lineHeight: 1.15,
