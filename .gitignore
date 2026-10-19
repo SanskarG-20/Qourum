@@ -45,3 +45,6 @@ env/
 venv/
 .venv/
 ENV/
+
+# Documentation / Specs
+design.md
