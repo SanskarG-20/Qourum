@@ -84,11 +84,11 @@ const PIXEL_GLYPHS = {
     '11111',
   ],
   J: [
-    '00111',
     '00010',
     '00010',
     '00010',
-    '10010',
+    '00010',
+    '00010',
     '10010',
     '01100',
   ],
@@ -111,13 +111,13 @@ const PIXEL_GLYPHS = {
     '11111',
   ],
   M: [
-    '10001',
-    '11011',
+    '11111',
     '10101',
     '10101',
-    '10001',
-    '10001',
-    '10001',
+    '10101',
+    '10101',
+    '10101',
+    '10101',
   ],
   N: [
     '10001',
@@ -266,18 +266,93 @@ function PixelGlyphSvg({ char, color = '#111111' }) {
     return <span>{char}</span>;
   }
 
-  const rects = [];
+  // Decompose into continuous horizontal and vertical strokes to form solid connected letterforms (matching BEJAMAN style)
+  const strokes = [];
+
+  // 1. Horizontal continuous runs
+  for (let r = 0; r < 7; r += 1) {
+    let start = -1;
+    for (let c = 0; c < 5; c += 1) {
+      if (matrix[r][c] === '1') {
+        if (start === -1) start = c;
+      } else if (start !== -1) {
+        strokes.push(
+          <rect
+            key={`h-${r}-${start}-${c - 1}`}
+            x={start * 10}
+            y={r * 10}
+            width={(c - start) * 10}
+            height="10"
+            rx="5"
+            fill={color}
+          />
+        );
+        start = -1;
+      }
+    }
+    if (start !== -1) {
+      strokes.push(
+        <rect
+          key={`h-${r}-${start}-4`}
+          x={start * 10}
+          y={r * 10}
+          width={(5 - start) * 10}
+          height="10"
+          rx="5"
+          fill={color}
+        />
+      );
+    }
+  }
+
+  // 2. Vertical continuous runs
+  for (let c = 0; c < 5; c += 1) {
+    let start = -1;
+    for (let r = 0; r < 7; r += 1) {
+      if (matrix[r][c] === '1') {
+        if (start === -1) start = r;
+      } else if (start !== -1) {
+        strokes.push(
+          <rect
+            key={`v-${c}-${start}-${r - 1}`}
+            x={c * 10}
+            y={start * 10}
+            width="10"
+            height={(r - start) * 10}
+            rx="5"
+            fill={color}
+          />
+        );
+        start = -1;
+      }
+    }
+    if (start !== -1) {
+      strokes.push(
+        <rect
+          key={`v-${c}-${start}-6`}
+          x={c * 10}
+          y={start * 10}
+          width="10"
+          height={(7 - start) * 10}
+          rx="5"
+          fill={color}
+        />
+      );
+    }
+  }
+
+  // 3. Grid cell overlaps to guarantee solid interior joins
   for (let r = 0; r < 7; r += 1) {
     for (let c = 0; c < 5; c += 1) {
       if (matrix[r][c] === '1') {
-        rects.push(
+        strokes.push(
           <rect
-            key={`${r}-${c}`}
+            key={`c-${r}-${c}`}
             x={c * 10}
             y={r * 10}
-            width="10.6"
-            height="10.6"
-            rx="2.6"
+            width="10"
+            height="10"
+            rx="4.8"
             fill={color}
           />
         );
@@ -287,7 +362,7 @@ function PixelGlyphSvg({ char, color = '#111111' }) {
 
   return (
     <svg
-      viewBox="0 0 52 72"
+      viewBox="0 0 50 70"
       fill="none"
       aria-hidden="true"
       style={{
@@ -295,11 +370,24 @@ function PixelGlyphSvg({ char, color = '#111111' }) {
         width: 'auto',
         display: 'inline-block',
         verticalAlign: 'baseline',
-        margin: '0 0.035em',
+        margin: '0 0.04em',
         overflow: 'visible',
       }}
     >
-      {rects}
+      <defs>
+        <filter id={`stencil-fillet-${upper}`} x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="1.2" result="blur" />
+          <feColorMatrix
+            in="blur"
+            type="matrix"
+            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -9"
+            result="goo"
+          />
+        </filter>
+      </defs>
+      <g filter={`url(#stencil-fillet-${upper})`}>
+        {strokes}
+      </g>
     </svg>
   );
 }
