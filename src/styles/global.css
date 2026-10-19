@@ -1,0 +1,269 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-family: var(--font-sans);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-canvas);
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 1. 125px x 125px Graph Paper Canvas Background (design.md Section D & Section 3) */
+.canvas-grid-bg {
+  background-color: var(--color-bg-canvas);
+  background-image:
+    linear-gradient(to right, var(--color-grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-grid-line) 1px, transparent 1px);
+  background-size: var(--grid-cell-size) var(--grid-cell-size);
+  background-position: 0 var(--top-chrome-height);
+}
+
+/* Primary 1650px Artboard Container aligned to 125px Grid */
+.nudge-container {
+  width: 100%;
+  max-width: var(--container-max-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--page-margin-desktop);
+  padding-right: var(--page-margin-desktop);
+}
+
+@media (min-width: 1900px) {
+  .nudge-container {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 1440px) {
+  .nudge-container {
+    padding-left: 64px;
+    padding-right: 64px;
+  }
+}
+
+@media (max-width: 1199px) {
+  .nudge-container {
+    padding-left: var(--page-margin-tablet);
+    padding-right: var(--page-margin-tablet);
+  }
+}
+
+@media (max-width: 809px) {
+  .nudge-container {
+    padding-left: var(--page-margin-mobile);
+    padding-right: var(--page-margin-mobile);
+  }
+}
+
+/* 2. Selection Bounding Box with 4 Corner Resize Handles (design.md Section B.3 & E.3) */
+.selection-box {
+  position: relative;
+  border: 2px solid var(--box-color, var(--color-cyan-primary));
+}
+
+.selection-box__handle {
+  position: absolute;
+  width: var(--handle-size, 12px);
+  height: var(--handle-size, 12px);
+  background-color: var(--handle-fill, var(--color-cyan-primary));
+  border: 1.5px solid var(--handle-stroke, var(--color-border-strong));
+  z-index: 4;
+  pointer-events: none;
+}
+
+.selection-box__handle--tl { top: calc(var(--handle-size, 12px) / -2 - 1px); left: calc(var(--handle-size, 12px) / -2 - 1px); }
+.selection-box__handle--tr { top: calc(var(--handle-size, 12px) / -2 - 1px); right: calc(var(--handle-size, 12px) / -2 - 1px); }
+.selection-box__handle--bl { bottom: calc(var(--handle-size, 12px) / -2 - 1px); left: calc(var(--handle-size, 12px) / -2 - 1px); }
+.selection-box__handle--br { bottom: calc(var(--handle-size, 12px) / -2 - 1px); right: calc(var(--handle-size, 12px) / -2 - 1px); }
+
+/* 3. Chamfered File-Folder Tab Geometry (design.md Section E.5) */
+.folder-tab-top {
+  height: 80px;
+  padding: 0 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: var(--text-mono-ui);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  clip-path: polygon(48px 0%, calc(100% - 48px) 0%, 100% 100%, 0% 100%);
+  cursor: pointer;
+  user-select: none;
+}
+
+.folder-tab-top--flush-left {
+  padding-left: 28px;
+  padding-right: 52px;
+  clip-path: polygon(0% 0%, calc(100% - 54px) 0%, 100% 100%, 0% 100%);
+}
+
+/* Folder-shaped capability pill */
+.folder-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 20px 8px 16px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  clip-path: polygon(0% 0%, 34% 0%, 42% 18%, 100% 18%, 100% 100%, 0% 100%);
+  transition: transform var(--duration-fast) var(--ease-spring);
+}
+
+.folder-pill:hover {
+  transform: translateY(-2px);
+}
+
+/* Full-width Service Folder Capability Bar (Services Section) */
+.service-folder-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 62px;
+  padding: 14px 22px 10px 20px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  clip-path: polygon(0% 0%, 18% 0%, 22% 20%, 100% 20%, 100% 100%, 0% 100%);
+  transition: transform var(--duration-fast) var(--ease-spring), filter var(--duration-fast) ease;
+}
+
+.service-folder-bar:hover {
+  transform: translateY(-3px);
+  filter: brightness(0.97);
+}
+
+/* 4. Polaroid Instant-Film Frame (design.md Section E.4 & F.1) */
+.polaroid-frame {
+  background: #FFFFFF;
+  padding: 14px 14px 44px 14px;
+  box-shadow: var(--shadow-polaroid);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  transition: transform var(--duration-normal) var(--ease-spring), box-shadow var(--duration-normal) ease;
+}
+
+.polaroid-frame:hover {
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.14);
+}
+
+/* 5. Primary Nudge Dark CTA Button (design.md Section E.3) */
+.nudge-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  height: 68px;
+  padding: 0 24px 0 11px;
+  background-color: var(--color-text-primary);
+  color: var(--color-text-inverse);
+  border: 2px solid var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  position: relative;
+  transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-fast) var(--ease-spring);
+}
+
+.nudge-cta-btn:hover {
+  background-color: #C8C8C8;
+  color: #111111;
+  border-color: #666666;
+}
+
+/* 6. Diagonal Gold / Espresso Striped Footer Banner (design.md Section E.6) */
+.footer-striped-banner {
+  background-color: var(--color-gold-primary);
+  background-image:
+    linear-gradient(128deg,
+      var(--color-espresso-dark) 0%,
+      var(--color-espresso-dark) 16%,
+      var(--color-gold-primary) 16.2%,
+      var(--color-gold-primary) 46%,
+      var(--color-espresso-dark) 46.2%,
+      var(--color-espresso-dark) 62%,
+      var(--color-gold-primary) 62.2%,
+      var(--color-gold-primary) 88%,
+      var(--color-espresso-dark) 88.2%,
+      var(--color-espresso-dark) 100%
+    );
+  border-radius: var(--radius-banner);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 7. Accessibility & Focus States (design.md Section I.2) */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--color-text-primary);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px var(--color-cyan-primary);
+}
+
+/* Pulse animation for availability indicator */
+@keyframes pulseCyan {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.22); opacity: 0.75; }
+}
+
+.pulse-dot {
+  animation: pulseCyan 2.2s infinite ease-in-out;
+}
+
+/* Responsive visibility helpers */
+@media (max-width: 1100px) {
+  .hide-tablet {
+    display: none !important;
+  }
+}
+
+@media (max-width: 809px) {
+  .hide-mobile {
+    display: none !important;
+  }
+  .folder-tab-top {
+    height: 54px;
+    padding: 0 20px;
+    font-size: 12px;
+    clip-path: polygon(18px 0%, calc(100% - 18px) 0%, 100% 100%, 0% 100%);
+  }
+  .folder-tab-top--flush-left {
+    padding-left: 16px;
+    padding-right: 24px;
+    clip-path: polygon(0% 0%, calc(100% - 22px) 0%, 100% 100%, 0% 100%);
+  }
+}
+
+/* Reduced Motion Respect (design.md Section G & I) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

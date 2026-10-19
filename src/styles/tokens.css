@@ -1,0 +1,130 @@
+:root {
+  /* ==========================================================================
+     1. COLOR TOKENS ([Sampled] & Normalized from design.md & 1914x870 Recording)
+     ========================================================================== */
+  /* Surfaces & Neutrals */
+  --color-bg-canvas: #FFFFFF;
+  --color-bg-navbar: #FFFFFF;
+  --color-bg-card-muted: #EEEEEE;
+  --color-bg-chat-bubble: #F1F1F1;
+  --color-bg-pill-neutral: #EDEDED;
+  --color-grid-line: #F0F0F0;
+  --color-border-subtle: #E5E5E5;
+  --color-border-ruler: #CCCCCC;
+  --color-border-strong: #111111;
+
+  /* Ink & Text */
+  --color-text-primary: #111111;
+  --color-text-secondary: #333333;
+  --color-text-muted: #777777;
+  --color-text-ruler: #888888;
+  --color-text-inverse: #FFFFFF;
+
+  /* Brand Chromatic Primary Palette (4 Core Hues from design.md) */
+  --color-cyan-primary: #42D2ED;
+  --color-gold-primary: #E5B433;
+  --color-magenta-primary: #D0075A;
+  --color-green-primary: #3BCF81;
+
+  /* Brand Pastel Tint Palette (Sticky Notes & Service Sections) */
+  --color-cyan-tint: #ABEBF7;
+  --color-gold-tint: #F2DEA3;
+  --color-magenta-tint: #F6B6D0;
+  --color-green-tint: #A6E3C4;
+
+  /* Special Accent Surfaces */
+  --color-espresso-dark: #422C3A;
+  --color-reaction-bg: #E6F9FD;
+
+  /* ==========================================================================
+     2. TYPOGRAPHY TOKENS (design.md Section C & Section 3)
+     ========================================================================== */
+  --font-display: 'Silkscreen', 'JetBrains Mono', monospace;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  --font-hand: 'Caveat', 'Comic Sans MS', cursive;
+
+  /* Fluid / Responsive Font Sizes */
+  --text-display-hero: clamp(3.25rem, 7vw, 8.25rem);
+  --text-display-section: clamp(2.5rem, 5.4vw, 6.5rem);
+  --text-statement-xl: clamp(1.85rem, 3.6vw, 4.15rem);
+  --text-project-title: clamp(1.85rem, 3.3vw, 3.9rem);
+  --text-hero-sub: clamp(1.5rem, 2.6vw, 3.1rem);
+  --text-heading-lg: clamp(1.35rem, 2vw, 2.25rem);
+  --text-heading-md: clamp(1.25rem, 1.8vw, 2rem);
+  --text-heading-sm: clamp(1.125rem, 1.5vw, 1.65rem);
+  --text-card-title: 1.25rem;
+  --text-body-lg: 1.0625rem;
+  --text-body-md: 0.9375rem;
+  --text-hand-md: 1.55rem;
+  --text-mono-ui: 0.85rem;
+  --text-mono-xs: 0.6875rem;
+
+  /* ==========================================================================
+     3. LAYOUT, GRID & SPACING TOKENS (125px Quantum Grid & 1650px Container)
+     ========================================================================== */
+  --grid-cell-size: 125px;
+  --container-max-width: 1650px;
+  --container-bio-width: 980px;
+  --page-margin-desktop: 125px;
+  --page-margin-tablet: 40px;
+  --page-margin-mobile: 20px;
+
+  --navbar-height: 62px;
+  --ruler-height: 49px;
+  --top-chrome-height: 111px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 36px;
+  --space-7: 48px;
+  --space-8: 72px;
+  --space-9: 120px;
+  --space-10: 160px;
+
+  /* ==========================================================================
+     4. BORDER, RADIUS & SHADOW TOKENS
+     ========================================================================== */
+  --border-thin: 1px solid var(--color-border-ruler);
+  --border-selection: 2px solid var(--color-cyan-primary);
+  --border-ink: 1.5px solid var(--color-border-strong);
+  --border-heavy: 3px solid var(--color-border-strong);
+
+  --radius-none: 0px;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 28px;
+  --radius-banner: 32px;
+  --radius-phone: 48px;
+  --radius-pill: 9999px;
+
+  --shadow-polaroid: 0 12px 32px rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 10px 35px rgba(0, 0, 0, 0.06);
+  --shadow-sticky-nav: 0 8px 30px rgba(0, 0, 0, 0.06);
+
+  /* ==========================================================================
+     5. MOTION & TRANSITION TOKENS
+     ========================================================================== */
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-quart: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 180ms;
+  --duration-normal: 300ms;
+  --duration-slow: 600ms;
+}
+
+@media (max-width: 1199px) {
+  :root {
+    --grid-cell-size: 80px;
+  }
+}
+
+@media (max-width: 809px) {
+  :root {
+    --grid-cell-size: 50px;
+  }
+}
