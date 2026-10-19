@@ -27,6 +27,7 @@ export default function App() {
   const [modelType, setModelType] = useState('hybrid_mf');
   const [thresholdPct, setThresholdPct] = useState(50);
   const [surveyFocused, setSurveyFocused] = useState(false);
+  const [introCompleted, setIntroCompleted] = useState(false);
 
   const scrollToSection = (id) => {
     setActiveSection(id);
@@ -66,8 +67,8 @@ export default function App() {
       {/* Global Multiplayer 'YOU' Cursor & Contextual 'See' Circle */}
       <CustomCursorLayer />
 
-      {/* Initial 00:00-00:03 Speech-Bubble Preloader ('Hey there!' -> 'Q' -> 'Welcome!') */}
-      <IntroSplashBubble />
+      {/* Initial Speech-Bubble Preloader ('Planning a club event?' -> 'Welcome to Qourum') */}
+      <IntroSplashBubble onComplete={() => setIntroCompleted(true)} />
 
       {/* Persistent Sticky 62px Top Utility Navbar */}
       <TopNavbar
@@ -93,6 +94,7 @@ export default function App() {
           onChangeThreshold={setThresholdPct}
           organizerAvatar={MEDIA_ASSETS.organizerPortrait}
           onJumpToDemo={() => scrollToSection('demo-lab')}
+          introCompleted={introCompleted}
         />
 
         {/* 2. Problem & 4 Core Pillars (Scribble Divider, Inline-Media Statement, Polaroids, 2x2 Blocks) */}

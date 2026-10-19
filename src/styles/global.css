@@ -281,29 +281,47 @@ select:focus-visible,
   animation: typewriterCursor 750ms infinite;
 }
 
-/* Climax animation when speech bubble morphs to QOURUM */
-@keyframes qourumPulseEnter {
+/* Arriving animation for the main QUORUM hero title */
+@keyframes quorumCharArrive {
   0% {
-    transform: scale(0.8);
     opacity: 0;
+    transform: translateY(-30px) scale(0.68);
     filter: blur(4px);
-    letter-spacing: -0.02em;
   }
-  55% {
-    transform: scale(1.09);
+  65% {
     opacity: 1;
+    transform: translateY(4px) scale(1.06);
     filter: blur(0);
-    letter-spacing: 0.08em;
   }
   100% {
-    transform: scale(1);
     opacity: 1;
-    letter-spacing: 0.06em;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
   }
 }
 
-.qourum-pulse-animate {
-  animation: qourumPulseEnter 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+.quorum-char-arrive {
+  animation: quorumCharArrive 600ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes selectionBoxArrive {
+  0% {
+    opacity: 0.6;
+    transform: scale(0.96);
+    box-shadow: 0 0 0 rgba(66, 210, 237, 0);
+  }
+  45% {
+    box-shadow: 0 0 32px rgba(66, 210, 237, 0.45);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(66, 210, 237, 0);
+  }
+}
+
+.selection-box-arrive {
+  animation: selectionBoxArrive 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* Responsive visibility helpers */

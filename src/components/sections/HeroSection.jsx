@@ -12,6 +12,7 @@ export function HeroSection({
   onChangeThreshold,
   organizerAvatar,
   onJumpToDemo,
+  introCompleted = false,
 }) {
   const clockRef = useRef(null);
   const lensRef = useRef(null);
@@ -175,6 +176,7 @@ export function HeroSection({
             handleFill="#42D2ED"
             handleStroke="#111111"
             handleSize="13px"
+            className={introCompleted ? 'selection-box-arrive' : ''}
             style={{
               width: '100%',
               minHeight: '186px',
@@ -191,6 +193,7 @@ export function HeroSection({
               size="var(--text-display-hero)"
               scrollFade={false}
               color="#111111"
+              animateArrival={introCompleted}
             />
           </SelectionBox>
 

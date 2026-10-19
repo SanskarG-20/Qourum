@@ -312,6 +312,7 @@ export function PixelDisplayHeading({
   align = 'center',
   color = '#111111',
   style = {},
+  animateArrival = false,
 }) {
   const containerRef = useRef(null);
   const fullLabel = lines.join(' ');
@@ -396,10 +397,12 @@ export function PixelDisplayHeading({
               <span
                 key={chIdx}
                 data-char-pos={normalizedPos}
+                className={animateArrival ? 'quorum-char-arrive' : ''}
                 style={{
                   opacity: 1,
                   transition: 'opacity 120ms linear',
                   display: 'inline-block',
+                  animationDelay: animateArrival ? `${chIdx * 65}ms` : undefined,
                 }}
               >
                 <PixelGlyphSvg char={ch} color={color} />
