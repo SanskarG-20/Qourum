@@ -281,6 +281,31 @@ select:focus-visible,
   animation: typewriterCursor 750ms infinite;
 }
 
+/* Climax animation when speech bubble morphs to QOURUM */
+@keyframes qourumPulseEnter {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+    filter: blur(4px);
+    letter-spacing: -0.02em;
+  }
+  55% {
+    transform: scale(1.09);
+    opacity: 1;
+    filter: blur(0);
+    letter-spacing: 0.08em;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    letter-spacing: 0.06em;
+  }
+}
+
+.qourum-pulse-animate {
+  animation: qourumPulseEnter 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
 /* Responsive visibility helpers */
 @media (max-width: 1100px) {
   .hide-tablet {

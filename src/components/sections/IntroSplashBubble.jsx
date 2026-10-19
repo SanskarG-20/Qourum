@@ -9,6 +9,7 @@ export function IntroSplashBubble({ onComplete }) {
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [displayText, setDisplayText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isQourumMark, setIsQourumMark] = useState(false);
   const [entered, setEntered] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
   const [isMounted, setIsMounted] = useState(true);
@@ -42,7 +43,7 @@ export function IntroSplashBubble({ onComplete }) {
 
   // Typewriter Engine
   useEffect(() => {
-    if (!entered || isExiting || !isMounted) return;
+    if (!entered || isExiting || !isMounted || isQourumMark) return;
 
     const currentTarget = PHRASES[phraseIndex];
 
@@ -73,10 +74,14 @@ export function IntroSplashBubble({ onComplete }) {
             setPhraseIndex((prev) => prev + 1);
           }, 240);
         } else {
-          // Both phrases typed & deleted: dissolve out
+          // Second line disappeared: trigger spring pulse animation to QOURUM!
           loopTimerRef.current = setTimeout(() => {
-            handleDismiss();
-          }, 160);
+            setIsQourumMark(true);
+            // Hold QOURUM display mark, then dissolve into the page
+            loopTimerRef.current = setTimeout(() => {
+              handleDismiss();
+            }, 1050);
+          }, 180);
         }
       }
     }
@@ -84,7 +89,7 @@ export function IntroSplashBubble({ onComplete }) {
     return () => {
       if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
     };
-  }, [displayText, isDeleting, phraseIndex, entered, isExiting, isMounted]);
+  }, [displayText, isDeleting, phraseIndex, entered, isExiting, isMounted, isQourumMark]);
 
   useEffect(() => {
     return () => {
@@ -125,8 +130,10 @@ export function IntroSplashBubble({ onComplete }) {
           color: '#111111',
           border: '2px solid #111111',
           borderRadius: '0px 24px 24px 24px',
-          padding: '18px 36px',
-          boxShadow: '0 12px 32px rgba(0, 0, 0, 0.12)',
+          padding: isQourumMark ? '20px 48px' : '18px 36px',
+          boxShadow: isQourumMark
+            ? '0 20px 48px rgba(66, 210, 237, 0.45), 0 6px 18px rgba(0, 0, 0, 0.16)'
+            : '0 12px 32px rgba(0, 0, 0, 0.12)',
           transform: isExiting
             ? 'scale(0.96)'
             : !entered
@@ -134,8 +141,8 @@ export function IntroSplashBubble({ onComplete }) {
             : 'scale(1)',
           opacity: isExiting || !entered ? 0 : 1,
           transition:
-            'opacity 400ms cubic-bezier(0.16, 1, 0.3, 1), transform 400ms cubic-bezier(0.16, 1, 0.3, 1)',
-          minWidth: 'clamp(280px, 46vw, 560px)',
+            'opacity 400ms cubic-bezier(0.16, 1, 0.3, 1), transform 400ms cubic-bezier(0.16, 1, 0.3, 1), padding 320ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 320ms ease',
+          minWidth: isQourumMark ? 'clamp(260px, 32vw, 420px)' : 'clamp(280px, 46vw, 560px)',
           minHeight: '84px',
           maxWidth: '92vw',
           display: 'inline-flex',
@@ -145,22 +152,41 @@ export function IntroSplashBubble({ onComplete }) {
           userSelect: 'none',
         }}
       >
-        <span
-          style={{
-            fontFamily: 'var(--font-sans)',
-            fontSize: 'clamp(1.75rem, 3.5vw, 2.75rem)',
-            fontWeight: 500,
-            letterSpacing: '-0.02em',
-            lineHeight: 1.15,
-            whiteSpace: 'nowrap',
-            display: 'inline-flex',
-            alignItems: 'center',
-            color: '#111111',
-          }}
-        >
-          {displayText}
-          <span className="typewriter-cursor" />
-        </span>
+        {isQourumMark ? (
+          <span
+            className="qourum-pulse-animate"
+            style={{
+              fontFamily: 'var(--font-display, Silkscreen)',
+              fontSize: 'clamp(2.4rem, 5.2vw, 3.8rem)',
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+              lineHeight: 1.1,
+              whiteSpace: 'nowrap',
+              display: 'inline-flex',
+              alignItems: 'center',
+              color: '#111111',
+            }}
+          >
+            QOURUM
+          </span>
+        ) : (
+          <span
+            style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: 'clamp(1.75rem, 3.5vw, 2.75rem)',
+              fontWeight: 500,
+              letterSpacing: '-0.02em',
+              lineHeight: 1.15,
+              whiteSpace: 'nowrap',
+              display: 'inline-flex',
+              alignItems: 'center',
+              color: '#111111',
+            }}
+          >
+            {displayText}
+            <span className="typewriter-cursor" />
+          </span>
+        )}
       </div>
     </div>
   );
