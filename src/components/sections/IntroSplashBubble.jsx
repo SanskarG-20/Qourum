@@ -1,44 +1,41 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const INTRO_STAGES = [
+const PHRASES = [
   {
-    id: 'hello',
-    badge: '01 / INTRO',
-    mainText: 'Hey there! 👋',
+    text: 'Hey there!',
+    badge: '01 / HELLO',
     subText: 'Setting up club canvas...',
   },
   {
-    id: 'brand',
-    badge: '02 / SYSTEM',
-    mainText: 'Q',
-    subText: 'Group-Aware Recommendation',
-    isBrandMark: true,
-  },
-  {
-    id: 'welcome',
-    badge: '03 / QUORUM',
-    mainText: 'Welcome to Quorum!',
-    subText: 'Fair, explainable event decisions',
+    text: 'Welcome',
+    badge: '02 / QUORUM',
+    subText: 'Group-Aware Event Recommender',
   },
 ];
 
 export function IntroSplashBubble({ onComplete }) {
-  const [stageIndex, setStageIndex] = useState(0);
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const [displayText, setDisplayText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
   const [entered, setEntered] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
   const [isMounted, setIsMounted] = useState(true);
+
+  const loopTimerRef = useRef(null);
   const exitTimeoutRef = useRef(null);
 
-  // Trigger graceful exit sequence
+  // Smooth dissolve dismissal
   const handleDismiss = () => {
     if (isExiting) return;
     setIsExiting(true);
+    if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
     exitTimeoutRef.current = setTimeout(() => {
       setIsMounted(false);
       onComplete?.();
     }, 450); // Matches CSS dissolve transition duration
   };
 
+  // Entrance transition
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     if (mediaQuery.matches) {
@@ -47,30 +44,68 @@ export function IntroSplashBubble({ onComplete }) {
       return undefined;
     }
 
-    // Phase 0: trigger organic entrance
     const enterTimer = setTimeout(() => setEntered(true), 40);
+    return () => clearTimeout(enterTimer);
+  }, []);
 
-    // Phase 1: smoothly advance to 'Q' mark
-    const t1 = setTimeout(() => setStageIndex(1), 950);
+  // Typewriter Engine
+  useEffect(() => {
+    if (!entered || isExiting || !isMounted) return;
 
-    // Phase 2: smoothly expand to 'Welcome to Quorum!'
-    const t2 = setTimeout(() => setStageIndex(2), 1850);
+    const currentTarget = PHRASES[phraseIndex].text;
 
-    // Phase 3: begin graceful fade-out dissolve
-    const t3 = setTimeout(() => handleDismiss(), 3050);
+    if (!isDeleting) {
+      // Typing phase
+      if (displayText.length < currentTarget.length) {
+        loopTimerRef.current = setTimeout(() => {
+          setDisplayText(currentTarget.slice(0, displayText.length + 1));
+        }, 55); // Typing speed per character
+      } else {
+        // Full phrase typed: pause so user can comfortably read it
+        const pauseTime = phraseIndex === 0 ? 850 : 950;
+        loopTimerRef.current = setTimeout(() => {
+          setIsDeleting(true);
+        }, pauseTime);
+      }
+    } else {
+      // Deleting phase
+      if (displayText.length > 0) {
+        loopTimerRef.current = setTimeout(() => {
+          setDisplayText(currentTarget.slice(0, displayText.length - 1));
+        }, 32); // Deleting speed per character
+      } else {
+        // Fully deleted
+        if (phraseIndex < PHRASES.length - 1) {
+          // Pause briefly then move to next phrase
+          loopTimerRef.current = setTimeout(() => {
+            setIsDeleting(false);
+            setPhraseIndex((prev) => prev + 1);
+          }, 220);
+        } else {
+          // All phrases completed typing and deleting: gracefully dissolve
+          loopTimerRef.current = setTimeout(() => {
+            handleDismiss();
+          }, 150);
+        }
+      }
+    }
 
     return () => {
-      clearTimeout(enterTimer);
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
+      if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
+    };
+  }, [displayText, isDeleting, phraseIndex, entered, isExiting, isMounted]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
       if (exitTimeoutRef.current) clearTimeout(exitTimeoutRef.current);
     };
   }, []);
 
   if (!isMounted) return null;
 
-  const currentStage = INTRO_STAGES[stageIndex];
+  const currentPhraseObj = PHRASES[phraseIndex];
 
   return (
     <div
@@ -103,7 +138,7 @@ export function IntroSplashBubble({ onComplete }) {
           flexDirection: 'column',
           alignItems: 'center',
           gap: '14px',
-          maxWidth: '90vw',
+          maxWidth: '92vw',
         }}
       >
         <div
@@ -114,19 +149,22 @@ export function IntroSplashBubble({ onComplete }) {
             color: '#111111',
             border: '2px solid #111111',
             borderRadius: '0px 24px 24px 24px',
-            padding: currentStage.isBrandMark ? '24px 52px' : '28px 46px',
+            padding: '24px 38px',
             boxShadow:
               '0 24px 48px -12px rgba(0, 0, 0, 0.18), 0 8px 24px rgba(66, 210, 237, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.5)',
             transform: isExiting
               ? 'translateY(-16px) scale(0.96)'
               : !entered
               ? 'translateY(24px) scale(0.92)'
-              : currentStage.isBrandMark
-              ? 'scale(0.95)'
               : 'scale(1)',
             opacity: isExiting || !entered ? 0 : 1,
-            transition: 'all 420ms cubic-bezier(0.16, 1, 0.3, 1)',
-            minWidth: currentStage.isBrandMark ? '160px' : '280px',
+            transition: 'opacity 420ms cubic-bezier(0.16, 1, 0.3, 1), transform 420ms cubic-bezier(0.16, 1, 0.3, 1)',
+            minWidth: 'clamp(300px, 42vw, 460px)',
+            minHeight: '146px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
             textAlign: 'center',
             userSelect: 'none',
           }}
@@ -148,7 +186,7 @@ export function IntroSplashBubble({ onComplete }) {
 
           {/* Micro Stage Pill */}
           <div
-            key={`badge-${stageIndex}`}
+            key={`badge-${phraseIndex}`}
             className="intro-text-animate"
             style={{
               display: 'inline-flex',
@@ -162,7 +200,7 @@ export function IntroSplashBubble({ onComplete }) {
               fontWeight: 600,
               letterSpacing: '0.1em',
               color: 'rgba(17, 17, 17, 0.75)',
-              marginBottom: '4px',
+              marginBottom: '6px',
             }}
           >
             <span
@@ -174,31 +212,32 @@ export function IntroSplashBubble({ onComplete }) {
                 display: 'inline-block',
               }}
             />
-            {currentStage.badge}
+            {currentPhraseObj.badge}
           </div>
 
-          {/* Animated Main Text with Smooth Glide & Filter */}
+          {/* Typewriter Text Display */}
           <div
-            key={`main-${stageIndex}`}
-            className="intro-text-animate"
             style={{
-              fontFamily: currentStage.isBrandMark ? 'var(--font-display)' : 'var(--font-sans)',
-              fontSize: currentStage.isBrandMark
-                ? 'clamp(2.8rem, 5vw, 4rem)'
-                : 'clamp(1.75rem, 3.2vw, 2.6rem)',
-              fontWeight: currentStage.isBrandMark ? 700 : 600,
-              letterSpacing: currentStage.isBrandMark ? '0.04em' : '-0.02em',
-              lineHeight: 1.15,
-              marginTop: '2px',
-              marginBottom: '4px',
+              fontFamily: 'var(--font-sans)',
+              fontSize: 'clamp(2.1rem, 4vw, 3rem)',
+              fontWeight: 600,
+              letterSpacing: '-0.02em',
+              lineHeight: 1.2,
+              minHeight: '1.25em',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              whiteSpace: 'nowrap',
+              color: '#111111',
             }}
           >
-            {currentStage.mainText}
+            <span>{displayText}</span>
+            <span className="typewriter-cursor" />
           </div>
 
           {/* Subtext description */}
           <div
-            key={`sub-${stageIndex}`}
+            key={`sub-${phraseIndex}`}
             className="intro-text-animate"
             style={{
               fontFamily: 'var(--font-mono)',
@@ -206,31 +245,32 @@ export function IntroSplashBubble({ onComplete }) {
               fontWeight: 500,
               color: 'rgba(17, 17, 17, 0.7)',
               letterSpacing: '0.02em',
+              marginTop: '6px',
             }}
           >
-            {currentStage.subText}
+            {currentPhraseObj.subText}
           </div>
         </div>
 
-        {/* 3-Step Dot Indicator */}
+        {/* 2-Step Dot Indicator */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            marginTop: '4px',
+            marginTop: '2px',
             transition: 'opacity 300ms ease',
             opacity: isExiting ? 0 : 1,
           }}
         >
-          {INTRO_STAGES.map((s, idx) => (
+          {PHRASES.map((p, idx) => (
             <div
-              key={s.id}
+              key={p.text}
               style={{
                 height: '6px',
-                width: idx === stageIndex ? '22px' : '6px',
+                width: idx === phraseIndex ? '22px' : '6px',
                 borderRadius: '999px',
-                backgroundColor: idx === stageIndex ? '#111111' : 'rgba(17, 17, 17, 0.22)',
+                backgroundColor: idx === phraseIndex ? '#111111' : 'rgba(17, 17, 17, 0.22)',
                 transition: 'all 320ms cubic-bezier(0.16, 1, 0.3, 1)',
               }}
             />
@@ -259,4 +299,5 @@ export function IntroSplashBubble({ onComplete }) {
     </div>
   );
 }
+
 
