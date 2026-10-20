@@ -57,7 +57,9 @@ export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPilla
   const [hotPillar, setHotPillar] = useState(null);
   const [badgeHover, setBadgeHover] = useState(false);
   const [badgeEnter, setBadgeEnter] = useState(false);
+  const [sectionEntered, setSectionEntered] = useState(false);
   const badgeRef = useRef(null);
+  const statementRef = useRef(null);
   const irisRef = useRef(null);
   const enterTimerRef = useRef(null);
 
@@ -81,6 +83,29 @@ export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPilla
       observer.disconnect();
       if (enterTimerRef.current) clearTimeout(enterTimerRef.current);
     };
+  }, []);
+
+  // Entrance beat: the kicker writes itself in, the statement rises, and the three
+  // inline tokens spring into place within it — one orchestrated moment, not a pile
+  // of scattered effects.
+  useEffect(() => {
+    const node = statementRef.current;
+    if (!node || typeof IntersectionObserver === 'undefined') {
+      setSectionEntered(true);
+      return undefined;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          setSectionEntered(true);
+          observer.disconnect();
+        });
+      },
+      { threshold: 0.25 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
   }, []);
 
   // The User Research eye looks back at the pointer.
@@ -131,15 +156,15 @@ export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPilla
         />
       </svg>
 
-      <div className="nudge-container" style={{ position: 'relative' }}>
+      <div className={`nudge-container${sectionEntered ? ' is-entered' : ''}`} style={{ position: 'relative' }}>
         {/* Handwritten Kicker ('about me!' -> 'why quorum?' tilted -10 deg at left) */}
         <div
+          className="problem-kicker"
           style={{
             fontFamily: 'var(--font-hand)',
-            fontSize: '28px',
+            fontSize: '26px',
             fontWeight: 600,
             color: '#111111',
-            transform: 'rotate(-10deg)',
             display: 'inline-block',
             marginLeft: '12%',
             marginBottom: '16px',
@@ -163,16 +188,16 @@ export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPilla
               borderColor="#111111"
               handleFill="#FFFFFF"
               handleStroke="#111111"
-              handleSize="10px"
+              handleSize="9px"
               style={{
-                padding: '12px 32px',
+                padding: '10px 28px',
                 backgroundColor: '#FFFFFF',
               }}
             >
               <span
                 style={{
                   fontFamily: 'var(--font-sans)',
-                  fontSize: 'clamp(1.5rem, 2.2vw, 2.1rem)',
+                  fontSize: '28px',
                   fontWeight: 500,
                   letterSpacing: '-0.02em',
                   color: '#111111',
@@ -216,6 +241,8 @@ export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPilla
 
           {/* Editorial Statement with Inline Photo & Geometric Tokens (prd.md Section 2 & 3) */}
           <h2
+            ref={statementRef}
+            className="problem-statement"
             style={{
               fontFamily: 'var(--font-sans)',
               fontSize: 'clamp(2rem, 3.8vw, 4.25rem)',
@@ -231,15 +258,24 @@ export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPilla
             }}
           >
             Organizers pick slots by gut feeling{' '}
-            <span className="statement-avatar-tile">
-              <img
-                src={organizerPortrait}
-                alt="Club organizer inline thumbnail"
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-              />
+            <span className="token-enter" style={{ '--enter-delay': '200ms' }}>
+              <span className="statement-avatar-tile">
+                <img
+                  src={organizerPortrait}
+                  alt="Club organizer inline thumbnail"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                />
+              </span>
             </span>{' '}
-            while chat polls miss history, <InlineGoldClover size={48} /> so Quorum makes every club
-            event decision fair &amp; explainable <InlineMagentaSpool size={48} />.
+            while chat polls miss history,{' '}
+            <span className="token-enter" style={{ '--enter-delay': '300ms' }}>
+              <InlineGoldClover size={48} />
+            </span>{' '}
+            so Quorum makes every club event decision fair &amp; explainable{' '}
+            <span className="token-enter" style={{ '--enter-delay': '400ms' }}>
+              <InlineMagentaSpool size={48} />
+            </span>
+            .
           </h2>
 
           {/* Right Flanking Polaroid (+9 deg, lifts toward upright on hover) */}
@@ -278,6 +314,7 @@ export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPilla
             alt="a club organizer planning an event"
             caption="2026-27"
             rotationDeg={-5}
+            lift="left"
             width={175}
           />
           <PolaroidFrame
@@ -285,6 +322,7 @@ export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPilla
             alt="organizer workspace desk"
             caption="club workspace"
             rotationDeg={5}
+            lift="right"
             width={175}
           />
         </div>

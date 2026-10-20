@@ -487,6 +487,41 @@ body {
 }
 
 /* Inline statement tokens */
+.problem-kicker {
+  opacity: 0;
+  transform: rotate(-10deg) translateX(-26px);
+  transition: opacity 520ms cubic-bezier(0.16, 1, 0.3, 1), transform 520ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.is-entered .problem-kicker {
+  opacity: 1;
+  transform: rotate(-10deg) translateX(0);
+}
+
+.problem-statement {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 620ms cubic-bezier(0.16, 1, 0.3, 1), transform 620ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.is-entered .problem-statement {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* The three inline tokens spring into place within the arriving statement */
+.token-enter {
+  display: inline-block;
+  vertical-align: middle;
+  opacity: 0;
+  transform: scale(0.35) translateY(8px);
+  transition: opacity 420ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              transform 520ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition-delay: var(--enter-delay, 0ms);
+}
+.is-entered .token-enter {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
 .statement-avatar-tile {
   display: inline-block;
   width: 54px;
