@@ -164,11 +164,31 @@ body {
   padding: 14px 14px 44px 14px;
   box-shadow: var(--shadow-polaroid);
   border: 1px solid rgba(0, 0, 0, 0.07);
-  transition: transform var(--duration-normal) var(--ease-spring), box-shadow var(--duration-normal) ease;
+  transform: rotate(var(--polaroid-rot, 0deg));
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.polaroid-frame:hover {
+/* Hover lifts the frame back toward upright */
+.polaroid-frame[data-lift='left']:hover {
+  transform: rotate(-4deg) translateY(-6px) scale(1.03);
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.14);
+}
+
+.polaroid-frame[data-lift='right']:hover {
+  transform: rotate(3deg) translateY(-6px) scale(1.03);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.14);
+}
+
+/* Flanking Polaroids need the full artboard. The editorial statement is 1040px wide
+   and the frames are 224px wide, so a comfortable 52px gutter only opens up once the
+   container content exceeds 1572px — i.e. from a 1700px viewport. Below that they hand
+   off to the inline row instead of crowding the text. */
+.polaroid-flank { display: block; }
+.polaroid-mobile-row { display: none; }
+
+@media (max-width: 1699px) {
+  .polaroid-flank { display: none !important; }
+  .polaroid-mobile-row { display: flex !important; }
 }
 
 /* 5. Primary Nudge Dark CTA Button (00:05 - 00:06 CAD Selection Bounding Box) */
@@ -292,7 +312,220 @@ body {
   overflow: hidden;
 }
 
-/* 7. Multiplayer Cursor Accent — isometric pixel block (Royal Blue state only) */
+/* 7. Animated Skill Instrument Boxes + Inline Statement Tokens (Problem Section)
+      Each 74x74 box idles on its own rhythm and accelerates when its pair is hovered. */
+
+/* Pair 1 — 2x2 window grid that flips between flat and a 45deg diamond */
+.skill-tile {
+  width: 74px;
+  height: 74px;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.skill-tile--gold { background-color: #E5B433; border: 2px dashed #111111; }
+.skill-tile--green { background-color: #3BCF81; overflow: hidden; }
+.skill-tile--magenta { background-color: #D0075A; }
+.skill-tile--cyan { background-color: #42D2ED; }
+
+.skill-tile-gold-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 10px);
+  grid-auto-rows: 10px;
+  gap: 4px;
+  animation: skillGridFlip 2.4s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+.skill-tile-gold-grid > span { width: 10px; height: 10px; background-color: #111111; }
+
+@keyframes skillGridFlip {
+  0% { transform: rotate(0deg) scale(1); }
+  12% { transform: rotate(45deg) scale(1.08); }
+  50% { transform: rotate(45deg) scale(1.08); }
+  62% { transform: rotate(0deg) scale(1); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+
+.skill-tile--gold.is-hot .skill-tile-gold-grid {
+  animation-name: skillGridFlipHot;
+  animation-duration: 0.7s;
+}
+@keyframes skillGridFlipHot {
+  0% { transform: rotate(45deg) scale(1.08); }
+  50% { transform: rotate(90deg) scale(1.16); }
+  100% { transform: rotate(45deg) scale(1.08); }
+}
+.skill-tile--gold.is-hot .skill-tile-gold-grid > span {
+  animation: skillSquareOut 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+.skill-tile--gold.is-hot .skill-tile-gold-grid > span:nth-child(1) { --ox: -3px; --oy: -3px; }
+.skill-tile--gold.is-hot .skill-tile-gold-grid > span:nth-child(2) { --ox: 3px; --oy: -3px; }
+.skill-tile--gold.is-hot .skill-tile-gold-grid > span:nth-child(3) { --ox: -3px; --oy: 3px; }
+.skill-tile--gold.is-hot .skill-tile-gold-grid > span:nth-child(4) { --ox: 3px; --oy: 3px; }
+@keyframes skillSquareOut {
+  0%, 100% { transform: translate(var(--ox, 0px), var(--oy, 0px)) scale(1); }
+  50% { transform: translate(var(--ox, 0px), var(--oy, 0px)) scale(1.28); }
+}
+
+/* Pair 2 — 8-spoke starburst over a breathing magenta core */
+.skill-spokes {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: skillSpin 5s linear infinite;
+}
+.skill-tile--green.is-hot .skill-spokes { animation-duration: 1.2s; }
+@keyframes skillSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.skill-core {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: skillBreathe 1.4s ease-in-out infinite;
+}
+.skill-tile--green.is-hot .skill-core { animation: skillBreatheHot 1.4s ease-in-out infinite; }
+@keyframes skillBreathe {
+  0%, 100% { transform: scale(0.88); }
+  50% { transform: scale(1.12); }
+}
+@keyframes skillBreatheHot {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+/* Pair 3 — the eye looks around, blinks, and tracks the pointer on hover */
+.skill-eye {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: skillBlink 2.8s ease-in-out infinite;
+}
+@keyframes skillBlink {
+  0%, 66% { transform: scaleY(1); }
+  72% { transform: scaleY(0.08); }
+  78%, 100% { transform: scaleY(1); }
+}
+
+.skill-eye-iris {
+  transform-box: view-box;
+  animation: skillLook 2.8s ease-in-out infinite;
+}
+@keyframes skillLook {
+  0% { transform: translateX(-5px); }
+  25% { transform: translateX(0); }
+  50% { transform: translateX(5px); }
+  75%, 100% { transform: translateX(0); }
+}
+
+.skill-tile--magenta.is-hot .skill-eye { animation: skillBlinkHot 0.9s ease-in-out infinite; }
+@keyframes skillBlinkHot {
+  0%, 20% { transform: scaleY(1); }
+  28% { transform: scaleY(0.08); }
+  36% { transform: scaleY(1); }
+  52% { transform: scaleY(1); }
+  58% { transform: scaleY(0.08); }
+  68%, 100% { transform: scaleY(1); }
+}
+
+/* Pointer tracking takes over from the idle look while hovered */
+.skill-tile--magenta.is-hot .skill-eye-iris { animation: none; }
+
+.skill-eye-star {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+}
+.skill-tile--magenta.is-hot .skill-eye-star {
+  animation: skillStarSpin 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+@keyframes skillStarSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(90deg); }
+}
+
+/* Pair 4 — elastic dot-to-circle morph with a 90deg cluster swap */
+.skill-dot-cluster {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 50%;
+  animation: skillClusterSpin 1.4s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+.skill-dot {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  transform-origin: 50% 50%;
+  animation: skillDotMorph 1.4s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+.skill-dot--magenta { background-color: #D0075A; }
+.skill-dot--ink { background-color: #111111; }
+
+@keyframes skillClusterSpin {
+  0%, 30% { transform: rotate(0deg); }
+  60%, 100% { transform: rotate(90deg); }
+}
+@keyframes skillDotMorph {
+  0% { transform: scale(1); }
+  30% { transform: scale(0.22); }
+  60% { transform: scale(0.22); }
+  85%, 100% { transform: scale(1); }
+}
+.skill-tile--cyan.is-hot .skill-dot-cluster,
+.skill-tile--cyan.is-hot .skill-dot { animation-duration: 0.55s; }
+
+/* Capability card requirement-code chip */
+.skill-card-code {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  opacity: 0.72;
+  border: 1px solid currentColor;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
+/* Inline statement tokens */
+.statement-avatar-tile {
+  display: inline-block;
+  width: 54px;
+  height: 54px;
+  vertical-align: middle;
+  overflow: hidden;
+  border: 1.5px solid #111111;
+  margin: 0 4px;
+  transform: translateY(-4px);
+  transition: transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.statement-avatar-tile:hover {
+  transform: translateY(-4px) rotate(6deg) scale(1.08);
+}
+
+.spin-clover {
+  transform-origin: 50% 50%;
+  animation: spinClover 6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+.spin-clover:hover { animation-duration: 2s; }
+@keyframes spinClover {
+  0% { transform: translateY(-4px) rotate(0deg); }
+  25% { transform: translateY(-4px) rotate(90deg); }
+  50% { transform: translateY(-4px) rotate(180deg); }
+  75% { transform: translateY(-4px) rotate(270deg); }
+  100% { transform: translateY(-4px) rotate(360deg); }
+}
+
+.pulse-spool {
+  transform-origin: 50% 50%;
+  animation: spoolBob 3.5s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+@keyframes spoolBob {
+  0%, 55% { transform: translateY(-4px) scaleY(1); }
+  70% { transform: translateY(-4px) scaleY(0.5); }
+  85%, 100% { transform: translateY(-4px) scaleY(1); }
+}
+
+/* 8. Multiplayer Cursor Accent — isometric pixel block (Royal Blue state only) */
 .cursor-accent {
   position: absolute;
   top: 0;
@@ -312,8 +545,7 @@ body {
   transform: scale(1);
 }
 
-/* 8. Accessibility & Focus States (design.md Section I.2) */
-button:focus-visible,
+/* 9. Accessibility & Focus States (design.md Section I.2) */button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 select:focus-visible,

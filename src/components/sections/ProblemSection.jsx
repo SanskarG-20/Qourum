@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { SelectionBox } from '../ui/SelectionBox.jsx';
 import { PolaroidFrame } from '../ui/PolaroidFrame.jsx';
 import { InlineGoldClover, InlineMagentaSpool, SkillGeometricTile } from '../ui/GeometricIcons.jsx';
 
-export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPillar }) {
-  const pillars = [
+// Two rows of two capability cards. Each card is paired with a 74x74 instrument box
+// that idles on its own rhythm and accelerates when the pair is hovered.
+// `cursor` is the multiplayer "YOU" pill colour that this pair activates.
+const SKILL_ROWS = [
+  [
     {
       id: 'preference',
       label: 'Preference Learning',
@@ -12,6 +15,7 @@ export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPilla
       bg: '#E5B433',
       text: '#111111',
       tile: 'gold',
+      cursor: 'blue',
       desc: 'Predicts p(member, type, slot) ∈ [0,1] from 1–5 ratings & attendance history.',
     },
     {
@@ -21,8 +25,11 @@ export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPilla
       bg: '#3BCF81',
       text: '#111111',
       tile: 'green',
+      cursor: 'red',
       desc: 'Drops any 7d × 5-slot candidate below the configurable availability threshold.',
     },
+  ],
+  [
     {
       id: 'aggregation',
       label: 'Fair Aggregation',
@@ -30,6 +37,7 @@ export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPilla
       bg: '#D0075A',
       text: '#FFFFFF',
       tile: 'magenta',
+      cursor: 'green',
       desc: 'Compares Average, Least-Misery, and Fairness-Aware strategies side by side.',
     },
     {
@@ -39,9 +47,61 @@ export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPilla
       bg: '#42D2ED',
       text: '#111111',
       tile: 'cyan',
+      cursor: 'orange',
       desc: 'Outputs top-3 events with per-member satisfaction & template explanations.',
     },
-  ];
+  ],
+];
+
+export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPillar }) {
+  const [hotPillar, setHotPillar] = useState(null);
+  const [badgeHover, setBadgeHover] = useState(false);
+  const [badgeEnter, setBadgeEnter] = useState(false);
+  const badgeRef = useRef(null);
+  const irisRef = useRef(null);
+  const enterTimerRef = useRef(null);
+
+  // Entrance beat: the badge tips once the first time it scrolls into view.
+  useEffect(() => {
+    const node = badgeRef.current;
+    if (!node || typeof IntersectionObserver === 'undefined') return undefined;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          setBadgeEnter(true);
+          enterTimerRef.current = setTimeout(() => setBadgeEnter(false), 700);
+          observer.disconnect();
+        });
+      },
+      { threshold: 0.4 }
+    );
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+      if (enterTimerRef.current) clearTimeout(enterTimerRef.current);
+    };
+  }, []);
+
+  // The User Research eye looks back at the pointer.
+  const handlePairMouseMove = (e, skill) => {
+    if (skill.tile !== 'magenta') return;
+    const iris = irisRef.current;
+    if (!iris) return;
+    const tile = e.currentTarget.querySelector('.skill-tile--magenta');
+    if (!tile) return;
+    const rect = tile.getBoundingClientRect();
+    const dx = Math.max(-6, Math.min(6, (e.clientX - (rect.left + rect.width / 2)) / 5));
+    const dy = Math.max(-3, Math.min(3, (e.clientY - (rect.top + rect.height / 2)) / 7));
+    iris.style.transform = `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px)`;
+  };
+
+  const handlePairMouseLeave = (skill) => {
+    setHotPillar(null);
+    if (skill.tile === 'magenta' && irisRef.current) {
+      irisRef.current.style.transform = '';
+    }
+  };
 
   return (
     <section
@@ -89,29 +149,39 @@ export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPilla
         </div>
 
         {/* Centered Black Selection Box Badge ('what's up' -> 'the problem', frame_029) */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '44px' }}>
-          <SelectionBox
-            borderColor="#111111"
-            handleFill="#FFFFFF"
-            handleStroke="#111111"
-            handleSize="10px"
+        <div ref={badgeRef} style={{ display: 'flex', justifyContent: 'center', marginBottom: '44px' }}>
+          <div
+            onMouseEnter={() => setBadgeHover(true)}
+            onMouseLeave={() => setBadgeHover(false)}
             style={{
-              padding: '12px 32px',
-              backgroundColor: '#FFFFFF',
+              transform:
+                badgeHover || badgeEnter ? 'rotate(-4deg) scale(1.03)' : 'rotate(0deg)',
+              transition: 'transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1)',
             }}
           >
-            <span
+            <SelectionBox
+              borderColor="#111111"
+              handleFill="#FFFFFF"
+              handleStroke="#111111"
+              handleSize="10px"
               style={{
-                fontFamily: 'var(--font-sans)',
-                fontSize: 'clamp(1.5rem, 2.2vw, 2.1rem)',
-                fontWeight: 500,
-                letterSpacing: '-0.02em',
-                color: '#111111',
+                padding: '12px 32px',
+                backgroundColor: '#FFFFFF',
               }}
             >
-              the problem
-            </span>
-          </SelectionBox>
+              <span
+                style={{
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: 'clamp(1.5rem, 2.2vw, 2.1rem)',
+                  fontWeight: 500,
+                  letterSpacing: '-0.02em',
+                  color: '#111111',
+                }}
+              >
+                the problem
+              </span>
+            </SelectionBox>
+          </div>
         </div>
 
         {/* Central Editorial Statement with Inline Photo & Geometric Tokens + Flanking Polaroids (frame_029) */}
@@ -124,9 +194,9 @@ export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPilla
             marginBottom: '68px',
           }}
         >
-          {/* Left Flanking Polaroid (-11 deg) */}
+          {/* Left Flanking Polaroid (-11 deg, lifts toward upright on hover) */}
           <div
-            className="hide-tablet"
+            className="polaroid-flank"
             style={{
               position: 'absolute',
               left: '-10px',
@@ -139,15 +209,16 @@ export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPilla
               alt="a club organizer planning an event"
               caption="2026-27"
               rotationDeg={-11}
+              lift="left"
               width={224}
             />
           </div>
 
-          {/* 72px Inline-Media Problem & Opportunity Statement (prd.md Section 2 & 3) */}
+          {/* Editorial Statement with Inline Photo & Geometric Tokens (prd.md Section 2 & 3) */}
           <h2
             style={{
               fontFamily: 'var(--font-sans)',
-              fontSize: 'var(--text-statement-xl)',
+              fontSize: 'clamp(2rem, 3.8vw, 4.25rem)',
               fontWeight: 500,
               lineHeight: 1.15,
               letterSpacing: '-0.03em',
@@ -160,32 +231,20 @@ export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPilla
             }}
           >
             Organizers pick slots by gut feeling{' '}
-            <span
-              style={{
-                display: 'inline-block',
-                width: '56px',
-                height: '56px',
-                verticalAlign: 'middle',
-                overflow: 'hidden',
-                border: '1.5px solid #111111',
-                margin: '0 4px',
-                transform: 'translateY(-4px)',
-              }}
-            >
+            <span className="statement-avatar-tile">
               <img
                 src={organizerPortrait}
                 alt="Club organizer inline thumbnail"
                 style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
               />
             </span>{' '}
-            while chat polls miss history,{' '}
-            <InlineGoldClover size={52} /> so Quorum makes every club event decision fair &amp; explainable{' '}
-            <InlineMagentaSpool size={52} />.
+            while chat polls miss history, <InlineGoldClover size={48} /> so Quorum makes every club
+            event decision fair &amp; explainable <InlineMagentaSpool size={48} />.
           </h2>
 
-          {/* Right Flanking Polaroid (+9 deg) */}
+          {/* Right Flanking Polaroid (+9 deg, lifts toward upright on hover) */}
           <div
-            className="hide-tablet"
+            className="polaroid-flank"
             style={{
               position: 'absolute',
               right: '-10px',
@@ -198,6 +257,7 @@ export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPilla
               alt="organizer workspace desk"
               caption="club workspace"
               rotationDeg={9}
+              lift="right"
               width={224}
             />
           </div>
@@ -207,7 +267,6 @@ export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPilla
         <div
           className="polaroid-mobile-row"
           style={{
-            display: 'none',
             justifyContent: 'center',
             gap: '24px',
             flexWrap: 'wrap',
@@ -230,7 +289,7 @@ export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPilla
           />
         </div>
 
-        {/* 2x2 Colored Skill / Pillar Blocks with 74x74 Geometric Icon Tiles (frame_030) */}
+        {/* 2x2 Colored Capability Cards, each paired with a 74x74 Animated Instrument Box (frame_030) */}
         <div
           style={{
             display: 'flex',
@@ -239,125 +298,64 @@ export function ProblemSection({ organizerPortrait, workspaceDesk, onSelectPilla
             gap: '16px',
           }}
         >
-          {/* Row 1: Preference Learning (Gold) + Hard Slot Filter (Green) */}
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              gap: '16px',
-            }}
-          >
-            {pillars.slice(0, 2).map((p) => (
-              <div
-                key={p.id}
-                style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
-              >
-                <button
-                  type="button"
-                  onClick={() => onSelectPillar && onSelectPillar(p.id)}
-                  title={`${p.code}: ${p.desc}`}
-                  style={{
-                    height: '74px',
-                    padding: '0 28px',
-                    backgroundColor: p.bg,
-                    color: p.text,
-                    border: 'none',
-                    fontFamily: 'var(--font-sans)',
-                    fontSize: 'clamp(1.35rem, 2.1vw, 2.25rem)',
-                    fontWeight: 500,
-                    letterSpacing: '-0.02em',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    transition: 'transform 180ms cubic-bezier(0.22, 1, 0.36, 1)',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                >
-                  <span>{p.label}</span>
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '11px',
-                      opacity: 0.78,
-                      border: '1px solid currentColor',
-                      padding: '2px 6px',
-                    }}
+          {SKILL_ROWS.map((row, rowIndex) => (
+            <div
+              key={`row-${rowIndex}`}
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                gap: '16px',
+              }}
+            >
+              {row.map((skill) => {
+                const hot = hotPillar === skill.id;
+                return (
+                  <div
+                    key={skill.id}
+                    data-cursor-color={skill.cursor}
+                    onMouseEnter={() => setHotPillar(skill.id)}
+                    onMouseLeave={() => handlePairMouseLeave(skill)}
+                    onMouseMove={(e) => handlePairMouseMove(e, skill)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                   >
-                    {p.code}
-                  </span>
-                </button>
-                <SkillGeometricTile variant={p.tile} />
-              </div>
-            ))}
-          </div>
-
-          {/* Row 2: Fair Aggregation (Magenta) + Explainable Top-K (Cyan) */}
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              gap: '16px',
-            }}
-          >
-            {pillars.slice(2, 4).map((p) => (
-              <div
-                key={p.id}
-                style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
-              >
-                <button
-                  type="button"
-                  onClick={() => onSelectPillar && onSelectPillar(p.id)}
-                  title={`${p.code}: ${p.desc}`}
-                  style={{
-                    height: '74px',
-                    padding: '0 28px',
-                    backgroundColor: p.bg,
-                    color: p.text,
-                    border: 'none',
-                    fontFamily: 'var(--font-sans)',
-                    fontSize: 'clamp(1.35rem, 2.1vw, 2.25rem)',
-                    fontWeight: 500,
-                    letterSpacing: '-0.02em',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    transition: 'transform 180ms cubic-bezier(0.22, 1, 0.36, 1)',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                >
-                  <span>{p.label}</span>
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '11px',
-                      opacity: 0.85,
-                      border: '1px solid currentColor',
-                      padding: '2px 6px',
-                    }}
-                  >
-                    {p.code}
-                  </span>
-                </button>
-                <SkillGeometricTile variant={p.tile} />
-              </div>
-            ))}
-          </div>
+                    <button
+                      type="button"
+                      onClick={() => onSelectPillar && onSelectPillar(skill.id)}
+                      title={`${skill.code}: ${skill.desc}`}
+                      style={{
+                        height: '74px',
+                        padding: '0 28px',
+                        backgroundColor: skill.bg,
+                        color: skill.text,
+                        border: 'none',
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: 'clamp(1.35rem, 2.1vw, 2.25rem)',
+                        fontWeight: 500,
+                        letterSpacing: '-0.02em',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        transform: hot ? 'translateY(-3px)' : 'translateY(0)',
+                        transition: 'transform 180ms cubic-bezier(0.22, 1, 0.36, 1)',
+                      }}
+                    >
+                      <span>{skill.label}</span>
+                      <span className="skill-card-code">{skill.code}</span>
+                    </button>
+                    <SkillGeometricTile
+                      variant={skill.tile}
+                      hot={hot}
+                      irisRef={skill.tile === 'magenta' ? irisRef : undefined}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          ))}
         </div>
       </div>
-
-      <style>{`
-        @media (max-width: 1100px) {
-          .polaroid-mobile-row {
-            display: flex !important;
-          }
-        }
-      `}</style>
     </section>
   );
 }

@@ -97,9 +97,11 @@ export function InlineFlowerIcon({ size = 40 }) {
 }
 
 // Inline Gold Clover [🌼] and Magenta Hourglass [⏳] for Problem / About statement (design.md Section E.4)
+// The className carries the ambient motion; the inline transform is the reduced-motion fallback.
 export function InlineGoldClover({ size = 48 }) {
   return (
     <svg
+      className="spin-clover"
       width={size}
       height={size}
       viewBox="0 0 54 54"
@@ -119,6 +121,7 @@ export function InlineGoldClover({ size = 48 }) {
 export function InlineMagentaSpool({ size = 48 }) {
   return (
     <svg
+      className="pulse-spool"
       width={size}
       height={size}
       viewBox="0 0 54 54"
@@ -133,97 +136,67 @@ export function InlineMagentaSpool({ size = 48 }) {
   );
 }
 
-// 4 Geometric 79x79 Skill Tiles from frame_030 (design.md Section E.4)
-export function SkillGeometricTile({ variant }) {
+// 4 Animated 74x74 Skill Instrument Boxes (design.md Section E.4)
+// Each box is an idle-running instrument that accelerates when the pair is hovered.
+export function SkillGeometricTile({ variant, hot = false, irisRef }) {
+  const cls = `skill-tile skill-tile--${variant}${hot ? ' is-hot' : ''}`;
+
   if (variant === 'gold') {
     return (
-      <div
-        aria-hidden="true"
-        style={{
-          width: '74px',
-          height: '74px',
-          backgroundColor: '#E5B433',
-          border: '2px dashed #111111',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-          <rect x="20" y="3" width="10" height="10" transform="rotate(45 20 3)" fill="#111111" />
-          <rect x="20" y="23" width="10" height="10" transform="rotate(45 20 23)" fill="#111111" />
-          <rect x="10" y="13" width="10" height="10" transform="rotate(45 10 13)" fill="#111111" />
-          <rect x="30" y="13" width="10" height="10" transform="rotate(45 30 13)" fill="#111111" />
-        </svg>
+      <div className={cls} aria-hidden="true">
+        <span className="skill-tile-gold-grid">
+          <span />
+          <span />
+          <span />
+          <span />
+        </span>
       </div>
     );
   }
+
   if (variant === 'green') {
     return (
-      <div
-        aria-hidden="true"
-        style={{
-          width: '74px',
-          height: '74px',
-          backgroundColor: '#3BCF81',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          overflow: 'hidden',
-        }}
-      >
+      <div className={cls} aria-hidden="true">
         <svg width="74" height="74" viewBox="0 0 74 74" fill="none">
-          <path d="M37 0V74M0 37H74M5 5L69 69M69 5L5 69" stroke="#111111" strokeWidth="3.5" />
+          <g className="skill-spokes">
+            <path d="M37 0V74M0 37H74M5 5L69 69M69 5L5 69" stroke="#111111" strokeWidth="3.5" />
+          </g>
           <circle cx="37" cy="37" r="19" fill="#3BCF81" />
-          <circle cx="37" cy="37" r="15" fill="#D0075A" />
+          <circle className="skill-core" cx="37" cy="37" r="15" fill="#D0075A" />
         </svg>
       </div>
     );
   }
+
   if (variant === 'magenta') {
     return (
-      <div
-        aria-hidden="true"
-        style={{
-          width: '74px',
-          height: '74px',
-          backgroundColor: '#D0075A',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <svg width="68" height="44" viewBox="0 0 68 44" fill="none">
-          <path d="M2 22C12 6 23 2 34 2C45 2 56 6 66 22C56 38 45 42 34 42C23 42 12 38 2 22Z" fill="#FFFFFF" />
-          <circle cx="34" cy="22" r="12" fill="#D0075A" />
-          <path d="M34 13L36.5 19.5L43 22L36.5 24.5L34 31L31.5 24.5L25 22L31.5 19.5L34 13Z" fill="#E5B433" />
+      <div className={cls} aria-hidden="true">
+        <svg className="skill-eye" width="68" height="44" viewBox="0 0 68 44" fill="none">
+          <path
+            d="M2 22C12 6 23 2 34 2C45 2 56 6 66 22C56 38 45 42 34 42C23 42 12 38 2 22Z"
+            fill="#FFFFFF"
+          />
+          <g className="skill-eye-iris" ref={irisRef}>
+            <circle cx="34" cy="22" r="12" fill="#D0075A" />
+            <path
+              className="skill-eye-star"
+              d="M34 13L36.5 19.5L43 22L36.5 24.5L34 31L31.5 24.5L25 22L31.5 19.5L34 13Z"
+              fill="#E5B433"
+            />
+          </g>
         </svg>
       </div>
     );
   }
+
   return (
-    <div
-      aria-hidden="true"
-      style={{
-        width: '74px',
-        height: '74px',
-        backgroundColor: '#42D2ED',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-      }}
-    >
-      <svg width="74" height="74" viewBox="0 0 74 74" fill="none">
-        <circle cx="16" cy="16" r="9" fill="#D0075A" />
-        <circle cx="58" cy="58" r="9" fill="#D0075A" />
-        <circle cx="58" cy="16" r="2.5" fill="#111111" />
-        <circle cx="16" cy="58" r="2.5" fill="#111111" />
-        <circle cx="37" cy="37" r="2.5" fill="#111111" />
-      </svg>
+    <div className={cls} aria-hidden="true">
+      <span className="skill-dot-cluster">
+        <span className="skill-dot skill-dot--magenta" style={{ left: '12px', top: '12px' }} />
+        <span className="skill-dot skill-dot--magenta" style={{ left: '44px', top: '12px' }} />
+        <span className="skill-dot skill-dot--ink" style={{ left: '12px', top: '44px' }} />
+        <span className="skill-dot skill-dot--ink" style={{ left: '44px', top: '44px' }} />
+      </span>
     </div>
   );
 }

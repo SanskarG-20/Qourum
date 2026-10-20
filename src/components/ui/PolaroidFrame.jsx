@@ -6,15 +6,17 @@ export function PolaroidFrame({
   caption,
   rotationDeg = -8,
   width = 236,
+  lift = 'none', // 'left' | 'right' | 'none' — hover lift toward upright
   style = {},
   className = '',
 }) {
   return (
     <figure
       className={`polaroid-frame ${className}`}
+      data-lift={lift}
       style={{
         width: `${width}px`,
-        transform: `rotate(${rotationDeg}deg)`,
+        '--polaroid-rot': `${rotationDeg}deg`,
         ...style,
       }}
     >
