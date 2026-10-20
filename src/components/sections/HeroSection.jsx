@@ -93,6 +93,12 @@ export function HeroSection({
   // solid black inversion instead of washing out to grey mid-iris.
   const LENS_OPACITY_FLOOR = 0.25;
   const setLensScale = (to, duration) => {
+    // Reduced motion: land on the target size instantly rather than irising.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      lensScaleAnimRef.current = null;
+      lensScaleRef.current.value = to;
+      return;
+    }
     lensScaleAnimRef.current = {
       from: lensScaleRef.current.value,
       to,
