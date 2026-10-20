@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { WORKING_TITLES } from '../../config/siteConfig.js';
 import { SelectionBox } from '../ui/SelectionBox.jsx';
 import { CursorBadge } from '../ui/CursorBadge.jsx';
@@ -15,13 +15,15 @@ export function HeroSection({
   introCompleted = false,
 }) {
   const clockRef = useRef(null);
+  const heroSectionRef = useRef(null);
   const lensRef = useRef(null);
   const [leftAvatarExpanded, setLeftAvatarExpanded] = useState(false);
   const [rightAvatarExpanded, setRightAvatarExpanded] = useState(false);
+  const [isLensDragging, setIsLensDragging] = useState(false);
 
   const currentTitleObj = WORKING_TITLES.find((t) => t.id === workingTitleId) || WORKING_TITLES[0];
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const formatTime = () => {
       const now = new Date();
       return (
@@ -44,29 +46,195 @@ export function HeroSection({
     return () => clearInterval(timer);
   }, []);
 
+  // 2. Difference-Blend Inversion Lens
+  //    - Iries open out of the circle cursor on hover and retracts back into it
+  //    - Spring-follows the pointer (stiffness 180, damping 22) and can be dragged
+  //      across the whole hero canvas
+  //    - Releasing a real drag retracts it into the cursor
+  const LENS_WIDTH = 410;
+  const LENS_HEIGHT = 430;
+  const LENS_ANCHOR_X = 123; // pointer rests 30% across the lens
+  const LENS_ANCHOR_Y = 129; // pointer rests 30% down the lens
+  const SPRING_STIFFNESS = 180;
+  const SPRING_DAMPING = 22;
+  const LENS_DRAG_THRESHOLD = 4;
+  const LENS_EXPAND_MS = 300; // iris open
+  const LENS_RETRACT_MS = 240; // suck back into the cursor
+
   const lensPos = useRef({ x: 0, y: 0 });
+  const lensVel = useRef({ x: 0, y: 0 });
+  const lensTarget = useRef({ x: 0, y: 0 });
+  const lensRafRef = useRef(0);
+  const lensLastTsRef = useRef(0);
+  // 'idle' | 'visible' | 'dragging' | 'dismissed'
+  const lensModeRef = useRef('idle');
+  const lensMovedRef = useRef(false);
+  const lensDownPosRef = useRef({ x: 0, y: 0 });
+  const lensScaleRef = useRef({ value: 0 });
+  const lensScaleAnimRef = useRef(null);
 
-  const handleHeroMouseMove = (e) => {
-    const lens = lensRef.current;
-    if (!lens) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = Math.min(Math.max(e.clientX - rect.left - 130, -20), rect.width - 240);
-    const y = Math.min(Math.max(e.clientY - rect.top - 100, -30), rect.height - 180);
-    lensPos.current = { x, y };
-    lens.style.opacity = '1';
-    lens.style.transform = `translate3d(${x}px, ${y}px, 0) scale(1)`;
+  const easeOutQuart = (p) => 1 - Math.pow(1 - p, 4);
+  const easeInCubic = (p) => p * p * p;
+
+  const aimLensAt = (clientX, clientY) => {
+    const section = heroSectionRef.current;
+    if (!section) return;
+    const rect = section.getBoundingClientRect();
+    const rawX = clientX - rect.left - LENS_ANCHOR_X;
+    const rawY = clientY - rect.top - LENS_ANCHOR_Y;
+    lensTarget.current = {
+      x: Math.min(Math.max(rawX, 0), Math.max(0, rect.width - LENS_WIDTH)),
+      y: Math.min(Math.max(rawY, 0), Math.max(0, rect.height - LENS_HEIGHT)),
+    };
   };
 
-  const handleHeroMouseLeave = () => {
-    if (lensRef.current) {
-      lensRef.current.style.opacity = '0';
-      lensRef.current.style.transform = `translate3d(${lensPos.current.x}px, ${lensPos.current.y}px, 0) scale(0.92)`;
-    }
+  // Scale tween: 0 = collapsed to a point on the cursor, 1 = full 410x430 box.
+  // Opacity is derived from the scale (not tweened separately) so the box stays a
+  // solid black inversion instead of washing out to grey mid-iris.
+  const LENS_OPACITY_FLOOR = 0.25;
+  const setLensScale = (to, duration) => {
+    lensScaleAnimRef.current = {
+      from: lensScaleRef.current.value,
+      to,
+      start: performance.now(),
+      duration,
+      ease: to > 0 ? easeOutQuart : easeInCubic,
+    };
   };
+
+  const runLensSpring = () => {
+    const tick = (now) => {
+      const dt = lensLastTsRef.current ? Math.min((now - lensLastTsRef.current) / 1000, 1 / 30) : 1 / 60;
+      lensLastTsRef.current = now;
+      const subSteps = 4;
+      const h = dt / subSteps;
+      for (let i = 0; i < subSteps; i += 1) {
+        const ax =
+          (lensTarget.current.x - lensPos.current.x) * SPRING_STIFFNESS - lensVel.current.x * SPRING_DAMPING;
+        const ay =
+          (lensTarget.current.y - lensPos.current.y) * SPRING_STIFFNESS - lensVel.current.y * SPRING_DAMPING;
+        lensVel.current.x += ax * h;
+        lensVel.current.y += ay * h;
+        lensPos.current.x += lensVel.current.x * h;
+        lensPos.current.y += lensVel.current.y * h;
+      }
+
+      // Iris scale tween
+      const anim = lensScaleAnimRef.current;
+      if (anim) {
+        const p = Math.min(1, (now - anim.start) / anim.duration);
+        const eased = anim.ease(p);
+        lensScaleRef.current.value = anim.from + (anim.to - anim.from) * eased;
+        if (p >= 1) lensScaleAnimRef.current = null;
+      }
+
+      if (lensRef.current) {
+        lensRef.current.style.transform = `translate3d(${lensPos.current.x}px, ${lensPos.current.y}px, 0) scale(${lensScaleRef.current.value})`;
+        lensRef.current.style.opacity = `${Math.min(1, lensScaleRef.current.value / LENS_OPACITY_FLOOR)}`;
+      }
+
+      const stillActive =
+        lensModeRef.current === 'visible' ||
+        lensModeRef.current === 'dragging' ||
+        lensScaleAnimRef.current !== null;
+      if (stillActive) {
+        lensRafRef.current = requestAnimationFrame(tick);
+      } else {
+        lensRafRef.current = 0;
+      }
+    };
+    lensLastTsRef.current = 0;
+    lensRafRef.current = requestAnimationFrame(tick);
+  };
+
+  const startLensLoop = () => {
+    if (!lensRafRef.current) runLensSpring();
+  };
+
+  // Hover over the title stage -> the lens irises open out of the circle cursor
+  const handleStagePointerEnter = (e) => {
+    if (e.pointerType === 'touch') return;
+    if (lensModeRef.current === 'dragging') return;
+    aimLensAt(e.clientX, e.clientY);
+    lensPos.current = { x: lensTarget.current.x, y: lensTarget.current.y };
+    lensVel.current = { x: 0, y: 0 };
+    lensModeRef.current = 'visible';
+    setLensScale(1, LENS_EXPAND_MS);
+    startLensLoop();
+  };
+
+  const handleStagePointerMove = (e) => {
+    if (e.pointerType === 'touch') return;
+    if (lensModeRef.current !== 'visible') return;
+    aimLensAt(e.clientX, e.clientY);
+  };
+
+  // Leaving -> the box sucks back into the cursor
+  const handleStagePointerLeave = () => {
+    if (lensModeRef.current !== 'visible') return;
+    lensModeRef.current = 'idle';
+    setLensScale(0, LENS_RETRACT_MS);
+    startLensLoop();
+  };
+
+  const handleStagePointerDown = (e) => {
+    if (e.button !== 0) return;
+    // Touch pointers keep native page scrolling — the lens is a mouse/pen affordance.
+    if (e.pointerType === 'touch') return;
+    lensModeRef.current = 'dragging';
+    lensMovedRef.current = false;
+    lensDownPosRef.current = { x: e.clientX, y: e.clientY };
+    aimLensAt(e.clientX, e.clientY);
+    setIsLensDragging(true);
+    document.body.style.userSelect = 'none';
+    if (lensScaleRef.current.value < 1) setLensScale(1, LENS_EXPAND_MS);
+    startLensLoop();
+    e.preventDefault();
+  };
+
+  useEffect(() => {
+    const handlePointerMove = (e) => {
+      if (lensModeRef.current !== 'dragging') return;
+      const dx = e.clientX - lensDownPosRef.current.x;
+      const dy = e.clientY - lensDownPosRef.current.y;
+      if (!lensMovedRef.current && Math.hypot(dx, dy) > LENS_DRAG_THRESHOLD) {
+        lensMovedRef.current = true;
+      }
+      aimLensAt(e.clientX, e.clientY);
+    };
+
+    const endLensDrag = () => {
+      if (lensModeRef.current !== 'dragging') return;
+      document.body.style.userSelect = '';
+      setIsLensDragging(false);
+      if (lensMovedRef.current) {
+        // A real drag retracts the lens into the cursor; it re-arms on re-entry.
+        lensModeRef.current = 'dismissed';
+        setLensScale(0, LENS_RETRACT_MS);
+        startLensLoop();
+      } else {
+        // A plain click leaves the lens hovering in place.
+        lensModeRef.current = 'visible';
+      }
+    };
+
+    window.addEventListener('pointermove', handlePointerMove, { passive: true });
+    window.addEventListener('pointerup', endLensDrag);
+    window.addEventListener('pointercancel', endLensDrag);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', endLensDrag);
+      window.removeEventListener('pointercancel', endLensDrag);
+      cancelAnimationFrame(lensRafRef.current);
+      lensRafRef.current = 0;
+      document.body.style.userSelect = '';
+    };
+  }, []);
 
   return (
     <section
       id="home"
+      ref={heroSectionRef}
       style={{
         position: 'relative',
         paddingTop: '24px',
@@ -97,7 +265,7 @@ export function HeroSection({
             textAlign: 'center',
           }}
         >
-          9:27:15 AM • RS_MINI PROJECT 2026-27
+          {''}
         </div>
 
         {/* 2. Handwritten Kicker ('working title is' / 'my name is' from frame_005) */}
@@ -119,8 +287,10 @@ export function HeroSection({
 
         {/* 3. Main Interactive Hero Stage with Difference-Blend Inversion Lens (frame_011, frame_015) */}
         <div
-          onMouseMove={handleHeroMouseMove}
-          onMouseLeave={handleHeroMouseLeave}
+          onPointerEnter={handleStagePointerEnter}
+          onPointerMove={handleStagePointerMove}
+          onPointerLeave={handleStagePointerLeave}
+          onPointerDown={handleStagePointerDown}
           style={{
             position: 'relative',
             width: '100%',
@@ -129,6 +299,7 @@ export function HeroSection({
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
+            cursor: isLensDragging ? 'grabbing' : 'grab',
           }}
         >
           {/* Top-Left Tilted Mint Ribbon (-13 deg on desktop, clean row on mobile) */}
@@ -199,35 +370,6 @@ export function HeroSection({
               waitingForArrival={!introCompleted}
             />
           </SelectionBox>
-
-          {/* Interactive White Difference-Blend Inversion Lens on Hover (frame_011 & frame_015) */}
-          <div
-            ref={lensRef}
-            aria-hidden="true"
-            className="hide-mobile"
-            style={{
-              position: 'absolute',
-              left: '0px',
-              top: '0px',
-              width: '240px',
-              height: '190px',
-              backgroundColor: '#FFFFFF',
-              mixBlendMode: 'difference',
-              pointerEvents: 'none',
-              zIndex: 10,
-              opacity: 0,
-              transform: 'scale(0.92)',
-              transformOrigin: 'center center',
-              transition: 'transform 75ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease-out',
-              willChange: 'transform, opacity',
-            }}
-          >
-            {/* 4 Corner Resize Handles: 10px x 10px solid #111111 with 1.5px solid #FFFFFF border anchored at -5px */}
-            <span style={{ position: 'absolute', top: '-5px', left: '-5px', width: '10px', height: '10px', backgroundColor: '#111111', border: '1.5px solid #FFFFFF', boxSizing: 'border-box' }} />
-            <span style={{ position: 'absolute', top: '-5px', right: '-5px', width: '10px', height: '10px', backgroundColor: '#111111', border: '1.5px solid #FFFFFF', boxSizing: 'border-box' }} />
-            <span style={{ position: 'absolute', bottom: '-5px', left: '-5px', width: '10px', height: '10px', backgroundColor: '#111111', border: '1.5px solid #FFFFFF', boxSizing: 'border-box' }} />
-            <span style={{ position: 'absolute', bottom: '-5px', right: '-5px', width: '10px', height: '10px', backgroundColor: '#111111', border: '1.5px solid #FFFFFF', boxSizing: 'border-box' }} />
-          </div>
         </div>
 
         {/* 4. Availability / System Status Indicator (frame_005 y=535) */}
@@ -243,8 +385,8 @@ export function HeroSection({
             aria-hidden="true"
             className="pulse-dot"
             style={{
-              width: '13px',
-              height: '13px',
+              width: '12px',
+              height: '12px',
               borderRadius: '50%',
               backgroundColor: 'var(--color-cyan-primary)',
               display: 'inline-block',
@@ -422,7 +564,7 @@ export function HeroSection({
           <span
             style={{
               fontFamily: 'var(--font-sans)',
-              fontSize: '15px',
+              fontSize: '16px',
               fontWeight: 500,
               color: '#111111',
               maxWidth: leftAvatarExpanded ? '140px' : '0px',
@@ -450,7 +592,7 @@ export function HeroSection({
           <span
             style={{
               fontFamily: 'var(--font-sans)',
-              fontSize: '15px',
+              fontSize: '16px',
               fontWeight: 500,
               color: '#111111',
               maxWidth: leftAvatarExpanded ? '160px' : '0px',
@@ -489,7 +631,7 @@ export function HeroSection({
           <span
             style={{
               fontFamily: 'var(--font-sans)',
-              fontSize: '15px',
+              fontSize: '16px',
               fontWeight: 500,
               color: '#111111',
               maxWidth: rightAvatarExpanded ? '140px' : '0px',
@@ -517,7 +659,7 @@ export function HeroSection({
           <span
             style={{
               fontFamily: 'var(--font-sans)',
-              fontSize: '15px',
+              fontSize: '16px',
               fontWeight: 500,
               color: '#111111',
               maxWidth: rightAvatarExpanded ? '160px' : '0px',
@@ -564,6 +706,39 @@ export function HeroSection({
             rotationDeg={9}
           />
         </div>
+      </div>
+
+      {/* Interactive White Difference-Blend Inversion Lens (frame_011 & frame_015)
+          - 410px x 430px solid #FFFFFF with mix-blend-mode: difference
+          - Irises open out of the circle cursor on hover and retracts back into it
+          - Pointer-down grabs it; it spring-damps toward the pointer
+            (stiffness 180, damping 22) and can be dragged across the hero canvas. */}
+      <div
+        ref={lensRef}
+        aria-hidden="true"
+        className="hide-mobile"
+        style={{
+          position: 'absolute',
+          left: '0px',
+          top: '0px',
+          width: '410px',
+          height: '430px',
+          backgroundColor: '#FFFFFF',
+          mixBlendMode: 'difference',
+          pointerEvents: 'none',
+          zIndex: 10,
+          opacity: 0,
+          transform: 'translate3d(0px, 0px, 0) scale(0)',
+          // Anchor the iris on the pointer so the box grows out of the cursor dot
+          transformOrigin: `${LENS_ANCHOR_X}px ${LENS_ANCHOR_Y}px`,
+          willChange: 'transform, opacity',
+        }}
+      >
+        {/* 4 Corner Resize Handles: 10px x 10px solid #111111 with 1.5px solid #FFFFFF border anchored at -5px */}
+        <span style={{ position: 'absolute', top: '-5px', left: '-5px', width: '10px', height: '10px', backgroundColor: '#111111', border: '1.5px solid #FFFFFF', boxSizing: 'border-box' }} />
+        <span style={{ position: 'absolute', top: '-5px', right: '-5px', width: '10px', height: '10px', backgroundColor: '#111111', border: '1.5px solid #FFFFFF', boxSizing: 'border-box' }} />
+        <span style={{ position: 'absolute', bottom: '-5px', left: '-5px', width: '10px', height: '10px', backgroundColor: '#111111', border: '1.5px solid #FFFFFF', boxSizing: 'border-box' }} />
+        <span style={{ position: 'absolute', bottom: '-5px', right: '-5px', width: '10px', height: '10px', backgroundColor: '#111111', border: '1.5px solid #FFFFFF', boxSizing: 'border-box' }} />
       </div>
 
       <style>{`
