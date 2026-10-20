@@ -188,7 +188,7 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
             onMouseLeave={() => setActiveTooltip((prev) => (prev === 'sd' ? null : prev))}
             onClick={() => {
               setActiveTooltip('sd');
-              handleCopyCommand('python -m eval.run_harness --seed 42', 'EVAL COMMAND', 'sd');
+              handleCopyCommand('npm run verify -- --seed 42', 'EVAL COMMAND', 'sd');
             }}
             style={{
               width: '38px',

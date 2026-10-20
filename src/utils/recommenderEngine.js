@@ -311,7 +311,7 @@ export function runSeededEvaluationHarness(seed = 42) {
 
   return {
     seed,
-    command: `python -m eval.run_harness --seed ${seed} --split temporal --k 3`,
+    command: `npm run verify -- --seed ${seed}`,
     rows: [
       {
         method: 'Random Baseline (FR-007)',

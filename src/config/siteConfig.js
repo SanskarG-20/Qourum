@@ -59,7 +59,7 @@ export const AGGREGATION_STRATEGIES = [
     name: 'Fairness-Aware Aggregation',
     shortName: 'Fairness-Aware',
     formula: 'S_group(e, s) = Σ w_m · p(m, e, s) − λ · Var({p(m, e, s)})',
-    description: 'Weights members inversely by historical satisfaction in prior rounds and penalizes intra-group variance (λ = 0.35).',
+    description: 'Weights members inversely by historical satisfaction in prior rounds and penalizes intra-group variance (λ = 0.38).',
     badgeColor: '#D0075A',
   },
 ];
