@@ -1,10 +1,21 @@
 import React, { useEffect, useRef } from 'react';
 
+// Context-aware cursor states. These sit deliberately outside the brand palette so the
+// pill reads as a foreign presence — another person in the room, not part of the page.
+const CURSOR_COLOR_STATES = {
+  blue: { bg: '#2563EB', text: '#FFFFFF' },
+  red: { bg: '#DC2626', text: '#FFFFFF' },
+  orange: { bg: '#EA580C', text: '#FFFFFF' },
+  green: { bg: '#10B981', text: '#111111' },
+};
+const DEFAULT_PILL = { bg: '#111111', text: '#FFFFFF' };
+
 export function CustomCursorLayer() {
   const containerRef = useRef(null);
   const dotRef = useRef(null);
   const pillRef = useRef(null);
   const seeCircleRef = useRef(null);
+  const accentRef = useRef(null);
   const mousePos = useRef({ x: -200, y: -200 });
   const dotPos = useRef({ x: -200, y: -200 });
   const pillPos = useRef({ x: -200, y: -200 });
@@ -31,10 +42,13 @@ export function CustomCursorLayer() {
           dotRef.current.style.transform = `translate3d(${dotPos.current.x}px, ${dotPos.current.y}px, 0) translate(-50%, -50%)`;
         }
         if (pillRef.current) {
-          pillRef.current.style.transform = `translate3d(${pillPos.current.x + 6}px, ${pillPos.current.y + 18}px, 0)`;
+          pillRef.current.style.transform = `translate3d(${pillPos.current.x + 8}px, ${pillPos.current.y + 16}px, 0)`;
         }
         if (seeCircleRef.current) {
           seeCircleRef.current.style.transform = `translate3d(${dotPos.current.x}px, ${dotPos.current.y}px, 0) translate(-50%, -50%)`;
+        }
+        if (accentRef.current) {
+          accentRef.current.style.transform = `translate3d(${dotPos.current.x + 9}px, ${dotPos.current.y - 17}px, 0)`;
         }
       }
       rafId = requestAnimationFrame(loop);
@@ -56,9 +70,22 @@ export function CustomCursorLayer() {
 
       const target = e.target;
       const seeCard = target && target.closest ? target.closest('[data-cursor-see]') : null;
+      const colorHost = target && target.closest ? target.closest('[data-cursor-color]') : null;
       const seeCircle = seeCircleRef.current;
       const dot = dotRef.current;
       const pill = pillRef.current;
+      const accent = accentRef.current;
+
+      // Context-aware pill colour (Royal Blue / Crimson / Orange / Emerald)
+      const colorKey = colorHost ? colorHost.getAttribute('data-cursor-color') : null;
+      const tone = CURSOR_COLOR_STATES[colorKey] || DEFAULT_PILL;
+      if (pill) {
+        pill.style.backgroundColor = tone.bg;
+        pill.style.color = tone.text;
+      }
+      if (accent) {
+        accent.classList.toggle('is-on', colorKey === 'blue');
+      }
 
       if (seeCard && seeCircle && dot && pill) {
         isHoveringSee.current = true;
@@ -66,6 +93,7 @@ export function CustomCursorLayer() {
         seeCircle.textContent = seeCard.getAttribute('data-cursor-see') || 'See';
         dot.style.display = 'none';
         pill.style.display = 'none';
+        if (accent) accent.classList.remove('is-on');
       } else if (seeCircle && dot && pill) {
         isHoveringSee.current = false;
         seeCircle.style.display = 'none';
@@ -131,6 +159,20 @@ export function CustomCursorLayer() {
         See
       </div>
 
+      {/* Isometric Pixel-Block Accent — only present in the Royal Blue cursor state */}
+      <div ref={accentRef} className="cursor-accent" aria-hidden="true">
+        <span className="cursor-accent-inner">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 1L15 5L8 9L1 5L8 1Z" fill="#60A5FA" />
+            <path d="M1 5L8 9V15L1 11V5Z" fill="#2563EB" />
+            <path d="M15 5L8 9V15L15 11V5Z" fill="#1D4ED8" />
+            <path d="M8 1L15 5L8 9L1 5L8 1Z" stroke="#FFFFFF" strokeWidth="1" strokeLinejoin="round" />
+            <path d="M1 5L8 9V15L1 11V5Z" stroke="#FFFFFF" strokeWidth="1" strokeLinejoin="round" />
+            <path d="M15 5L8 9V15L15 11V5Z" stroke="#FFFFFF" strokeWidth="1" strokeLinejoin="round" />
+          </svg>
+        </span>
+      </div>
+
       {/* 14px Solid #111111 Circle with 1.5px Solid #FFFFFF Border */}
       <div
         ref={dotRef}
@@ -163,9 +205,10 @@ export function CustomCursorLayer() {
           fontWeight: 600,
           letterSpacing: '0.05em',
           textTransform: 'uppercase',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.14)',
           whiteSpace: 'nowrap',
           willChange: 'transform',
+          transition: 'background-color 180ms ease, color 180ms ease',
         }}
       >
         YOU
