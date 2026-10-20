@@ -1,13 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect, useRef } from 'react';
 import { NAV_ITEMS } from '../../config/siteConfig.js';
 import { BrandArchLogo, NavTabIcon } from '../ui/GeometricIcons.jsx';
 
-export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onOpenSurveyModal }) {
-  const [activeTooltip, setActiveTooltip] = useState(null); // 'sc' | 'sd' | null
-  const [copiedNote, setCopiedNote] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+const TOOLTIP_TEXT = {
+  sc: 'FR-004: ZERO PII • ANONYMIZED MEMBER_ID SCHEMA',
+  sd: 'FR-018: SEED=42 DETERMINISTIC HARNESS',
+  avatar: 'DOWNLOAD RESUME • ORGANIZER SPEC',
+};
 
-  const handleCopyCommand = (text, label) => {
+export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onOpenSurveyModal }) {
+  const [activeTooltip, setActiveTooltip] = useState(null); // 'sc' | 'sd' | 'avatar' | null
+  const [copiedNote, setCopiedNote] = useState('');
+  const [copiedFor, setCopiedFor] = useState(null); // 'sc' | 'sd' | null
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [tooltipLeft, setTooltipLeft] = useState(null);
+
+  const headerRef = useRef(null);
+  const tooltipRef = useRef(null);
+  const scRef = useRef(null);
+  const sdRef = useRef(null);
+  const avatarRef = useRef(null);
+
+  const anchorRefs = { sc: scRef, sd: sdRef, avatar: avatarRef };
+
+  const handleCopyCommand = (text, label, source) => {
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text);
@@ -15,13 +31,38 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
     } catch (e) {
       // Fallback safe ignore in sandbox
     }
+    setCopiedFor(source);
     setCopiedNote(`COPIED: ${label}`);
     setTimeout(() => setCopiedNote(''), 2000);
   };
 
+  // Anchor the floating cyan tooltip directly beneath the hovered control.
+  // While the mouse is away, only the short-lived copy confirmation stays visible.
+  const tooltipKey = activeTooltip || (copiedNote ? copiedFor : null);
+  const tooltipContent = activeTooltip
+    ? copiedFor === activeTooltip && copiedNote
+      ? copiedNote
+      : TOOLTIP_TEXT[activeTooltip] || ''
+    : copiedNote || '';
+
+  useLayoutEffect(() => {
+    const anchorNode = tooltipKey ? anchorRefs[tooltipKey]?.current : null;
+    if (!anchorNode || !tooltipRef.current || !headerRef.current) {
+      setTooltipLeft(null);
+      return;
+    }
+    const anchorRect = anchorNode.getBoundingClientRect();
+    const headerRect = headerRef.current.getBoundingClientRect();
+    const width = tooltipRef.current.offsetWidth;
+    let left = anchorRect.left - headerRect.left + anchorRect.width / 2 - width / 2;
+    left = Math.max(8, Math.min(left, Math.max(8, headerRect.width - width - 8)));
+    setTooltipLeft(left);
+  }, [tooltipKey, copiedNote, activeTooltip]);
+
   return (
     <>
       <header
+        ref={headerRef}
         style={{
           position: 'sticky',
           top: 0,
@@ -110,13 +151,14 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
           }}
         >
           <button
+            ref={scRef}
             type="button"
             aria-label="Inspect Anonymized CSV Schema (FR-004)"
             onMouseEnter={() => setActiveTooltip('sc')}
             onMouseLeave={() => setActiveTooltip((prev) => (prev === 'sc' ? null : prev))}
             onClick={() => {
               setActiveTooltip('sc');
-              handleCopyCommand('member_id,type_id,rating,day,slot,available', 'CSV SCHEMA HEADER');
+              handleCopyCommand('member_id,type_id,rating,day,slot,available', 'CSV SCHEMA HEADER', 'sc');
             }}
             style={{
               width: '38px',
@@ -139,13 +181,14 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
           </button>
 
           <button
+            ref={sdRef}
             type="button"
             aria-label="Inspect Reproducible Seed (FR-018)"
             onMouseEnter={() => setActiveTooltip('sd')}
             onMouseLeave={() => setActiveTooltip((prev) => (prev === 'sd' ? null : prev))}
             onClick={() => {
               setActiveTooltip('sd');
-              handleCopyCommand('python -m eval.run_harness --seed 42', 'EVAL COMMAND');
+              handleCopyCommand('python -m eval.run_harness --seed 42', 'EVAL COMMAND', 'sd');
             }}
             style={{
               width: '38px',
@@ -168,11 +211,12 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
           </button>
 
           <button
+            ref={avatarRef}
             type="button"
             onMouseEnter={() => setActiveTooltip('avatar')}
             onMouseLeave={() => setActiveTooltip((prev) => (prev === 'avatar' ? null : prev))}
             onClick={() => onSelectSection('problem')}
-            title="Club Organizer Persona (Section 5)"
+            aria-label="Club Organizer Persona (Section 5)"
             style={{
               width: '38px',
               height: '38px',
@@ -197,6 +241,7 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
             onClick={onOpenSurveyModal}
             style={{
               height: '42px',
+              minWidth: '138px',
               padding: '0 18px',
               backgroundColor: '#FFFFFF',
               color: '#111111',
@@ -208,6 +253,7 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
               textTransform: 'uppercase',
               display: 'inline-flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: '8px',
               cursor: 'pointer',
               transition: 'background-color 160ms ease, color 160ms ease',
@@ -224,38 +270,34 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
             <span aria-hidden="true">♥</span>
             <span>SURVEY FORM</span>
           </button>
-
-          {(activeTooltip || copiedNote) && (
-            <div
-              role="status"
-              className="navbar-tooltip-animate"
-              style={{
-                position: 'absolute',
-                top: '64px',
-                right: '24px',
-                backgroundColor: 'var(--color-cyan-primary)',
-                color: '#111111',
-                padding: '12px 20px',
-                borderRadius: '8px',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '13px',
-                fontWeight: 600,
-                letterSpacing: '0.04em',
-                boxShadow: '0 10px 28px rgba(0,0,0,0.12)',
-                whiteSpace: 'nowrap',
-                zIndex: 120,
-              }}
-            >
-              {copiedNote
-                ? copiedNote
-                : activeTooltip === 'avatar'
-                ? 'DOWNLOAD RESUME • ORGANIZER SPEC'
-                : activeTooltip === 'sc'
-                ? 'FR-004: ZERO PII • ANONYMIZED MEMBER_ID SCHEMA'
-                : 'FR-018: SEED=42 DETERMINISTIC HARNESS'}
-            </div>
-          )}
         </div>
+
+        {/* Floating Cyan Tooltip — drops directly beneath the hovered control (top: 64px) */}
+        {tooltipContent && (
+          <div
+            ref={tooltipRef}
+            role="status"
+            className="navbar-tooltip-animate"
+            style={{
+              position: 'absolute',
+              top: '64px',
+              left: tooltipLeft ?? 0,
+              backgroundColor: 'var(--color-cyan-primary)',
+              color: '#111111',
+              padding: '12px 20px',
+              borderRadius: '8px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '13px',
+              fontWeight: 600,
+              letterSpacing: '0.04em',
+              boxShadow: '0 10px 28px rgba(0,0,0,0.12)',
+              whiteSpace: 'nowrap',
+              zIndex: 120,
+            }}
+          >
+            {tooltipContent}
+          </div>
+        )}
       </header>
 
       <div
