@@ -171,16 +171,16 @@ body {
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.14);
 }
 
-/* 5. Primary Nudge Dark CTA Button (design.md Section E.3) */
+/* 5. Primary Nudge Dark CTA Button (00:05 - 00:06 CAD Selection Bounding Box) */
 .nudge-cta-btn {
   display: inline-flex;
   align-items: center;
   gap: 14px;
   height: 68px;
   padding: 0 24px 0 11px;
-  background-color: var(--color-text-primary);
-  color: var(--color-text-inverse);
-  border: 2px solid var(--color-text-primary);
+  background-color: #111111;
+  color: #FFFFFF;
+  border: 1.5px solid #111111;
   font-family: var(--font-mono);
   font-size: 14px;
   font-weight: 600;
@@ -189,13 +189,82 @@ body {
   text-decoration: none;
   cursor: pointer;
   position: relative;
-  transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-fast) var(--ease-spring);
+  transition: background-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+              color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .nudge-cta-btn:hover {
-  background-color: #C8C8C8;
+  background-color: #FFFFFF;
   color: #111111;
-  border-color: #666666;
+  border-color: #888888;
+  box-shadow: 0 0 0 1px #888888;
+}
+
+/* CAD Corner Resize Handles (8px x 8px white-filled, gray-stroked) */
+.nudge-cta-btn .cta-cad-handle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background-color: #FFFFFF;
+  border: 1.5px solid #888888;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.nudge-cta-btn:hover .cta-cad-handle {
+  opacity: 1;
+}
+
+.nudge-cta-btn .cta-cad-handle--tl { top: -4px; left: -4px; }
+.nudge-cta-btn .cta-cad-handle--tr { top: -4px; right: -4px; }
+.nudge-cta-btn .cta-cad-handle--bl { bottom: -4px; left: -4px; }
+.nudge-cta-btn .cta-cad-handle--br { bottom: -4px; right: -4px; }
+
+/* Left 46px Icon Box: transitions from #D0075A magenta to #3BCF81 mint/green */
+.nudge-cta-btn .cta-icon-box {
+  width: 46px;
+  height: 46px;
+  background-color: #D0075A;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background-color 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nudge-cta-btn:hover .cta-icon-box {
+  background-color: #3BCF81;
+}
+
+.nudge-cta-btn .cta-chevron-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #42D2ED;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nudge-cta-btn .cta-chevron {
+  color: #111111;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1;
+  transition: color 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nudge-cta-btn:hover .cta-chevron {
+  color: #FFFFFF;
+}
+
+.nudge-cta-btn .cta-label {
+  color: inherit;
+  transition: color 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* 6. Diagonal Gold / Espresso Striped Footer Banner (design.md Section E.6) */

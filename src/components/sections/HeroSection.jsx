@@ -44,20 +44,23 @@ export function HeroSection({
     return () => clearInterval(timer);
   }, []);
 
+  const lensPos = useRef({ x: 0, y: 0 });
+
   const handleHeroMouseMove = (e) => {
     const lens = lensRef.current;
     if (!lens) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = Math.min(Math.max(e.clientX - rect.left - 110, -20), 560);
-    const y = Math.min(Math.max(e.clientY - rect.top - 95, -40), 110);
-    lens.style.display = 'block';
-    lens.style.left = `${x}px`;
-    lens.style.top = `${y}px`;
+    const x = Math.min(Math.max(e.clientX - rect.left - 130, -20), rect.width - 240);
+    const y = Math.min(Math.max(e.clientY - rect.top - 100, -30), rect.height - 180);
+    lensPos.current = { x, y };
+    lens.style.opacity = '1';
+    lens.style.transform = `translate3d(${x}px, ${y}px, 0) scale(1)`;
   };
 
   const handleHeroMouseLeave = () => {
     if (lensRef.current) {
-      lensRef.current.style.display = 'none';
+      lensRef.current.style.opacity = '0';
+      lensRef.current.style.transform = `translate3d(${lensPos.current.x}px, ${lensPos.current.y}px, 0) scale(0.92)`;
     }
   };
 
@@ -197,29 +200,33 @@ export function HeroSection({
             />
           </SelectionBox>
 
-          {/* Interactive Black Difference-Blend Inversion Lens on Hover (frame_011 & frame_015) */}
+          {/* Interactive White Difference-Blend Inversion Lens on Hover (frame_011 & frame_015) */}
           <div
             ref={lensRef}
             aria-hidden="true"
             className="hide-mobile"
             style={{
-              display: 'none',
               position: 'absolute',
               left: '0px',
               top: '0px',
-              width: '220px',
+              width: '240px',
               height: '190px',
               backgroundColor: '#FFFFFF',
               mixBlendMode: 'difference',
               pointerEvents: 'none',
               zIndex: 10,
-              transition: 'left 45ms linear, top 45ms linear',
+              opacity: 0,
+              transform: 'scale(0.92)',
+              transformOrigin: 'center center',
+              transition: 'transform 75ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease-out',
+              willChange: 'transform, opacity',
             }}
           >
-            <span style={{ position: 'absolute', top: '-6px', left: '-6px', width: '10px', height: '10px', backgroundColor: '#FFFFFF' }} />
-            <span style={{ position: 'absolute', top: '-6px', right: '-6px', width: '10px', height: '10px', backgroundColor: '#FFFFFF' }} />
-            <span style={{ position: 'absolute', bottom: '-6px', left: '-6px', width: '10px', height: '10px', backgroundColor: '#FFFFFF' }} />
-            <span style={{ position: 'absolute', bottom: '-6px', right: '-6px', width: '10px', height: '10px', backgroundColor: '#FFFFFF' }} />
+            {/* 4 Corner Resize Handles: 10px x 10px solid #111111 with 1.5px solid #FFFFFF border anchored at -5px */}
+            <span style={{ position: 'absolute', top: '-5px', left: '-5px', width: '10px', height: '10px', backgroundColor: '#111111', border: '1.5px solid #FFFFFF', boxSizing: 'border-box' }} />
+            <span style={{ position: 'absolute', top: '-5px', right: '-5px', width: '10px', height: '10px', backgroundColor: '#111111', border: '1.5px solid #FFFFFF', boxSizing: 'border-box' }} />
+            <span style={{ position: 'absolute', bottom: '-5px', left: '-5px', width: '10px', height: '10px', backgroundColor: '#111111', border: '1.5px solid #FFFFFF', boxSizing: 'border-box' }} />
+            <span style={{ position: 'absolute', bottom: '-5px', right: '-5px', width: '10px', height: '10px', backgroundColor: '#111111', border: '1.5px solid #FFFFFF', boxSizing: 'border-box' }} />
           </div>
         </div>
 
@@ -280,35 +287,18 @@ export function HeroSection({
         {/* 6. Primary CTA Button ('>> LAUNCH DEMO LAB', matching '>> CONTACT ME' in frame_005) */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center', marginBottom: '28px' }}>
           <button type="button" className="nudge-cta-btn" onClick={onJumpToDemo}>
-            <span
-              aria-hidden="true"
-              style={{
-                width: '46px',
-                height: '46px',
-                backgroundColor: 'var(--color-magenta-primary)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <span
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  backgroundColor: 'var(--color-cyan-primary)',
-                  color: '#111111',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 700,
-                  fontSize: '15px',
-                }}
-              >
-                &gt;&gt;
+            {/* 4 Corner CAD Handles that appear on hover */}
+            <span className="cta-cad-handle cta-cad-handle--tl" aria-hidden="true" />
+            <span className="cta-cad-handle cta-cad-handle--tr" aria-hidden="true" />
+            <span className="cta-cad-handle cta-cad-handle--bl" aria-hidden="true" />
+            <span className="cta-cad-handle cta-cad-handle--br" aria-hidden="true" />
+
+            <span className="cta-icon-box" aria-hidden="true">
+              <span className="cta-chevron-circle">
+                <span className="cta-chevron">&gt;&gt;</span>
               </span>
             </span>
-            <span>LAUNCH DEMO LAB</span>
+            <span className="cta-label">LAUNCH DEMO LAB</span>
           </button>
         </div>
 
@@ -407,74 +397,138 @@ export function HeroSection({
         </div>
 
         {/* 8. Peripheral Floating Cursor Badges & Expanding Mini-Avatars (frame_005, frame_019) */}
+        {/* Left Floating Avatar Pill (00:13.5 - 00:14.5) */}
         <div
           className="hide-tablet"
+          onMouseEnter={() => setLeftAvatarExpanded(true)}
+          onMouseLeave={() => setLeftAvatarExpanded(false)}
           onClick={() => setLeftAvatarExpanded(!leftAvatarExpanded)}
           style={{
             position: 'absolute',
             left: '28px',
             top: '340px',
-            backgroundColor: 'var(--color-cyan-tint)',
-            borderRadius: '38px 38px 38px 6px',
-            padding: leftAvatarExpanded ? '10px 20px' : '10px',
+            backgroundColor: '#ABEBF7',
+            borderRadius: '32px 32px 32px 6px',
+            padding: leftAvatarExpanded ? '10px 22px' : '8px',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '10px',
             cursor: 'pointer',
-            transition: 'all 260ms cubic-bezier(0.22, 1, 0.36, 1)',
+            transition: 'all 320ms cubic-bezier(0.22, 1, 0.36, 1)',
             boxShadow: '0 8px 24px rgba(0,0,0,0.06)',
+            userSelect: 'none',
           }}
         >
-          {leftAvatarExpanded && (
-            <span style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500, color: '#111111' }}>
-              no more
-            </span>
-          )}
+          <span
+            style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: '15px',
+              fontWeight: 500,
+              color: '#111111',
+              maxWidth: leftAvatarExpanded ? '140px' : '0px',
+              opacity: leftAvatarExpanded ? 1 : 0,
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              transition: 'max-width 320ms cubic-bezier(0.22, 1, 0.36, 1), opacity 240ms ease',
+            }}
+          >
+            no more
+          </span>
           <img
             src={organizerAvatar}
             alt="Club organizer mini portrait"
-            style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }}
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              objectFit: 'cover',
+              transform: leftAvatarExpanded ? 'scale(1.06)' : 'scale(1)',
+              transition: 'transform 320ms cubic-bezier(0.22, 1, 0.36, 1)',
+              flexShrink: 0,
+            }}
           />
-          {leftAvatarExpanded && (
-            <span style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500, color: '#111111' }}>
-              exam clashes!
-            </span>
-          )}
+          <span
+            style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: '15px',
+              fontWeight: 500,
+              color: '#111111',
+              maxWidth: leftAvatarExpanded ? '160px' : '0px',
+              opacity: leftAvatarExpanded ? 1 : 0,
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              transition: 'max-width 320ms cubic-bezier(0.22, 1, 0.36, 1), opacity 240ms ease',
+            }}
+          >
+            exam clashes!
+          </span>
         </div>
 
+        {/* Right Floating Avatar Pill (00:03.5 - 00:04.5) */}
         <div
           className="hide-tablet"
+          onMouseEnter={() => setRightAvatarExpanded(true)}
+          onMouseLeave={() => setRightAvatarExpanded(false)}
           onClick={() => setRightAvatarExpanded(!rightAvatarExpanded)}
           style={{
             position: 'absolute',
             right: '32px',
             top: '440px',
-            backgroundColor: 'var(--color-cyan-tint)',
-            borderRadius: '38px 38px 6px 38px',
-            padding: rightAvatarExpanded ? '10px 20px' : '10px',
+            backgroundColor: '#ABEBF7',
+            borderRadius: '32px 32px 6px 32px',
+            padding: rightAvatarExpanded ? '10px 22px' : '8px',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '10px',
             cursor: 'pointer',
-            transition: 'all 260ms cubic-bezier(0.22, 1, 0.36, 1)',
+            transition: 'all 320ms cubic-bezier(0.22, 1, 0.36, 1)',
             boxShadow: '0 8px 24px rgba(0,0,0,0.06)',
+            userSelect: 'none',
           }}
         >
-          {rightAvatarExpanded && (
-            <span style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500, color: '#111111' }}>
-              100% fair to
-            </span>
-          )}
+          <span
+            style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: '15px',
+              fontWeight: 500,
+              color: '#111111',
+              maxWidth: rightAvatarExpanded ? '140px' : '0px',
+              opacity: rightAvatarExpanded ? 1 : 0,
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              transition: 'max-width 320ms cubic-bezier(0.22, 1, 0.36, 1), opacity 240ms ease',
+            }}
+          >
+            100% fair to
+          </span>
           <img
             src={organizerAvatar}
             alt="Club member mini portrait"
-            style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover' }}
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              objectFit: 'cover',
+              transform: rightAvatarExpanded ? 'scale(1.06)' : 'scale(1)',
+              transition: 'transform 320ms cubic-bezier(0.22, 1, 0.36, 1)',
+              flexShrink: 0,
+            }}
           />
-          {rightAvatarExpanded && (
-            <span style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 500, color: '#111111' }}>
-              quiet members!
-            </span>
-          )}
+          <span
+            style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: '15px',
+              fontWeight: 500,
+              color: '#111111',
+              maxWidth: rightAvatarExpanded ? '160px' : '0px',
+              opacity: rightAvatarExpanded ? 1 : 0,
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              transition: 'max-width 320ms cubic-bezier(0.22, 1, 0.36, 1), opacity 240ms ease',
+            }}
+          >
+            quiet members!
+          </span>
         </div>
 
         <div

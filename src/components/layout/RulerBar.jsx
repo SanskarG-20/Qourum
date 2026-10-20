@@ -2,20 +2,33 @@ import React, { useRef } from 'react';
 
 export function RulerBar({ position = 'top' }) {
   const stripRef = useRef(null);
+  const guideRef = useRef(null);
 
   const handleMouseMove = (e) => {
-    if (!stripRef.current) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const relX = (e.clientX - rect.left) / (rect.width || 1) - 0.5;
-    const scrubOffset = Math.round(relX * -90);
-    stripRef.current.style.transition = 'transform 60ms linear';
-    stripRef.current.style.transform = `translateX(${scrubOffset}px)`;
+    const cursorX = e.clientX - rect.left;
+    const relX = (cursorX / (rect.width || 1)) - 0.5;
+    const scrubOffset = relX * -120;
+
+    if (stripRef.current) {
+      stripRef.current.style.transition = 'transform 60ms linear';
+      stripRef.current.style.transform = `translate3d(${scrubOffset}px, 0, 0)`;
+    }
+
+    if (guideRef.current) {
+      guideRef.current.style.display = 'block';
+      guideRef.current.style.transform = `translate3d(${cursorX}px, 0, 0)`;
+    }
   };
 
   const handleMouseLeave = () => {
-    if (!stripRef.current) return;
-    stripRef.current.style.transition = 'transform 400ms cubic-bezier(0.22, 1, 0.36, 1)';
-    stripRef.current.style.transform = 'translateX(0px)';
+    if (stripRef.current) {
+      stripRef.current.style.transition = 'transform 420ms cubic-bezier(0.22, 1, 0.36, 1)';
+      stripRef.current.style.transform = 'translate3d(0px, 0, 0)';
+    }
+    if (guideRef.current) {
+      guideRef.current.style.display = 'none';
+    }
   };
 
   const ticks = [];
@@ -40,6 +53,22 @@ export function RulerBar({ position = 'top' }) {
         cursor: 'ew-resize',
       }}
     >
+      {/* Vertical Hairline Guide Line Tracking Pointer X */}
+      <div
+        ref={guideRef}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '1px',
+          height: '100%',
+          backgroundColor: '#111111',
+          pointerEvents: 'none',
+          zIndex: 10,
+          display: 'none',
+          willChange: 'transform',
+        }}
+      />
       <div
         ref={stripRef}
         style={{

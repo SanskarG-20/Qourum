@@ -66,6 +66,7 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
                   key={item.id}
                   href={item.href}
                   data-nav-section={item.id}
+                  className={`nav-tab-link ${isActive ? 'is-active' : ''}`}
                   onClick={(e) => {
                     e.preventDefault();
                     onSelectSection(item.id);
@@ -88,7 +89,9 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  <NavTabIcon type={item.icon} />
+                  <span className="nav-tab-icon-wrap">
+                    <NavTabIcon type={item.icon} />
+                  </span>
                   <span>{item.label}</span>
                 </a>
               );
@@ -109,8 +112,10 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
           <button
             type="button"
             aria-label="Inspect Anonymized CSV Schema (FR-004)"
+            onMouseEnter={() => setActiveTooltip('sc')}
+            onMouseLeave={() => setActiveTooltip((prev) => (prev === 'sc' ? null : prev))}
             onClick={() => {
-              setActiveTooltip(activeTooltip === 'sc' ? null : 'sc');
+              setActiveTooltip('sc');
               handleCopyCommand('member_id,type_id,rating,day,slot,available', 'CSV SCHEMA HEADER');
             }}
             style={{
@@ -136,8 +141,10 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
           <button
             type="button"
             aria-label="Inspect Reproducible Seed (FR-018)"
+            onMouseEnter={() => setActiveTooltip('sd')}
+            onMouseLeave={() => setActiveTooltip((prev) => (prev === 'sd' ? null : prev))}
             onClick={() => {
-              setActiveTooltip(activeTooltip === 'sd' ? null : 'sd');
+              setActiveTooltip('sd');
               handleCopyCommand('python -m eval.run_harness --seed 42', 'EVAL COMMAND');
             }}
             style={{
@@ -162,6 +169,8 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
 
           <button
             type="button"
+            onMouseEnter={() => setActiveTooltip('avatar')}
+            onMouseLeave={() => setActiveTooltip((prev) => (prev === 'avatar' ? null : prev))}
             onClick={() => onSelectSection('problem')}
             title="Club Organizer Persona (Section 5)"
             style={{
@@ -219,9 +228,10 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
           {(activeTooltip || copiedNote) && (
             <div
               role="status"
+              className="navbar-tooltip-animate"
               style={{
                 position: 'absolute',
-                top: '56px',
+                top: '64px',
                 right: '24px',
                 backgroundColor: 'var(--color-cyan-primary)',
                 color: '#111111',
@@ -238,6 +248,8 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
             >
               {copiedNote
                 ? copiedNote
+                : activeTooltip === 'avatar'
+                ? 'DOWNLOAD RESUME • ORGANIZER SPEC'
                 : activeTooltip === 'sc'
                 ? 'FR-004: ZERO PII • ANONYMIZED MEMBER_ID SCHEMA'
                 : 'FR-018: SEED=42 DETERMINISTIC HARNESS'}
@@ -326,6 +338,32 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
       )}
 
       <style>{`
+        .nav-tab-link:not(.is-active):hover {
+          background-color: rgba(66, 210, 237, 0.14) !important;
+        }
+        .nav-tab-icon-wrap {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+          will-change: transform;
+        }
+        .nav-tab-link:not(.is-active):hover .nav-tab-icon-wrap {
+          transform: scale(1.15) rotate(8deg);
+        }
+        @keyframes navbarTooltipIn {
+          0% {
+            opacity: 0;
+            transform: translateY(-6px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .navbar-tooltip-animate {
+          animation: navbarTooltipIn 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
         @media (max-width: 809px) {
           .mobile-menu-trigger-wrap {
             display: block !important;

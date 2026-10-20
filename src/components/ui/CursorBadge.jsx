@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export function CursorBadge({
   label,
@@ -9,16 +9,27 @@ export function CursorBadge({
   style = {},
   className = '',
 }) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  const currentTransform = isHovered
+    ? `translate3d(0, -4px, 0) rotate(${rotationDeg * 0.65}deg) scale(1.04)`
+    : `translate3d(0, 0, 0) rotate(${rotationDeg}deg) scale(1)`;
+
   return (
     <div
       aria-hidden="true"
       className={className}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
         position: 'relative',
-        transform: rotationDeg ? `rotate(${rotationDeg}deg)` : undefined,
+        transform: currentTransform,
+        transition: 'transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1)',
         userSelect: 'none',
+        cursor: 'default',
+        willChange: 'transform',
         ...style,
       }}
     >
