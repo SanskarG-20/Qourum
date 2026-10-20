@@ -560,7 +560,89 @@ body {
   85%, 100% { transform: translateY(-4px) scaleY(1); }
 }
 
-/* 8. Multiplayer Cursor Accent — isometric pixel block (Royal Blue state only) */
+/* 8. Floating Multiplayer Cursor Badges (Hero Section)
+      Each badge glides along the exact diagonal its own cursor arrow points toward,
+      on an asynchronous cycle so the pair never syncs up robotically. */
+
+/* Outer motion wrapper — owns the continuous diagonal glide. */
+.cursor-badge-track {
+  will-change: transform;
+}
+
+/* The vectors are the ones from the reference recording:
+   gold  ( 187, -160) -> -40.5 degrees, north-east
+   magenta ( -74, -138) -> -61.8 degrees, north-west
+   Both scale down proportionally on narrower viewports. */
+.cursor-badge-track--gold {
+  --badge-gold-dx: clamp(120px, 9.75vw, 187px);
+  --badge-gold-dy: clamp(-160px, -18.4vh, -105px);
+  animation: floatDiagonalGold 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
+}
+
+.cursor-badge-track--magenta {
+  --badge-magenta-dx: clamp(-74px, -3.86vw, -40px);
+  --badge-magenta-dy: clamp(-138px, -15.9vh, -90px);
+  animation: floatDiagonalMagenta 4s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
+  animation-delay: -1.2s;
+}
+
+@keyframes floatDiagonalGold {
+  0% { transform: translate3d(0px, 0px, 0); }
+  100% { transform: translate3d(var(--badge-gold-dx), var(--badge-gold-dy), 0); }
+}
+
+@keyframes floatDiagonalMagenta {
+  0% { transform: translate3d(0px, 0px, 0); }
+  100% { transform: translate3d(var(--badge-magenta-dx), var(--badge-magenta-dy), 0); }
+}
+
+/* Inner interactive wrapper — rest tilt plus the hover/magnetic spring. */
+.cursor-badge-inner {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.cursor-badge-arrow {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+}
+.cursor-badge-arrow--tl { top: -20px; left: -18px; }
+.cursor-badge-arrow--tr { top: -20px; right: -18px; }
+
+.cursor-badge-pill {
+  background-color: #E5B433;
+  color: #111111;
+  border: 2px solid #111111;
+  border-radius: 9999px;
+  padding: 11px 24px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 0 0 rgba(17, 17, 17, 0);
+  transition: box-shadow 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cursor-badge-inner.is-hovered .cursor-badge-pill {
+  box-shadow: 0 10px 24px rgba(17, 17, 17, 0.14);
+}
+
+/* Guardrail: under reduced motion the glide is paused entirely and both badges
+   rest at their static tilted positions. The JS side additionally skips the
+   magnetic repulsion and applies the hover state instantly. */
+@media (prefers-reduced-motion: reduce) {
+  .cursor-badge-track {
+    animation: none !important;
+  }
+}
+
+/* 9. Multiplayer Cursor Accent — isometric pixel block (Royal Blue state only) */
 .cursor-accent {
   position: absolute;
   top: 0;
@@ -580,7 +662,7 @@ body {
   transform: scale(1);
 }
 
-/* 9. Accessibility & Focus States (design.md Section I.2) */button:focus-visible,
+/* 10. Accessibility & Focus States (design.md Section I.2) */button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 select:focus-visible,
@@ -600,7 +682,7 @@ select:focus-visible,
   animation: pulseCyan 2.2s infinite ease-in-out;
 }
 
-/* 8. Intro Splash Transitions (Smoothed speech-bubble preloader) */
+/* 11. Intro Splash Transitions (Smoothed speech-bubble preloader) */
 @keyframes introTextGlider {
   0% {
     opacity: 0;

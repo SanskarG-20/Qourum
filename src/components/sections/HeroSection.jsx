@@ -679,37 +679,37 @@ export function HeroSection({
           </span>
         </div>
 
-        <div
-          className="hide-tablet"
-          style={{
-            position: 'absolute',
-            left: '16px',
-            bottom: '34px',
-          }}
-        >
+        <div className="hide-tablet">
           <CursorBadge
             label="GROUP REC ENGINE"
             bgColor="#E5B433"
             textColor="#111111"
             pointerCorner="top-right"
             rotationDeg={-6}
+            float="gold"
+            style={{
+              position: 'absolute',
+              left: 'clamp(24px, 8vw, 175px)',
+              bottom: 'clamp(48px, 10vh, 94px)',
+              zIndex: 15,
+            }}
           />
         </div>
 
-        <div
-          className="hide-tablet"
-          style={{
-            position: 'absolute',
-            right: '140px',
-            top: '390px',
-          }}
-        >
+        <div className="hide-tablet">
           <CursorBadge
             label="FAIRNESS-AWARE"
             bgColor="#D0075A"
             textColor="#FFFFFF"
             pointerCorner="top-left"
             rotationDeg={9}
+            float="magenta"
+            style={{
+              position: 'absolute',
+              right: 'clamp(32px, 12vw, 240px)',
+              top: 'clamp(340px, 52vh, 520px)',
+              zIndex: 15,
+            }}
           />
         </div>
       </div>
