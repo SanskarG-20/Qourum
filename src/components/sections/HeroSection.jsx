@@ -732,7 +732,11 @@ export function HeroSection({
           backgroundColor: '#FFFFFF',
           mixBlendMode: 'difference',
           pointerEvents: 'none',
-          zIndex: 10,
+          // Must paint ABOVE every hero element it should invert (the floating
+          // badges sit at z-index 15) so they fall inside the difference-blend
+          // backdrop, but BELOW the sticky navbar (z-index 100) so the chrome
+          // never inverts.
+          zIndex: 20,
           opacity: 0,
           transform: 'translate3d(0px, 0px, 0) scale(0)',
           // Anchor the iris on the pointer so the box grows out of the cursor dot
