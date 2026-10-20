@@ -485,6 +485,15 @@ everything beneath it in real time — the wordmark turns white, the cyan select
 turns red-orange, the mint ribbon turns plum. Grab it and it spring-damps across the
 canvas (stiffness 180, damping 22); release and it retracts into the cursor.
 
+Two **floating multiplayer cursor badges** flank it — `GROUP REC ENGINE` in gold and
+`FAIRNESS-AWARE` in magenta, each with an SVG cursor arrow. They glide along the exact
+diagonal their own arrow points toward (a −40.5° north-east vector and a −61.8°
+north-west one) on asynchronous 2.5 s and 4 s cycles, so the pair never falls into
+lockstep. Within 110 px of the pointer a badge is pushed away by up to 18 px on a
+300/26 spring; hovered, it scales to 1.06, unwinds 35% of its tilt and lifts on a
+`0 10px 24px` shadow. Under `prefers-reduced-motion` the glide is paused and both
+badges rest at their static tilted positions.
+
 ---
 
 ## Accessibility
