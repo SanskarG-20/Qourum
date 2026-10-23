@@ -13,10 +13,12 @@ if __package__ == "app" or __package__.startswith("app."):
     from recsys.candidates import CalendarBlock, ScheduledBlock, assess_candidate, generate_candidates
     from recsys.group import FairnessRecord, fairness_weights, mmr_rerank, rank_group_candidates
     from recsys.individual import AttendanceObservation, TimeObservation, score_members
+    from recsys.explanations import counterfactual_evidence, factor_summary, render_counterfactual, render_explanation
 else:
     from backend.recsys.candidates import CalendarBlock, ScheduledBlock, assess_candidate, generate_candidates
     from backend.recsys.group import FairnessRecord, fairness_weights, mmr_rerank, rank_group_candidates
     from backend.recsys.individual import AttendanceObservation, TimeObservation, score_members
+    from backend.recsys.explanations import counterfactual_evidence, factor_summary, render_counterfactual, render_explanation
 from .models import AcademicCalendar, Availability, ClubMember, Event, EventType, FairnessLedger, MemberSettings, Preference, RSVP
 
 
@@ -73,7 +75,9 @@ def recommend_for_club(
     candidates = generate_candidates([(event_type.id, event_type.default_duration_minutes) for event_type in event_types], start_date=selected_date, horizon_days=horizon_days, opening_hour=9, closing_hour=21, venues=venues)
     assessments = []
     satisfaction_rows = []
+    component_rows: list[dict[str, float | None]] = []
     cached_scores: dict[tuple[str, int, int], dict[str, float]] = {}
+    component_cache: dict[tuple[str, int, int], dict[str, float | None]] = {}
     now = datetime.combine(selected_date, time.min)
     popularity_counts: dict[str, int] = {event_type.id: 0 for event_type in event_types}
     for row in db.scalars(select(Event.event_type_id).where(Event.club_id == club_id)):
@@ -86,12 +90,21 @@ def recommend_for_club(
             population_score = popularity_counts.get(candidate.event_type_id, 0) / total_popularity
             individual = score_members(member_ids, candidate.event_type_id, candidate.start.weekday(), candidate.start.hour, preferences, attendance_history, time_history, now=now, popularity_fallback=population_score)
             cached_scores[cache_key] = dict(zip(member_ids, (item.score for item in individual)))
+            component_cache[cache_key] = {
+                name: (sum(values) / len(values) if values else None)
+                for name, values in {
+                    "explicit_rating": [item.explicit_rating for item in individual if item.explicit_rating is not None],
+                    "implicit_attendance": [item.implicit_attendance for item in individual if item.implicit_attendance is not None],
+                    "time_affinity": [item.time_affinity for item in individual if item.time_affinity is not None],
+                }.items()
+            }
         scores = cached_scores[cache_key]
         assessment = assess_candidate(candidate, scores, weekly_availability, existing_events=events, calendar_blocks=calendar, latest_start_times=latest_start, quorum=quorum)
         if not assessment.feasible:
             continue
         assessments.append(assessment)
         satisfaction_rows.append([scores[member_id] for member_id in member_ids])
+        component_rows.append(component_cache[cache_key])
 
     if not assessments:
         return {"recommendations": [], "candidate_count": len(candidates), "feasible_count": 0, "message": "No candidate met calendar, availability, and quorum constraints."}
@@ -100,10 +113,45 @@ def recommend_for_club(
     event_type_ids = [assessment.candidate.event_type_id for assessment in assessments]
     selected = mmr_rerank(rankings, event_type_ids, top_n=top_n, recent_event_types=[row.event_type_id for row in db.scalars(select(Event).where(Event.club_id == club_id).order_by(Event.start_time.desc()).limit(3))] if diversity else (), relevance_weight=0.75 if diversity else 1.0)
     recommendations = []
+    counterfactuals = []
+    event_type_by_id = {value.id: value for value in event_types}
     for rank, item in enumerate(selected, start=1):
         assessment = assessments[item.candidate_index]
-        event_type = next(value for value in event_types if value.id == assessment.candidate.event_type_id)
-        recommendations.append({
+        event_type = event_type_by_id[assessment.candidate.event_type_id]
+        factors = factor_summary(component_rows[item.candidate_index])
+        evidence = {
+            "strategy": strategy,
+            "strategy_score": round(item.strategy_score, 3),
+            "group_mean": round(item.group_mean, 3),
+            "group_min": round(item.group_min, 3),
+            "group_std": round(item.group_std, 3),
+            "top_factors": factors,
+            "per_member_satisfaction": {member_id: round(value, 3) for member_id, value in zip(member_ids, item.satisfactions)},
+            "constraint_status": {
+                "feasible": assessment.feasible,
+                "reason_codes": list(assessment.reason_codes),
+                "availability_fraction": round(assessment.availability_fraction, 3),
+                "expected_attendance": round(assessment.expected_attendance, 2),
+                "quorum_required": assessment.quorum_required,
+            },
+        }
+        alternatives = []
+        for alternative in rankings:
+            if alternative.candidate_index == item.candidate_index or alternative.strategy_score >= item.strategy_score:
+                continue
+            alt_assessment = assessments[alternative.candidate_index]
+            alt_type = event_type_by_id[alt_assessment.candidate.event_type_id]
+            alt_factors = component_rows[alternative.candidate_index]
+            comparison = counterfactual_evidence(
+                f"{event_type.name} at {assessment.candidate.start.isoformat()}", item.strategy_score,
+                {key: value for key, value in component_rows[item.candidate_index].items() if value is not None},
+                f"{alt_type.name} at {alt_assessment.candidate.start.isoformat()}", alternative.strategy_score,
+                {key: value for key, value in alt_factors.items() if value is not None},
+            )
+            alternatives.append({"evidence": comparison, "text": render_counterfactual(comparison)})
+            if len(alternatives) == 3:
+                break
+        result = {
             "rank": rank,
             "event_type_id": event_type.id,
             "event_type": event_type.name,
@@ -119,5 +167,10 @@ def recommend_for_club(
             "availability_fraction": assessment.availability_fraction,
             "expected_attendance": assessment.expected_attendance,
             "quorum_required": assessment.quorum_required,
-        })
-    return {"recommendations": recommendations, "candidate_count": len(candidates), "feasible_count": len(assessments), "strategy": strategy, "fairness": fairness, "diversity": diversity}
+            "evidence": evidence,
+            "explanation": render_explanation(evidence),
+            "why_not": alternatives,
+        }
+        recommendations.append(result)
+        counterfactuals.extend(alternatives)
+    return {"recommendations": recommendations, "counterfactuals": counterfactuals, "candidate_count": len(candidates), "feasible_count": len(assessments), "strategy": strategy, "fairness": fairness, "diversity": diversity}

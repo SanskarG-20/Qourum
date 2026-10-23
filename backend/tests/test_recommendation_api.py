@@ -59,6 +59,9 @@ def test_recommendation_endpoint_role_validation_and_response(tmp_path):
                 assert 0 <= recommendation["group_mean"] <= 1
                 assert 0 <= recommendation["group_min"] <= 1
                 assert recommendation["expected_attendance"] >= recommendation["quorum_required"]
+                assert recommendation["evidence"]["constraint_status"]["feasible"] is True
+                assert recommendation["evidence"]["per_member_satisfaction"]
+                assert recommendation["explanation"]
 
             client.cookies.clear()
             member = _login(client, "member.acm@quorum.local", DEMO_PASSWORDS["member"])
