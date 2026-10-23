@@ -4,7 +4,7 @@ Quorum is a group-aware event recommender for college clubs. It ranks event type
 
 ## Current status
 
-P0 and P1 establish the local-only foundation and deterministic SQLite data layer. The authenticated workflow and Python recommendation logic are scheduled for later phases. The existing React/Vite landing page and illustrative browser demo remain available; the browser demo does not persist data.
+P0–P2 establish the local-only foundation, deterministic SQLite data layer, and local authentication API. Recommendation logic and the organizer/member workflow UI are scheduled for later phases. The existing React/Vite landing page and illustrative browser demo remain available; the browser demo does not persist data.
 
 ## Stack
 
@@ -36,6 +36,20 @@ make eval    # current seeded verification harness
 ```
 
 The seed command rebuilds the local SQLite database. The FastAPI server also seeds it when the database file is missing. To run the CLI directly, use `cd backend && python -m app.seed --seed 42`. Override `PYTHON` or `SEED` when needed, for example `make seed PYTHON="py -3.11" SEED=42` on Windows.
+
+### Demo accounts
+
+`make seed` creates organizer and member accounts for each synthetic club. Organizer accounts use `QuorumOrganizer42!`; member accounts use `QuorumMember42!`.
+
+| Club | Organizer | Member |
+| --- | --- | --- |
+| ACM & Robotics Guild | `organizer.acm@quorum.local` | `member.acm@quorum.local` |
+| Design & Creative Commons | `organizer.design@quorum.local` | `member.design@quorum.local` |
+| Student AI & Data Society | `organizer.ai-data@quorum.local` | `member.ai-data@quorum.local` |
+
+These credentials are for the local synthetic demo only.
+
+The API issues an HttpOnly `quorum_session` cookie and a CSRF token. Clients first request `GET /api/auth/csrf`, then send that token in `X-CSRF-Token` with `POST /api/auth/login`. `GET /api/auth/me` returns the signed-in profile and club roles; `POST /api/auth/logout` requires the session's CSRF token. Club event reads require membership, and the member directory is organizer-only.
 
 ## Recommendation approach
 

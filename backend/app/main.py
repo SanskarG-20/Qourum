@@ -9,8 +9,10 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from .database import database_path
+from .database import create_database_engine, database_path, initialize_schema
 from .seed import seed_database
+from .auth import router as auth_router
+from .clubs import router as clubs_router
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DIST_DIRECTORY = REPOSITORY_ROOT / "dist"
@@ -25,10 +27,15 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     selected_database = database_path()
     if not selected_database.is_file():
         seed_database(db_path=selected_database)
+    engine = create_database_engine(selected_database)
+    initialize_schema(engine)
+    engine.dispose()
     yield
 
 
 app = FastAPI(title="Quorum", docs_url=None, redoc_url=None, lifespan=lifespan)
+app.include_router(auth_router)
+app.include_router(clubs_router)
 app.mount(
     "/assets",
     StaticFiles(directory=ASSETS_DIRECTORY, check_dir=False),

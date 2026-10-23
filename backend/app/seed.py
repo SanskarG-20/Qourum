@@ -28,6 +28,7 @@ from .models import (
     RSVP,
     User,
 )
+from .security import hash_demo_password
 if __package__ == "app" or __package__.startswith("app."):
     from synthetic_data.calendar import ACADEMIC_CALENDAR_PERIODS
     from synthetic_data.exporter import export_feature_datasets
@@ -38,6 +39,15 @@ else:
     from backend.synthetic_data.generator import GenerationConfig, SyntheticDatasetGenerator
 
 SEED_NAMESPACE = uuid.UUID("a1f2a729-9b16-48ad-9f74-c8edb939d6a5")
+DEMO_CLUB_SLUGS = {
+    "ACM & Robotics Guild": "acm",
+    "Design & Creative Commons": "design",
+    "Student AI & Data Society": "ai-data",
+}
+DEMO_PASSWORDS = {
+    "organizer": "QuorumOrganizer42!",
+    "member": "QuorumMember42!",
+}
 
 
 def _calendar_id(name: str, start_date: str) -> str:
@@ -65,6 +75,20 @@ def seed_database(seed: int | None = None, db_path: str | Path | None = None) ->
     generator = SyntheticDatasetGenerator(GenerationConfig(seed=selected_seed))
     generator.generate_all()
     tables = export_feature_datasets(generator)
+    demo_accounts = [
+        {
+            "id": str(uuid.uuid5(SEED_NAMESPACE, f"demo:{club.id}:{role}")),
+            "club_id": club.id,
+            "role": role,
+            "name": f"Demo {role.title()} — {DEMO_CLUB_SLUGS[club.name]}",
+            "email": f"{role}.{DEMO_CLUB_SLUGS[club.name]}@quorum.local",
+            "password_hash": hash_demo_password(
+                DEMO_PASSWORDS[role], selected_seed, f"{role}.{DEMO_CLUB_SLUGS[club.name]}@quorum.local"
+            ),
+        }
+        for club in generator.clubs
+        for role in ("organizer", "member")
+    ]
 
     engine = create_database_engine(selected_path)
     initialize_schema(engine)
@@ -80,6 +104,10 @@ def seed_database(seed: int | None = None, db_path: str | Path | None = None) ->
                 for row in tables["members"].itertuples(index=False)
             )
             session.add_all(
+                User(id=account["id"], name=account["name"], email=account["email"], password_hash=account["password_hash"])
+                for account in demo_accounts
+            )
+            session.add_all(
                 EventType(
                     id=row.id,
                     name=row.name,
@@ -93,6 +121,10 @@ def seed_database(seed: int | None = None, db_path: str | Path | None = None) ->
             session.add_all(
                 ClubMember(club_id=row.club_id, member_id=row.member_id, role=row.role)
                 for row in tables["club_members"].itertuples(index=False)
+            )
+            session.add_all(
+                ClubMember(club_id=account["club_id"], member_id=account["id"], role=account["role"])
+                for account in demo_accounts
             )
             session.add_all(
                 Event(

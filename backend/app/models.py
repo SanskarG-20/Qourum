@@ -202,3 +202,18 @@ class Session(Base):
     csrf_token: Mapped[str] = mapped_column(String(128), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+class LoginAttempt(Base):
+    """Persist hashed login identifiers and rolling lockout state locally."""
+
+    __tablename__ = "login_attempts"
+    __table_args__ = (
+        CheckConstraint("failures BETWEEN 0 AND 5", name="ck_login_attempts_failures"),
+        Index("ix_login_attempts_lock", "locked_until"),
+    )
+
+    identifier_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    failures: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    window_started: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime)
