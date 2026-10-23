@@ -41,7 +41,7 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
       fileBadgeLabel: 'CSV SCHEMA.PY',
       imageSrc: mediaAssets.card01CampusBlue,
       imageAlt: 'a group of students collaborating on a blue campus court',
-      telemetrySpecs: [
+      technicalSpecs: [
         'Entities: Club (1:N Member, 1:N Event), Rating (1–5 int), Availability (0/1), Attendance (0/1)',
         'FR-002 Import Acceptance: 30-row sample with 3 bad rows loads 27 valid rows & reports 3 errors',
         'FR-004 Privacy Guarantee: Automated regex scan blocks emails, names, or roll numbers before modeling',
@@ -72,7 +72,7 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
       fileBadgeLabel: 'PY MODEL.PY',
       imageSrc: mediaAssets.card02StudyRoom,
       imageAlt: 'a student thinking near sunlit windows and indoor plants',
-      telemetrySpecs: [
+      technicalSpecs: [
         'Weekly Grid (FR-005): 7 days × 5 slots (Morning, Midday, Afternoon, Evening, Late Evening)',
         'Hard Filter (FR-006): Drops slots below configurable threshold (default 50%) with automatic fallback banner',
         'Baselines (FR-007): Random, Most-Popular, and Repeat-Last evaluated on identical metrics',
@@ -103,7 +103,7 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
       fileBadgeLabel: 'PY AGGREGATE.PY',
       imageSrc: mediaAssets.card03YellowCourtyard,
       imageAlt: 'two dogs sitting in front of a yellow tiled courtyard with red striped awning',
-      telemetrySpecs: [
+      technicalSpecs: [
         'FR-009 Average: Mean score over available members (maximizes aggregate utility)',
         'FR-010 Least-Misery: Minimum member score over available members (protects the worst-off attendee)',
         'FR-011 Fairness-Aware: Historical disadvantage weighting minus intra-group variance penalty',
@@ -134,7 +134,7 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
       fileBadgeLabel: 'PY HARNESS.PY',
       imageSrc: mediaAssets.card04SunsetDunes,
       imageAlt: 'a lone figure standing on golden sand dunes',
-      telemetrySpecs: [
+      technicalSpecs: [
         'FR-016 Synthetic Generator: Controllable conflict parameter with explicit is_synthetic=1 labeling',
         'FR-017 Metrics: Attendance MAE/RMSE, Hit@3 agreement, Min-Member Satisfaction, and Gini inequality',
         'Sec 12.3 Caveat: Combines historical agreement with simulated ground-truth satisfaction',
@@ -400,7 +400,7 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
                     </div>
                   </div>
 
-                  {/* Right Framed Image / Live Telemetry Selection Box (814x556 in reference) */}
+                {/* Right framed image / technical-spec selection box (814x556 in reference) */}
                   <div>
                     <SelectionBox
                       borderColor={card.selectionBorder}
@@ -494,7 +494,7 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
                             >
                               {card.reqCode} — ACCEPTANCE SPECIFICATION
                             </div>
-                            {card.telemetrySpecs.map((spec, sIdx) => (
+                            {card.technicalSpecs.map((spec, sIdx) => (
                               <div
                                 key={sIdx}
                                 style={{
@@ -521,7 +521,7 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
                               color: '#F0F0F0',
                             }}
                           >
-                            <span>{card.telemetrySpecs[0]}</span>
+                            <span>{card.technicalSpecs[0]}</span>
                             <span style={{ color: '#42D2ED', fontWeight: 600, marginLeft: '12px', whiteSpace: 'nowrap' }}>
                               [CLICK FOR SPECS]
                             </span>

@@ -53,3 +53,7 @@ design.md
 
 # Build helper scripts & internal tooling
 scripts/
+
+# Local SQLite databases
+data/*.db
+data/*.db-*
