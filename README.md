@@ -1,12 +1,10 @@
 # Quorum
 
-Quorum is a local-first group recommender that helps college clubs choose an event type, date, and start time. It combines member preferences, availability, attendance history, scheduling constraints, and configurable group decision strategies. The repository includes a deterministic synthetic dataset and temporal evaluation pipeline; it does not contain real club data.
+Quorum is a local-first recommender for choosing college club events. It ranks event types, dates, and start times using member preferences, availability, attendance history, scheduling constraints, and group decision strategies. The included data and evaluation are synthetic; they do not represent real clubs or members.
 
-## Requirements and setup
+## Quick start
 
-- Python 3.11+
-- Node.js 20.19+ and npm
-- GNU Make
+Requirements: Python 3.11+, Node.js 20.19+, npm, and GNU Make.
 
 ```sh
 make setup
@@ -15,24 +13,20 @@ make test
 make dev
 ```
 
-`make dev` runs FastAPI on `127.0.0.1:8000` and Vite on `127.0.0.1:5173`; Vite proxies relative `/api` requests to FastAPI. Open the Vite address and visit `/app`. For the single-origin production mode, run `make build` followed by `make run`; FastAPI serves the built frontend and API together. No service, credentials, or outbound connection is required at runtime. Setup installs only the pinned local Python and npm dependencies.
+Open `http://127.0.0.1:5173/app` during development. For a single-origin build, run `make build` then `make run`. The application uses SQLite at `data/quorum.db`; runtime operation is local and does not require external services or network access. `make seed SEED=42` recreates the same synthetic dataset.
 
 Useful commands:
 
 | Command | Purpose |
 | --- | --- |
-| `make seed SEED=42` | Rebuild `data/quorum.db` deterministically |
-| `make test` | Run frontend invariants, Python tests, and local-only source checks |
-| `make eval` | Run the five-seed temporal evaluation and write results |
-| `make simulate SEED=42` | Run the feedback simulation |
-| `make build` | Build the React application |
-| `make run` | Serve the built application and API from one origin |
+| `make test` | Run the test suite and local-only checks |
+| `make eval` | Run the five-seed temporal evaluation |
+| `make simulate SEED=42` | Run a reproducible feedback simulation |
+| `make build` / `make run` | Build and serve the application |
 
-The database is SQLite at `data/quorum.db`. It enables foreign keys, WAL mode, and a busy timeout. A missing database is generated on server startup. Change `SEED` to reproduce an alternative synthetic dataset. On Windows, pass `PYTHON="py -3.11"` to Make, for example `make setup PYTHON="py -3.11"`.
+## Demo credentials
 
-## Demo accounts
-
-`make seed` creates local-only demo accounts. The organizer password is `QuorumOrganizer42!`; the member password is `QuorumMember42!`.
+`make seed` creates these local demo accounts (all use the same role-specific password):
 
 | Club | Organizer | Member |
 | --- | --- | --- |
@@ -40,97 +34,26 @@ The database is SQLite at `data/quorum.db`. It enables foreign keys, WAL mode, a
 | Design & Creative Commons | `organizer.design@quorum.local` | `member.design@quorum.local` |
 | Student AI & Data Society | `organizer.ai-data@quorum.local` | `member.ai-data@quorum.local` |
 
-These fixed credentials are for the synthetic local demo. Authentication uses Argon2id password hashes, SQLite-backed server-side sessions, HttpOnly SameSite cookies, CSRF tokens on state-changing requests, login throttling, and club-scoped role checks.
+Organizer password: `QuorumOrganizer42!`. Member password: `QuorumMember42!`.
 
-## Application workflow
+## Recommendation method
 
-Members can rate event types, set weekly availability, and choose a latest acceptable start time. Organizers choose aggregation, quorum, fairness, and diversity settings; inspect ranked candidates, member satisfaction, and explanations; run what-if recommendations; then accept a candidate to schedule it. Members RSVP, and organizers record attendance and ratings. Subsequent recommendations incorporate the feedback. Member attempts to create events or request organizer recommendations receive HTTP 403.
+Individual scores combine explicit event-type ratings, recency-weighted attendance, smoothed weekday/hour affinity, and optional local description embeddings. Component weights and scoring constants are centralized in `backend/recsys/config.py`. Embeddings use the vendored `all-MiniLM-L6-v2` model and a SQLite text-hash cache; set `QUORUM_EMBEDDINGS_ENABLED=false` to disable them. Scoring and explanation rendering are deterministic, and the recommender does not use generator-only latent persona fields.
 
-## Recommendation methodology
-
-For each member and candidate event, Quorum computes four bounded signals:
-
-1. **Explicit preference:** a rating `r` on the 1–5 scale maps to `(r - 1) / 4`.
-2. **Implicit event-type response:** attended events contribute `1`, RSVP-yes no-shows `0.35`, and ignored events `0`. With recency enabled, each observation is weighted by `exp(-ln(2) × age_days / 120)`; the weighted mean is used.
-3. **Time affinity:** the candidate weekday/hour attendance rate uses Laplace smoothing: `(successes + 1) / (observations + 2)`.
-4. **Description similarity:** Quorum embeds each event description with the vendored `sentence-transformers/all-MiniLM-L6-v2` model (Apache-2.0, 384 dimensions, approximately 90.9 MB). A member profile is the exponential-recency-weighted mean of descriptions for events they attended before the candidate cutoff, using a 240-day half-life. Cosine similarity to the candidate event-type description maps from `[-1, 1]` to `[0, 1]`; confidence is `n / (n + 3)`. Vectors are cached in SQLite by normalized-text SHA-256 and fixed model revision. The model loads from `backend/models/all-MiniLM-L6-v2/` with local-only loading and CPU inference.
-
-Each available signal is weighted by its configured base weight (0.50 explicit, 0.35 implicit, 0.15 time, 0.20 content) multiplied by its confidence, then normalized across available signals. A member without attended-description history receives no content signal. Set the `QUORUM_EMBEDDINGS_ENABLED=false` environment variable to disable embedding assembly and return to the non-content score path. If no evidence remains, the score falls back to club popularity and is marked cold start. Scoring constants are centralized in `backend/recsys/config.py`.
-
-Candidates enumerate event type, date, and start time at one-hour increments over a configurable horizon. Availability, dealbreakers, existing events, holidays, exam periods, and quorum determine feasibility and reason codes. Expected attendance is the sum of member attendance probabilities; the default quorum is `max(5, ceil(0.30 × membership))`.
-
-Group ranking supports average, least misery, most pleasure, multiplicative, Borda, approval voting, and average-without-misery. Fairness applies a normalized decaying boost to members with low historical satisfaction. MMR reranking promotes event-type diversity relative to recent and already selected recommendations. Explanations and “why not” counterfactuals are deterministic templates over computed evidence; no generative language model is used.
-
-## Architecture
-
-```mermaid
-flowchart LR
-    Browser[React and Vite]
-    API[FastAPI routes]
-    Store[(SQLite: data/quorum.db)]
-    Embed[Local sentence encoder]
-    Cache[(SQLite embedding cache)]
-    Rec[Pure scoring and aggregation]
-    Gen[Seeded synthetic generator]
-    Sim[Attendance and feedback simulation]
-    Eval[Temporal evaluation and reports]
-
-    Browser -->|relative /api| API
-    API --> Store
-    API --> Embed
-    Embed --> Cache
-    API --> Rec
-    Gen --> Store
-    Sim --> Rec
-    Sim --> Store
-    Eval --> Gen
-    Eval --> Rec
-```
-
-`backend/recsys` contains deterministic scoring, candidate constraints, aggregation, and evidence rendering. It performs no persistence or network I/O. `backend/app` contains the API, authentication, database models, and workflow. `backend/simulation` and `backend/evaluation` isolate synthetic behavior, feedback simulation, and temporal measurement. The existing landing page remains at `/`; the application workflow is under `/app`.
+Candidate generation checks availability, member dealbreakers, existing events, holidays, exam periods, and quorum. Feasible candidates are aggregated using average, least misery, most pleasure, multiplicative, Borda, approval voting, or average-without-misery. Optional fairness weighting and diversity reranking affect group ranking. Explanations and “why not” comparisons render computed evidence with deterministic templates.
 
 ## Evaluation
 
-Run `make eval` to evaluate five deterministic seeds with a chronological 70/15/15 train/validation/test split. Tuning uses validation data only. Per-seed CSVs, 95% confidence intervals, paired comparisons, figures, and a report are written to `results/evaluation/`.
+Run `make eval` for the chronological 70/15/15 train/validation/test evaluation across five seeds. Tuning uses validation data only. Metrics cover individual ranking, group satisfaction and fairness, quorum success, attendance calibration, coverage, and list diversity. Baselines include random, popularity, recent-event, same-week-last-year, and aggregation-only approaches. Results and figures are written to `results/evaluation/`; see [`REPORT.md`](results/evaluation/REPORT.md) for the latest report.
 
-The scoring/feasibility benchmark (`backend/benchmarks/benchmark_recommendations.py`) measured p95 **258.36 ms** for 60 members × 500 candidates over 10 runs (seed 42), below the 1-second target. This benchmark includes precomputed content evidence; database reads and a cold model load/encode are outside its timing.
+The recorded benchmark measured p95 **258.36 ms** for 60 members and 500 candidates over 10 runs, with content evidence precomputed. It excludes database access and cold model loading/encoding.
 
-The evaluation measures Precision@K, Recall@K, NDCG@K, event-type and slot hit rates; mean/minimum satisfaction, satisfaction spread and Gini; quorum success; Brier calibration; coverage; and intra-list diversity. Baselines are random, club popularity, most recent type, same-week-last-year, and individual aggregation strategies. Ablations remove recency, time affinity, fairness, or diversity.
+In the five-seed embedding ablation, predicted mean satisfaction increased by **0.097** (paired 95% CI **[0.093, 0.101]**). Event-type hit-rate change was **0.032** (95% CI **[-0.079, 0.143]**), which was not significant; Brier score worsened by **0.025** (95% CI **[0.016, 0.033]**, lower is better). The recommender also trails club popularity on Precision@3, Recall@3, and NDCG@3 in the reported baseline comparison. Since both behavior and event descriptions are synthetic, these findings are weak evidence and do not establish real-world attendance or satisfaction gains.
 
-The five-seed embedding ablation is in [`results/evaluation/REPORT.md`](results/evaluation/REPORT.md) and `embedding_ablation.csv`. On this run, the predicted mean-satisfaction delta (full model minus no embeddings) was **+0.097** (paired 95% CI **[+0.093, +0.101]**), statistically significant under the prespecified metric. Event-type hit-rate delta was +0.032 (95% CI [-0.079, +0.143]) and was not significant; Brier score worsened by +0.025 (95% CI [+0.016, +0.033], lower is better). The broader baseline table still shows that the model does not beat club popularity on Precision@3, Recall@3, or NDCG@3. These gains are weak evidence because the data and descriptions are synthetic; predicted-score movement is not proof of real-world attendance or satisfaction lift.
+## Data, security, and limitations
 
-Suggested report outline: (1) data generation and temporal split; (2) individual ranking metrics and baselines; (3) group satisfaction, fairness, and quorum outcomes; (4) calibration and coverage; (5) paired intervals and ablations; (6) limitations and metrics where the model loses. Use `results/evaluation/REPORT.md` as the generated results source.
+The seeded generator creates three clubs, 25–60 members per club, twelve event types, and 18 months of synthetic history, including cold-start, sparse-history, and interest-drifting members. Descriptions come from seeded templates and are not generated from latent personas. The feedback simulation uses the generator behavior model independently of recommender features.
 
-## Synthetic data and assumptions
+SQLite is configured with foreign keys, WAL mode, and a busy timeout. Authentication uses Argon2id hashes, server-side SQLite sessions, HttpOnly SameSite cookies, CSRF protection, login throttling, and club-scoped role checks. `make test` includes a socket-blocking test and source checks for external services and unsafe references.
 
-The seeded generator creates three clubs, 25–60 members per club, twelve event types, and 18 months of synthetic event history. Hidden personas, time-slot fit, exam-week dips, repeat-event fatigue, and noise generate behavior; hidden persona fields are excluded from recommender inputs. Event descriptions use seeded public-text templates with overlapping vocabulary and are generated without reading latent fields or attendance outcomes. Data includes cold-start, sparse-history, and interest-drifting members. The simulation generates attendance from this behavior model, independently of recommender features.
-
-Assumptions and limitations:
-
-- Historical attendance is an imperfect proxy for interest; nonattendance can reflect factors missing from the model.
-- Weekly availability and one-hour slots simplify real scheduling constraints.
-- Candidate attendance probabilities are treated as additive expected attendance; member responses may be correlated.
-- Synthetic behavior is designed for reproducibility, not to represent a specific college or population.
-- Offline evaluation is observational and cannot measure the outcome of unheld alternatives.
-- Fairness weights and group strategies express configurable trade-offs, not a universal definition of fairness.
-
-## Three-minute demo
-
-1. Run `make seed SEED=42` and `make dev`, then open `/app`.
-2. Sign in as `organizer.acm@quorum.local` with `QuorumOrganizer42!`; set strategy, quorum, fairness, and diversity, then request recommendations.
-3. Open a recommendation to review per-member satisfaction, constraints, and its “why not” alternatives. Accept it to create an event.
-4. Sign in as `member.acm@quorum.local` with `QuorumMember42!`, submit an RSVP, then return as organizer to record attendance and ratings.
-5. Run recommendations again to see the feedback reflected. For reproducible offline metrics, run `make eval` and review `results/evaluation/REPORT.md`.
-
-## Hardening and known issues
-
-The Python test suite blocks socket connection attempts for every test. `python tools/hardening_check.py` scans runtime source for hosted database references, external URLs and CDNs, unsafe HTML insertion, and verifies the self-only `connect-src` policy. `make test` includes this check.
-
-| Issue | Severity | Fix or status |
-| --- | --- | --- |
-| Runtime network access or hosted-service dependency | Critical | Removed; suite blocks socket connections and source checks enforce local-only references. |
-| SQL injection through request strings | Critical | ORM-bound parameters and validated request schemas; adversarial API inputs are covered by tests. |
-| Stored XSS in member-visible event text | High | React text rendering escapes venue content; malicious content is round-tripped as data in tests and unsafe HTML insertion is scanned. |
-| Unauthorized scheduling, missing CSRF, or cross-club access | Critical | Session, CSRF, role, and club-boundary integration tests cover authorization. |
-| Large production JavaScript bundle | Low | Vite reports a size advisory; the complete existing landing experience and `/app` workflow remain in one build. |
-| Synthetic evaluation does not establish real-world lift | High | Reported as a limitation; no superiority claim is made where baseline comparisons do not support one. |
+Key limitations: attendance is an imperfect proxy for interest; availability and one-hour slots simplify scheduling; attendance estimates assume additive member probabilities; offline evaluation cannot observe outcomes for unheld alternatives; and synthetic performance does not establish performance for a real college population. Group strategies and fairness weights encode configurable trade-offs rather than a universal fairness definition.
