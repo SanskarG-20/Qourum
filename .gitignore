@@ -65,6 +65,9 @@ docs/superpowers/
 .vite/
 .cache/
 
+# Legacy build helper scripts not used by the current Vite build
+scripts/
+
 # Local SQLite databases
 data/*.db
 data/*.db-*

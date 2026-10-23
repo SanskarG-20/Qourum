@@ -4,29 +4,46 @@ Quorum is a local-first recommender for choosing college club events. It ranks e
 
 ## Quick start
 
-Requirements: Python 3.11+, Node.js 20.19+, npm, and GNU Make.
+Requirements: Python 3.11+, Node.js 20.19+, and npm.
 
 ```sh
-make setup
-make seed SEED=42
-make test
-make dev
+npm ci
+python -m pip install -r requirements.txt
+cd backend
+python -m app.seed --seed 42
+cd ..
+python tools/dev.py
 ```
 
-Open `http://127.0.0.1:5173/app` during development. For a single-origin build, run `make build` then `make run`. The application uses SQLite at `data/quorum.db`; runtime operation is local and does not require external services or network access. `make seed SEED=42` recreates the same synthetic dataset.
+Open `http://127.0.0.1:5173/app` during development. The application uses SQLite at `data/quorum.db`; runtime operation is local and does not require external services or network access. Re-running the seed command with the same seed recreates the same synthetic dataset.
 
-Useful commands:
+Run checks:
 
-| Command | Purpose |
-| --- | --- |
-| `make test` | Run the test suite and local-only checks |
-| `make eval` | Run the five-seed temporal evaluation |
-| `make simulate SEED=42` | Run a reproducible feedback simulation |
-| `make build` / `make run` | Build and serve the application |
+```sh
+npm run verify
+python -m pytest backend/tests -q
+python tools/hardening_check.py
+```
+
+Build and serve the single-origin application:
+
+```sh
+npm run build
+python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
+```
+
+Run evaluation from the repository root:
+
+```sh
+cd backend
+python -m evaluation.runner --seeds 42 43 44 45 46 --output ../results/evaluation
+```
+
+For a seeded feedback simulation, run `python -m app.simulate --seed 42` from `backend/`.
 
 ## Demo credentials
 
-`make seed` creates these local demo accounts (all use the same role-specific password):
+The seed command creates these local demo accounts (all use the same role-specific password):
 
 | Club | Organizer | Member |
 | --- | --- | --- |
@@ -44,7 +61,7 @@ Candidate generation checks availability, member dealbreakers, existing events, 
 
 ## Evaluation
 
-Run `make eval` for the chronological 70/15/15 train/validation/test evaluation across five seeds. Tuning uses validation data only. Metrics cover individual ranking, group satisfaction and fairness, quorum success, attendance calibration, coverage, and list diversity. Baselines include random, popularity, recent-event, same-week-last-year, and aggregation-only approaches. Results and figures are written to `results/evaluation/`; see [`REPORT.md`](results/evaluation/REPORT.md) for the latest report.
+The evaluation uses a chronological 70/15/15 train/validation/test split across five seeds; tuning uses validation data only. Metrics cover individual ranking, group satisfaction and fairness, quorum success, attendance calibration, coverage, and list diversity. Baselines include random, popularity, recent-event, same-week-last-year, and aggregation-only approaches. Results and figures are written to `results/evaluation/`; see [`REPORT.md`](results/evaluation/REPORT.md) for the latest report.
 
 The recorded benchmark measured p95 **258.36 ms** for 60 members and 500 candidates over 10 runs, with content evidence precomputed. It excludes database access and cold model loading/encoding.
 
@@ -54,6 +71,6 @@ In the five-seed embedding ablation, predicted mean satisfaction increased by **
 
 The seeded generator creates three clubs, 25–60 members per club, twelve event types, and 18 months of synthetic history, including cold-start, sparse-history, and interest-drifting members. Descriptions come from seeded templates and are not generated from latent personas. The feedback simulation uses the generator behavior model independently of recommender features.
 
-SQLite is configured with foreign keys, WAL mode, and a busy timeout. Authentication uses Argon2id hashes, server-side SQLite sessions, HttpOnly SameSite cookies, CSRF protection, login throttling, and club-scoped role checks. `make test` includes a socket-blocking test and source checks for external services and unsafe references.
+SQLite is configured with foreign keys, WAL mode, and a busy timeout. Authentication uses Argon2id hashes, server-side SQLite sessions, HttpOnly SameSite cookies, CSRF protection, login throttling, and club-scoped role checks. The test suite includes a socket-blocking test and source checks for external services and unsafe references.
 
 Key limitations: attendance is an imperfect proxy for interest; availability and one-hour slots simplify scheduling; attendance estimates assume additive member probabilities; offline evaluation cannot observe outcomes for unheld alternatives; and synthetic performance does not establish performance for a real college population. Group strategies and fairness weights encode configurable trade-offs rather than a universal fairness definition.
