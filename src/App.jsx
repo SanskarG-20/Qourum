@@ -14,8 +14,9 @@ import { DemoLabSection } from './components/sections/DemoLabSection.jsx';
 import { EvaluationSection } from './components/sections/EvaluationSection.jsx';
 import { PlaygroundSurveySection } from './components/sections/PlaygroundSurveySection.jsx';
 import { LetsTalkFooter } from './components/sections/LetsTalkFooter.jsx';
+import { QuorumMemberApp } from './components/app/MemberOnboarding.jsx';
 
-export default function App() {
+function LandingPage() {
   const sectionIds = useMemo(() => NAV_ITEMS.map((item) => item.id), []);
   const [activeSection, setActiveSection] = useActiveSection(sectionIds);
 
@@ -145,4 +146,11 @@ export default function App() {
       />
     </div>
   );
+}
+
+export default function App() {
+  if (window.location.pathname.startsWith('/app')) {
+    return <QuorumMemberApp />;
+  }
+  return <LandingPage />;
 }

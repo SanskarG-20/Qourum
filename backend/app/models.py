@@ -153,6 +153,16 @@ class Availability(Base):
     is_available: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
+class MemberSettings(Base):
+    """Member-level scheduling dealbreakers used by candidate generation."""
+
+    __tablename__ = "member_settings"
+    __table_args__ = (CheckConstraint("latest_start_time IS NULL OR latest_start_time BETWEEN '00:00:00' AND '23:59:59'", name="ck_member_settings_latest_start"),)
+
+    member_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    latest_start_time: Mapped[time | None] = mapped_column(Time)
+
+
 class AcademicCalendar(Base):
     __tablename__ = "academic_calendar"
     __table_args__ = (
