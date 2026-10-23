@@ -13,11 +13,12 @@ seed:
 	cd backend && $(PYTHON) -m app.seed --seed $(SEED)
 
 dev:
-	npm run dev
+	$(PYTHON) tools/dev.py
 
 test:
 	npm run verify
 	$(PYTHON) -m pytest backend/tests -q
+	$(PYTHON) tools/hardening_check.py
 
 eval:
 	cd backend && $(PYTHON) -m evaluation.runner --seeds 42 43 44 45 46 --output ../results/evaluation
