@@ -1,4 +1,6 @@
 # Runtime and application dependencies (exact versions)
+# PyTorch's official CPU-only wheel index; package installation is setup-only.
+--extra-index-url https://download.pytorch.org/whl/cpu
 fastapi==0.115.12
 SQLAlchemy==2.1.6
 pandas==3.1.0
@@ -12,6 +14,37 @@ argon2-cffi==25.1.0
 
 # Test-only local ASGI client
 httpx==0.28.1
+
+# Local semantic embedding runtime (pinned model files are vendored separately).
+sentence-transformers==6.2.0
+torch==2.14.0+cpu
+transformers==5.20.2
+tokenizers==0.23.3
+huggingface-hub==2.3.0
+safetensors==0.8.0
+
+# Fully pinned transitive dependencies of the local embedding runtime.
+Jinja2==3.1.6
+MarkupSafe==3.0.4
+PyYAML==6.0.3
+annotated-doc==0.0.5
+filelock==4.2.4
+fsspec==2026.9.0
+hf-xet==1.7.0
+httpcore2==2.16.0
+httpx2==2.16.0
+markdown-it-py==4.2.0
+mdurl==0.1.2
+mpmath==1.3.0
+networkx==3.6.1
+regex==2026.9.29
+rich==15.0.0
+setuptools==84.2.1
+shellingham==1.5.4
+sympy==1.14.0
+tqdm==4.70.1
+truststore==0.10.5
+typer==0.27.3
 
 # Fully pinned transitive dependencies for repeatable Python installs.
 annotated-types==0.8.0

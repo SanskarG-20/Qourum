@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from backend.recsys.candidates import Candidate, assess_candidate
 from backend.recsys.group import rank_group_candidates
-from backend.recsys.individual import AttendanceObservation, TimeObservation, score_members
+from backend.recsys.individual import AttendanceObservation, ContentSignal, TimeObservation, score_members
 
 
 def benchmark(seed: int, runs: int) -> tuple[float, float]:
@@ -29,6 +29,7 @@ def benchmark(seed: int, runs: int) -> tuple[float, float]:
         for member in member_ids
     }
     slots = {member: [TimeObservation(int(rng.integers(0, 7)), int(rng.integers(9, 21)), rng.random() < .6) for _ in range(12)] for member in member_ids}
+    content = {event_type: {member: ContentSignal(float(rng.random()), int(rng.integers(1, 20))) for member in member_ids} for event_type in event_types}
     availability = {member: [(day, time(9), time(21)) for day in range(7)] for member in member_ids}
     candidates = [Candidate(event_types[index % len(event_types)], now + timedelta(days=index % 21, hours=9 + index % 12), 60, "Benchmark room") for index in range(500)]
 
@@ -40,7 +41,7 @@ def benchmark(seed: int, runs: int) -> tuple[float, float]:
         for candidate in candidates:
             key = (candidate.event_type_id, candidate.start.weekday(), candidate.start.hour)
             if key not in score_cache:
-                scores = score_members(member_ids, key[0], key[1], key[2], preferences, attendance, slots, now=now, popularity_fallback=.5)
+                scores = score_members(member_ids, key[0], key[1], key[2], preferences, attendance, slots, now=now, popularity_fallback=.5, content_evidence=content[key[0]])
                 score_cache[key] = [item.score for item in scores]
             scores = score_cache[key]
             assessment = assess_candidate(candidate, dict(zip(member_ids, scores)), availability, quorum=5)

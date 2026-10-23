@@ -134,6 +134,7 @@ def club_events(
             "id": event.id,
             "event_type_id": event.event_type_id,
             "title": event.title,
+            "description": event.description,
             "start_time": event.start_time.isoformat(),
             "duration_minutes": event.duration_minutes,
             "venue": event.venue,

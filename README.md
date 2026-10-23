@@ -48,17 +48,18 @@ Members can rate event types, set weekly availability, and choose a latest accep
 
 ## Recommendation methodology
 
-For each member and candidate event, Quorum computes three bounded signals:
+For each member and candidate event, Quorum computes four bounded signals:
 
 1. **Explicit preference:** a rating `r` on the 1–5 scale maps to `(r - 1) / 4`.
 2. **Implicit event-type response:** attended events contribute `1`, RSVP-yes no-shows `0.35`, and ignored events `0`. With recency enabled, each observation is weighted by `exp(-ln(2) × age_days / 120)`; the weighted mean is used.
 3. **Time affinity:** the candidate weekday/hour attendance rate uses Laplace smoothing: `(successes + 1) / (observations + 2)`.
+4. **Description similarity:** Quorum embeds each event description with the vendored `sentence-transformers/all-MiniLM-L6-v2` model (Apache-2.0, 384 dimensions, approximately 90.9 MB). A member profile is the exponential-recency-weighted mean of descriptions for events they attended before the candidate cutoff, using a 240-day half-life. Cosine similarity to the candidate event-type description maps from `[-1, 1]` to `[0, 1]`; confidence is `n / (n + 3)`. Vectors are cached in SQLite by normalized-text SHA-256 and fixed model revision. The model loads from `backend/models/all-MiniLM-L6-v2/` with local-only loading and CPU inference.
 
-Each available signal is weighted by its configured base weight (0.50 explicit, 0.35 implicit, 0.15 time) multiplied by `n / (n + prior)`, then normalized across available signals. No evidence falls back to club popularity and is marked cold start. These settings are centralized in `backend/recsys/config.py`.
+Each available signal is weighted by its configured base weight (0.50 explicit, 0.35 implicit, 0.15 time, 0.20 content) multiplied by its confidence, then normalized across available signals. A member without attended-description history receives no content signal. Set the `QUORUM_EMBEDDINGS_ENABLED=false` environment variable to disable embedding assembly and return to the non-content score path. If no evidence remains, the score falls back to club popularity and is marked cold start. Scoring constants are centralized in `backend/recsys/config.py`.
 
 Candidates enumerate event type, date, and start time at one-hour increments over a configurable horizon. Availability, dealbreakers, existing events, holidays, exam periods, and quorum determine feasibility and reason codes. Expected attendance is the sum of member attendance probabilities; the default quorum is `max(5, ceil(0.30 × membership))`.
 
-Group ranking supports average, least misery, most pleasure, multiplicative, Borda, approval voting, and average-without-misery. Fairness applies a normalized decaying boost to members with low historical satisfaction. MMR reranking promotes event-type diversity relative to recent and already selected recommendations. Explanations and “why not” counterfactuals are deterministic templates over the computed evidence; no language model is used.
+Group ranking supports average, least misery, most pleasure, multiplicative, Borda, approval voting, and average-without-misery. Fairness applies a normalized decaying boost to members with low historical satisfaction. MMR reranking promotes event-type diversity relative to recent and already selected recommendations. Explanations and “why not” counterfactuals are deterministic templates over computed evidence; no generative language model is used.
 
 ## Architecture
 
@@ -67,6 +68,8 @@ flowchart LR
     Browser[React and Vite]
     API[FastAPI routes]
     Store[(SQLite: data/quorum.db)]
+    Embed[Local sentence encoder]
+    Cache[(SQLite embedding cache)]
     Rec[Pure scoring and aggregation]
     Gen[Seeded synthetic generator]
     Sim[Attendance and feedback simulation]
@@ -74,6 +77,8 @@ flowchart LR
 
     Browser -->|relative /api| API
     API --> Store
+    API --> Embed
+    Embed --> Cache
     API --> Rec
     Gen --> Store
     Sim --> Rec
@@ -88,15 +93,17 @@ flowchart LR
 
 Run `make eval` to evaluate five deterministic seeds with a chronological 70/15/15 train/validation/test split. Tuning uses validation data only. Per-seed CSVs, 95% confidence intervals, paired comparisons, figures, and a report are written to `results/evaluation/`.
 
+The scoring/feasibility benchmark (`backend/benchmarks/benchmark_recommendations.py`) measured p95 **258.36 ms** for 60 members × 500 candidates over 10 runs (seed 42), below the 1-second target. This benchmark includes precomputed content evidence; database reads and a cold model load/encode are outside its timing.
+
 The evaluation measures Precision@K, Recall@K, NDCG@K, event-type and slot hit rates; mean/minimum satisfaction, satisfaction spread and Gini; quorum success; Brier calibration; coverage; and intra-list diversity. Baselines are random, club popularity, most recent type, same-week-last-year, and individual aggregation strategies. Ablations remove recency, time affinity, fairness, or diversity.
 
-The checked-in five-seed report shows that the model **does not beat club popularity** on Precision@3, Recall@3, NDCG@3, or event-type hit rate. Predicted mean/minimum satisfaction, coverage, and diversity improve; calibration gains are inconclusive; satisfaction standard deviation increases. Historical slot hit rate and quorum success are unchanged because the temporal data cannot reveal counterfactual attendance for events that were not held. These results are synthetic and should not be interpreted as evidence of real-world effectiveness.
+The five-seed embedding ablation is in [`results/evaluation/REPORT.md`](results/evaluation/REPORT.md) and `embedding_ablation.csv`. On this run, the predicted mean-satisfaction delta (full model minus no embeddings) was **+0.097** (paired 95% CI **[+0.093, +0.101]**), statistically significant under the prespecified metric. Event-type hit-rate delta was +0.032 (95% CI [-0.079, +0.143]) and was not significant; Brier score worsened by +0.025 (95% CI [+0.016, +0.033], lower is better). The broader baseline table still shows that the model does not beat club popularity on Precision@3, Recall@3, or NDCG@3. These gains are weak evidence because the data and descriptions are synthetic; predicted-score movement is not proof of real-world attendance or satisfaction lift.
 
 Suggested report outline: (1) data generation and temporal split; (2) individual ranking metrics and baselines; (3) group satisfaction, fairness, and quorum outcomes; (4) calibration and coverage; (5) paired intervals and ablations; (6) limitations and metrics where the model loses. Use `results/evaluation/REPORT.md` as the generated results source.
 
 ## Synthetic data and assumptions
 
-The seeded generator creates three clubs, 25–60 members per club, twelve event types, and 18 months of synthetic event history. Hidden personas, time-slot fit, exam-week dips, repeat-event fatigue, and noise generate behavior; hidden persona fields are excluded from recommender inputs. Data includes cold-start, sparse-history, and interest-drifting members. The simulation generates attendance from this behavior model, independently of recommender features.
+The seeded generator creates three clubs, 25–60 members per club, twelve event types, and 18 months of synthetic event history. Hidden personas, time-slot fit, exam-week dips, repeat-event fatigue, and noise generate behavior; hidden persona fields are excluded from recommender inputs. Event descriptions use seeded public-text templates with overlapping vocabulary and are generated without reading latent fields or attendance outcomes. Data includes cold-start, sparse-history, and interest-drifting members. The simulation generates attendance from this behavior model, independently of recommender features.
 
 Assumptions and limitations:
 

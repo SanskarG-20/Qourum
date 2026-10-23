@@ -1,6 +1,6 @@
 # Local Semantic Recommender Design
 
-**Status:** Proposed for implementation review
+**Status:** Approved and implemented for required E1/E2; optional E3 deferred by user
 
 **Goal:** Add a deterministic, local-only event-description similarity feature to Quorum and measure its incremental value without changing synthetic behavior to favor it.
 

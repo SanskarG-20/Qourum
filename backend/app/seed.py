@@ -132,6 +132,7 @@ def seed_database(seed: int | None = None, db_path: str | Path | None = None) ->
                     club_id=row.club_id,
                     event_type_id=row.event_type_id,
                     title=row.title,
+                    description=row.description,
                     start_time=datetime.fromisoformat(row.start_time),
                     duration_minutes=int(row.duration_minutes),
                     venue=row.venue,

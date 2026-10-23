@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Sequence
+from typing import Mapping, Sequence
 
 import numpy as np
 
@@ -31,6 +31,14 @@ class TimeObservation:
 
 
 @dataclass(frozen=True)
+class ContentSignal:
+    """Candidate-description similarity and number of attended texts in a profile."""
+
+    similarity: float
+    observation_count: int
+
+
+@dataclass(frozen=True)
 class MemberScore:
     """Bounded member score and transparent component/confidence values."""
 
@@ -38,6 +46,7 @@ class MemberScore:
     explicit_rating: float | None
     implicit_attendance: float | None
     time_affinity: float | None
+    content_similarity: float | None
     confidence: dict[str, float]
     component_weights: dict[str, float]
     is_cold_start: bool
@@ -56,6 +65,8 @@ def score_members(
     popularity_fallback: float = 0.5,
     recency_decay: bool = True,
     time_affinity_enabled: bool = True,
+    content_evidence: Mapping[str, ContentSignal] | None = None,
+    content_enabled: bool = True,
 ) -> list[MemberScore]:
     """Score members in [0,1] from explicit, recency-weighted, and time evidence.
 
@@ -64,7 +75,9 @@ def score_members(
     exp(-ln(2) * age_days / half_life). Time affinity is the Laplace-smoothed
     attendance rate for the candidate weekday/hour. Each component's base
     weight is multiplied by n/(n+prior), then normalized; no evidence uses the
-    supplied club-popularity fallback and marks the result as cold start.
+    supplied club-popularity fallback and marks the result as cold start. Content
+    similarity is mapped to [0,1], weighted by n/(n+content_prior), and included
+    only when a member has at least one prior attended-event description.
     """
     if not 0 <= day_of_week <= 6 or not 0 <= hour <= 23:
         raise ValueError("Candidate day and hour must be within calendar bounds.")
@@ -78,6 +91,8 @@ def score_members(
     confidence_explicit = np.zeros(count, dtype=np.float64)
     confidence_implicit = np.zeros(count, dtype=np.float64)
     confidence_time = np.zeros(count, dtype=np.float64)
+    content = np.full(count, np.nan, dtype=np.float64)
+    confidence_content = np.zeros(count, dtype=np.float64)
 
     for index, member_id in enumerate(member_ids):
         rating = preferences.get(member_id, {}).get(event_type_id)
@@ -112,6 +127,13 @@ def score_members(
             time_affinity[index] = (successes + config.TIME_LAPLACE_ALPHA) / (len(matching_slots) + 2 * config.TIME_LAPLACE_ALPHA)
             confidence_time[index] = len(slots) / (len(slots) + config.TIME_CONFIDENCE_PRIOR)
 
+        signal = (content_evidence or {}).get(member_id) if content_enabled else None
+        if signal is not None:
+            if not 0.0 <= signal.similarity <= 1.0 or signal.observation_count < 1:
+                raise ValueError("Content evidence must have bounded similarity and a positive observation count.")
+            content[index] = signal.similarity
+            confidence_content[index] = signal.observation_count / (signal.observation_count + config.CONTENT_CONFIDENCE_PRIOR)
+
     result: list[MemberScore] = []
     for index in range(count):
         available: list[tuple[str, float, float]] = []
@@ -119,6 +141,7 @@ def score_members(
             ("explicit", explicit, confidence_explicit, config.EXPLICIT_BASE_WEIGHT),
             ("implicit", implicit, confidence_implicit, config.IMPLICIT_BASE_WEIGHT),
             ("time", time_affinity, confidence_time, config.TIME_BASE_WEIGHT),
+            ("content", content, confidence_content, config.CONTENT_BASE_WEIGHT),
         ):
             if not np.isnan(values[index]):
                 available.append((name, float(values[index]), float(base * confidence[index])))
@@ -136,7 +159,8 @@ def score_members(
             explicit_rating=None if np.isnan(explicit[index]) else float(explicit[index]),
             implicit_attendance=None if np.isnan(implicit[index]) else float(implicit[index]),
             time_affinity=None if np.isnan(time_affinity[index]) else float(time_affinity[index]),
-            confidence={"explicit": float(confidence_explicit[index]), "implicit": float(confidence_implicit[index]), "time": float(confidence_time[index])},
+            content_similarity=None if np.isnan(content[index]) else float(content[index]),
+            confidence={"explicit": float(confidence_explicit[index]), "implicit": float(confidence_implicit[index]), "time": float(confidence_time[index]), "content": float(confidence_content[index])},
             component_weights=weights,
             is_cold_start=is_cold_start,
         ))

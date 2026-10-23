@@ -15,19 +15,25 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.stats import sem, t
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session as OrmSession
 
 if __package__ == "evaluation" or __package__.startswith("evaluation."):
     from recsys import config
     from recsys.group import STRATEGIES, FairnessRecord, aggregate_scores, fairness_weights, mmr_rerank, rank_group_candidates
-    from recsys.individual import AttendanceObservation, TimeObservation, score_members
+    from recsys.individual import AttendanceObservation, ContentSignal, TimeObservation, score_members
     from synthetic_data.exporter import export_feature_datasets
     from synthetic_data.generator import GenerationConfig, SyntheticDatasetGenerator
+    from app.embedding_service import encode_and_cache
+    from app.models import EmbeddingCache
 else:
     from backend.recsys import config
     from backend.recsys.group import STRATEGIES, FairnessRecord, aggregate_scores, fairness_weights, mmr_rerank, rank_group_candidates
-    from backend.recsys.individual import AttendanceObservation, TimeObservation, score_members
+    from backend.recsys.individual import AttendanceObservation, ContentSignal, TimeObservation, score_members
     from backend.synthetic_data.exporter import export_feature_datasets
     from backend.synthetic_data.generator import GenerationConfig, SyntheticDatasetGenerator
+    from backend.app.embedding_service import encode_and_cache
+    from backend.app.models import EmbeddingCache
 
 
 def temporal_split(events: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -84,6 +90,29 @@ def paired_comparison_table(per_seed: pd.DataFrame, best_baseline: str) -> pd.Da
     return pd.DataFrame(rows)
 
 
+def paired_embedding_ablation(per_seed: pd.DataFrame) -> pd.DataFrame:
+    """Return paired main-minus-no-embedding deltas and two-sided 95% t intervals."""
+    metrics = [column for column in per_seed.columns if column not in {"seed", "method", "tuned_strategy", "best_baseline"}]
+    main = per_seed[per_seed.method == "main_model"].set_index("seed")
+    ablation = per_seed[per_seed.method == "ablation_no_embeddings"].set_index("seed")
+    rows = []
+    for metric in metrics:
+        difference = (main[metric] - ablation[metric].reindex(main.index)).dropna()
+        margin = float(t.ppf(0.975, len(difference) - 1) * sem(difference)) if len(difference) > 1 else 0.0
+        ci_low = float(difference.mean() - margin)
+        ci_high = float(difference.mean() + margin)
+        favorable = metric != "brier_score"
+        rows.append({
+            "metric": metric,
+            "mean_paired_delta": float(difference.mean()),
+            "ci95_low": ci_low,
+            "ci95_high": ci_high,
+            "favorable_significant": bool(ci_low > 0 if favorable else ci_high < 0),
+            "seeds": len(difference),
+        })
+    return pd.DataFrame(rows)
+
+
 def evaluate_window(
     fit_events: pd.DataFrame,
     holdout_events: pd.DataFrame,
@@ -96,6 +125,8 @@ def evaluate_window(
     allow_diversity: bool = True,
     recency_decay: bool = True,
     time_affinity: bool = True,
+    content_enabled: bool = True,
+    embedding_session: OrmSession | None = None,
 ) -> dict[str, dict[str, float]]:
     """Evaluate selected strategies on event-time contexts using observable history only."""
     rng = np.random.default_rng(seed)
@@ -105,6 +136,13 @@ def evaluate_window(
     events_frame = tables["events"].copy()
     events_frame["start_time"] = pd.to_datetime(events_frame["start_time"])
     events_by_id = events_frame.set_index("id").to_dict(orient="index")
+    event_types_frame = tables["event_types"].set_index("id")
+    embedding_vectors = {}
+    if content_enabled:
+        if embedding_session is None:
+            raise ValueError("Embedding evaluation requires a shared SQLite embedding cache session.")
+        texts = [*events_frame.description.astype(str).tolist(), *event_types_frame.description.astype(str).tolist()]
+        embedding_vectors = encode_and_cache(embedding_session, texts)
     roster: dict[str, list[str]] = {
         club: members.sort_values("member_id")["member_id"].tolist()
         for club, members in tables["club_members"].groupby("club_id")
@@ -130,6 +168,34 @@ def evaluate_window(
             stamp = historical_event["start_time"].to_pydatetime()
             attendance[interaction.member_id].append(AttendanceObservation(historical_event["event_type_id"], interaction.rsvp_status, bool(interaction.attended), stamp))
             slots[interaction.member_id].append(TimeObservation(stamp.weekday(), stamp.hour, bool(interaction.attended)))
+        content_by_type: dict[str, dict[str, ContentSignal]] = {}
+        if content_enabled:
+            profiles: dict[str, tuple[np.ndarray, int]] = {}
+            attended_rows = observed_history[observed_history.attended.astype(bool)]
+            for member_id, interactions in attended_rows.groupby("member_id", sort=True):
+                history = [events_by_id[row.event_id] for row in interactions.itertuples(index=False)]
+                history = [row for row in history if str(row.get("description", "")).strip()]
+                if not history:
+                    continue
+                ages = np.asarray([max(0.0, (event_time - row["start_time"].to_pydatetime()).total_seconds() / 86400.0) for row in history])
+                recency = np.exp(-np.log(2.0) * ages / config.CONTENT_HALF_LIFE_DAYS)
+                matrix = np.vstack([embedding_vectors[row["description"]] for row in history])
+                profile = np.average(matrix, axis=0, weights=recency).astype(np.float32)
+                norm = float(np.linalg.norm(profile))
+                if norm > 0:
+                    profiles[member_id] = (profile / norm, len(history))
+            for event_type_id, row in event_types_frame.iterrows():
+                target_text = str(row.description).strip()
+                if not target_text:
+                    continue
+                target = embedding_vectors[target_text]
+                content_by_type[event_type_id] = {
+                    member_id: ContentSignal(
+                        (float(np.clip(np.dot(profile, target), -1.0, 1.0)) + 1.0) / 2.0,
+                        observation_count,
+                    )
+                    for member_id, (profile, observation_count) in profiles.items()
+                }
         popularity = history_events.event_type_id.value_counts().to_dict()
         total_count = sum(popularity.values()) or 1
         probability_maps: dict[str, np.ndarray] = {}
@@ -140,6 +206,7 @@ def evaluate_window(
                 preferences_by_member, attendance, slots, now=event_time,
                 popularity_fallback=popularity.get(event_type, 0) / total_count,
                 recency_decay=recency_decay, time_affinity_enabled=time_affinity,
+                content_evidence=content_by_type.get(event_type), content_enabled=content_enabled,
             )
             probability_maps[event_type] = np.asarray([item.score for item in individual], dtype=np.float64)
             score_maps[event_type] = probability_maps[event_type]
@@ -276,7 +343,7 @@ def evaluate_window(
             if selected_type not in hour_score_cache:
                 hour_score_cache[selected_type] = []
                 for hour in range(9, 21):
-                    slot_probs = score_members(member_ids, selected_type, event_time.weekday(), hour, preferences_by_member, attendance, slots, now=event_time, popularity_fallback=popularity.get(selected_type, 0) / total_count, recency_decay=recency_decay, time_affinity_enabled=time_affinity)
+                    slot_probs = score_members(member_ids, selected_type, event_time.weekday(), hour, preferences_by_member, attendance, slots, now=event_time, popularity_fallback=popularity.get(selected_type, 0) / total_count, recency_decay=recency_decay, time_affinity_enabled=time_affinity, content_evidence=content_by_type.get(selected_type), content_enabled=content_enabled)
                     hour_score_cache[selected_type].append(float(np.mean([row.score for row in slot_probs])))
             hour_scores = hour_score_cache[selected_type]
             predicted_hour = 9 + int(np.argmax(hour_scores))
@@ -302,8 +369,11 @@ def _evaluate_seed(seed: int) -> tuple[dict[str, dict[str, float]], dict[str, di
     events = tables["events"].copy()
     events["start_time"] = pd.to_datetime(events["start_time"])
     train, validation, test = temporal_split(events)
+    cache_engine = create_engine("sqlite+pysqlite:///:memory:")
+    EmbeddingCache.__table__.create(cache_engine)
+    embedding_session = OrmSession(cache_engine)
     validation_methods = ["random", "club_popularity", "most_recent", "same_week_last_year", *(f"strategy_{strategy}" for strategy in STRATEGIES)]
-    validation_result = evaluate_window(train, validation, tables, seed=seed, strategy="average", methods=validation_methods)
+    validation_result = evaluate_window(train, validation, tables, seed=seed, strategy="average", methods=validation_methods, embedding_session=embedding_session)
     tuned_strategy = max(STRATEGIES, key=lambda item: (validation_result[f"strategy_{item}"]["mean_satisfaction"], item))
     best_baseline = max(("random", "club_popularity", "most_recent", "same_week_last_year"), key=lambda item: (validation_result[item]["type_hit_rate"], item))
     test_methods = [
@@ -311,11 +381,14 @@ def _evaluate_seed(seed: int) -> tuple[dict[str, dict[str, float]], dict[str, di
         *(f"strategy_{strategy}" for strategy in STRATEGIES), "main_model",
     ]
     test_fit = pd.concat([train, validation]).sort_values(["start_time", "id"], kind="stable")
-    test_result = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=test_methods)
-    test_result["ablation_no_recency"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], recency_decay=False)["main_model"]
-    test_result["ablation_no_time_affinity"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], time_affinity=False)["main_model"]
-    test_result["ablation_no_fairness"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], allow_fairness=False)["main_model"]
-    test_result["ablation_no_diversity"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], allow_diversity=False)["main_model"]
+    test_result = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=test_methods, embedding_session=embedding_session)
+    test_result["ablation_no_recency"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], recency_decay=False, embedding_session=embedding_session)["main_model"]
+    test_result["ablation_no_time_affinity"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], time_affinity=False, embedding_session=embedding_session)["main_model"]
+    test_result["ablation_no_fairness"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], allow_fairness=False, embedding_session=embedding_session)["main_model"]
+    test_result["ablation_no_diversity"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], allow_diversity=False, embedding_session=embedding_session)["main_model"]
+    test_result["ablation_no_embeddings"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], content_enabled=False, embedding_session=embedding_session)["main_model"]
+    embedding_session.close()
+    cache_engine.dispose()
     return test_result, {
         "tuned_strategy": {"index": float(STRATEGIES.index(tuned_strategy))},
         "validation_baselines": {name: validation_result[name]["type_hit_rate"] for name in ("random", "club_popularity", "most_recent", "same_week_last_year")},
@@ -358,6 +431,8 @@ def run_evaluation(seeds: list[int], output_dir: str | Path) -> tuple[pd.DataFra
     summary.to_csv(root / "summary_95ci.csv", index=False)
     paired = paired_comparison_table(per_seed, best_baseline)
     paired.to_csv(root / "paired_comparison.csv", index=False)
+    embedding_ablation = paired_embedding_ablation(per_seed)
+    embedding_ablation.to_csv(root / "embedding_ablation.csv", index=False)
     summary_lookup = summary.set_index(["method", "metric"])
     report_metrics = ["precision_at_3", "recall_at_3", "ndcg_at_3", "type_hit_rate", "slot_hit_rate", "mean_satisfaction", "min_satisfaction", "satisfaction_std", "satisfaction_gini", "quorum_success_rate", "brier_score", "coverage", "intra_list_diversity"]
     report_lines = [
@@ -383,9 +458,37 @@ def run_evaluation(seeds: list[int], output_dir: str | Path) -> tuple[pd.DataFra
         "",
         "## Interpretation",
         "",
-        "The model did not beat the club-popularity baseline on Precision@3, Recall@3, NDCG@3, or event-type hit rate. Paired confidence intervals for these metrics include zero. Mean and minimum predicted member satisfaction, coverage, and intra-list diversity improved with paired intervals above zero. The Brier score mean was lower, but its paired interval includes zero, so calibration improvement is inconclusive. Slot hit rate and observed historical quorum success were identical across methods; this offline split cannot observe counterfactual attendance for a recommendation that was not actually held. Satisfaction standard deviation increased, indicating a less even predicted satisfaction distribution; the fairness and diversity trade-off should not be described as an overall win.",
+        "Read the metrics and paired intervals together. Improvements are claimed only where the paired 95% interval excludes zero in the favorable direction. Historical event data cannot observe counterfactual attendance for recommendations that were not held.",
         "",
-        "These results use synthetic data only. They are a reproducible pipeline check, not evidence of performance on real clubs.",
+        "## Embedding ablation",
+        "",
+        "Deltas compare the full model with the same model with content embeddings disabled, paired by seed. Positive deltas are favorable except for Brier score, where lower is better.",
+        "",
+        "| Metric | Main minus no embeddings (95% CI) | Significant gain? |",
+        "| --- | ---: | --- |",
+    ])
+    for metric in ["type_hit_rate", "ndcg_at_3", "mean_satisfaction", "min_satisfaction", "brier_score", "quorum_success_rate"]:
+        row = embedding_ablation[embedding_ablation.metric == metric].iloc[0]
+        significant = bool(row["ci95_low"] > 0 if metric != "brier_score" else row["ci95_high"] < 0)
+        report_lines.append(f"| {metric} | {row['mean_paired_delta']:+.3f} [{row['ci95_low']:+.3f}, {row['ci95_high']:+.3f}] | {significant} |")
+    primary = embedding_ablation[embedding_ablation.metric == "mean_satisfaction"].iloc[0]
+    if primary["ci95_low"] > 0:
+        report_lines.extend(["", f"Primary endpoint: mean-satisfaction gain was statistically significant ({primary['mean_paired_delta']:+.3f}, 95% CI [{primary['ci95_low']:+.3f}, {primary['ci95_high']:+.3f}])."])
+    elif primary["ci95_high"] < 0:
+        report_lines.extend(["", f"Primary endpoint: mean satisfaction was significantly lower with embeddings ({primary['mean_paired_delta']:+.3f}, 95% CI [{primary['ci95_low']:+.3f}, {primary['ci95_high']:+.3f}])."])
+    else:
+        report_lines.extend(["", f"Primary endpoint: the mean-satisfaction embedding delta was not statistically significant (inconclusive; {primary['mean_paired_delta']:+.3f}, 95% CI [{primary['ci95_low']:+.3f}, {primary['ci95_high']:+.3f}])."])
+    significant_gains = embedding_ablation[
+        ((embedding_ablation.metric != "brier_score") & (embedding_ablation.ci95_low > 0))
+        | ((embedding_ablation.metric == "brier_score") & (embedding_ablation.ci95_high < 0))
+    ].metric.tolist()
+    if significant_gains:
+        report_lines.extend(["", f"Paired intervals show significant embedding gains for: {', '.join(significant_gains)}."])
+    else:
+        report_lines.extend(["", "No embedding-related gain was statistically significant under the paired 95% intervals for the reported metrics."])
+    report_lines.extend([
+        "",
+        "These results use synthetic data only. Any gain is weak evidence and does not establish performance on real clubs.",
     ])
     (root / "REPORT.md").write_text("\n".join(report_lines) + "\n", encoding="utf-8")
 

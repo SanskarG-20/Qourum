@@ -2,6 +2,7 @@
 
 import ast
 import asyncio
+from datetime import datetime
 from pathlib import Path
 
 from sqlalchemy import inspect, select, text
@@ -9,12 +10,13 @@ from sqlalchemy.exc import IntegrityError
 import pytest
 
 from backend.app import main
-from backend.app.database import create_database_engine, make_session_factory
+from backend.app.database import create_database_engine, initialize_schema, make_session_factory
 from backend.app.models import (
     Base,
     Club,
     ClubMember,
     Event,
+    EventType,
     User,
 )
 from backend.app.repositories import get_club_members, get_user_by_email, list_events
@@ -36,12 +38,12 @@ def test_schema_has_required_tables_constraints_and_indexes(tmp_path):
     Base.metadata.create_all(engine)
     inspector = inspect(engine)
     required = {
-        "users", "clubs", "club_members", "event_types", "events", "rsvps",
+        "users", "clubs", "club_members", "event_types", "events", "embedding_cache", "rsvps",
         "preferences", "availability", "academic_calendar", "fairness_ledger", "sessions",
     }
     assert required.issubset(set(inspector.get_table_names()))
     for table_name in required:
-        assert inspector.get_foreign_keys(table_name) or table_name in {"users", "clubs", "event_types"}
+        assert inspector.get_foreign_keys(table_name) or table_name in {"users", "clubs", "event_types", "embedding_cache"}
     assert inspector.get_pk_constraint("club_members")["constrained_columns"] == ["club_id", "member_id"]
     assert inspector.get_check_constraints("events")
     assert inspector.get_check_constraints("rsvps")
@@ -70,6 +72,30 @@ def test_sqlite_pragmas_and_foreign_key_enforcement(tmp_path):
     engine.dispose()
 
 
+def test_event_description_schema_upgrade_is_idempotent(tmp_path):
+    database = tmp_path / "legacy.db"
+    engine = create_database_engine(database)
+    Base.metadata.create_all(engine)
+    with engine.begin() as connection:
+        connection.exec_driver_sql("ALTER TABLE events DROP COLUMN description")
+    factory = make_session_factory(engine)
+    with factory.begin() as session:
+        session.add_all([
+            Club(id="legacy-club", name="Legacy"),
+            EventType(id="legacy-type", name="Legacy type", category="Other", description="Type description", default_duration_minutes=60),
+        ])
+        session.flush()
+        session.execute(text(
+            "INSERT INTO events (id, club_id, event_type_id, title, start_time, duration_minutes, venue, status) "
+            "VALUES (:id, :club, :type, :title, :start, :duration, :venue, :status)"
+        ), {"id": "legacy-event", "club": "legacy-club", "type": "legacy-type", "title": "Legacy event", "start": "2026-01-01 00:00:00", "duration": 60, "venue": "Room", "status": "completed"})
+    initialize_schema(engine)
+    initialize_schema(engine)
+    with factory() as session:
+        assert session.get(Event, "legacy-event").description == "Type description"
+    engine.dispose()
+
+
 def test_seed_rebuild_is_deterministic_and_repositories_bind_values(tmp_path):
     db = tmp_path / "seed.db"
     counts = seed_database(seed=42, db_path=db)
@@ -90,6 +116,7 @@ def test_seed_rebuild_is_deterministic_and_repositories_bind_values(tmp_path):
         assert 25 <= len(members) <= 60
         event_times = list(session.scalars(select(Event.start_time)))
         assert (max(event_times) - min(event_times)).days >= 500
+        assert all(session.scalars(select(Event.description)).all())
     first_engine.dispose()
 
     repeated_counts = seed_database(seed=42, db_path=db)

@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 import sqlite3
 
-from sqlalchemy import Engine, create_engine, event
+from sqlalchemy import Engine, create_engine, event, text
 from sqlalchemy.orm import Session as OrmSession, sessionmaker
 
 from .models import Base
@@ -43,8 +43,16 @@ def create_database_engine(path: str | Path | None = None) -> Engine:
 
 
 def initialize_schema(engine: Engine) -> None:
-    """Create all mapped tables and indexes when they do not exist."""
+    """Create mapped objects and apply idempotent additive SQLite upgrades."""
     Base.metadata.create_all(engine)
+    with engine.begin() as connection:
+        columns = {row[1] for row in connection.execute(text("PRAGMA table_info(events)"))}
+        if "description" not in columns:
+            connection.execute(text("ALTER TABLE events ADD COLUMN description TEXT NOT NULL DEFAULT ''"))
+        connection.execute(text(
+            "UPDATE events SET description = COALESCE((SELECT description FROM event_types "
+            "WHERE event_types.id = events.event_type_id), '') WHERE description = ''"
+        ))
 
 
 def make_session_factory(engine: Engine) -> sessionmaker[OrmSession]:

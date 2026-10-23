@@ -9,6 +9,7 @@ Simulates 18 months of college club history with:
 
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
+import hashlib
 import math
 from typing import Dict, List, Tuple
 import uuid
@@ -42,84 +43,84 @@ EVENT_TYPES_SPEC = [
     {
         "name": "Hands-On Workshop",
         "category": "Technical",
-        "description": "Interactive technical lab building concrete tools or software.",
+        "description": "",
         "duration": 90,
         "latent": [0.95, 0.30, 0.20, 0.65, 0.80],
     },
     {
         "name": "Technical Lightning Talk",
         "category": "Seminar",
-        "description": "Short tech deep-dives presented by student or faculty speakers.",
+        "description": "",
         "duration": 60,
         "latent": [0.85, 0.40, 0.15, 0.50, 0.90],
     },
     {
         "name": "Hackathon & Build Jam",
         "category": "Sprint",
-        "description": "Collaborative project sprint with prizes and demos.",
+        "description": "",
         "duration": 180,
         "latent": [0.90, 0.70, 0.85, 0.60, 0.40],
     },
     {
         "name": "Domain Quiz & Trivia",
         "category": "Competition",
-        "description": "Fast-paced quiz bowl on computer science and domain knowledge.",
+        "description": "",
         "duration": 60,
         "latent": [0.40, 0.60, 0.90, 0.20, 0.70],
     },
     {
         "name": "Social Mixer & Board Games",
         "category": "Community",
-        "description": "Casual networking, board games, and food for club members.",
+        "description": "",
         "duration": 90,
         "latent": [0.10, 0.95, 0.35, 0.20, 0.10],
     },
     {
         "name": "Reading Group & Paper Review",
         "category": "Seminar",
-        "description": "Discussion of recent research papers and theoretical foundations.",
+        "description": "",
         "duration": 60,
         "latent": [0.90, 0.30, 0.10, 0.40, 0.95],
     },
     {
         "name": "Portfolio & Resume Clinic",
         "category": "Career",
-        "description": "Peer and alumni review of resumes, GitHub repos, and portfolios.",
+        "description": "",
         "duration": 75,
         "latent": [0.30, 0.50, 0.15, 0.95, 0.40],
     },
     {
         "name": "Project Showcase & Demo Night",
         "category": "Showcase",
-        "description": "Formal end-of-term demonstration of student projects.",
+        "description": "",
         "duration": 120,
         "latent": [0.75, 0.80, 0.50, 0.75, 0.50],
     },
     {
         "name": "Industry Fireside Chat",
         "category": "Career",
-        "description": "Q&A with visiting engineers, founders, and industry alumni.",
+        "description": "",
         "duration": 75,
         "latent": [0.50, 0.60, 0.10, 0.90, 0.60],
     },
     {
         "name": "Open Coworking Lab",
         "category": "Community",
-        "description": "Informal drop-in study and hack session with snacks.",
+        "description": "",
         "duration": 120,
         "latent": [0.55, 0.70, 0.10, 0.30, 0.30],
     },
     {
         "name": "Peer Mentorship Circle",
         "category": "Mentorship",
-        "description": "Structured upperclassmen guidance for incoming sophomores.",
+        "description": "",
         "duration": 60,
         "latent": [0.40, 0.80, 0.10, 0.70, 0.60],
     },
     {
         "name": "Esports & Casual Gaming",
         "category": "Community",
-        "description": "LAN party and gaming tournament for club relaxation.",
+        "description": "",
         "duration": 120,
         "latent": [0.15, 0.90, 0.80, 0.10, 0.10],
     },
@@ -189,16 +190,39 @@ class SyntheticDatasetGenerator:
 
     def _generate_event_types(self):
         """Generates the 12 standard event types."""
-        for spec in EVENT_TYPES_SPEC:
+        for spec_index, spec in enumerate(EVENT_TYPES_SPEC):
+            description = self._description_for(spec["name"], spec_index, "type")
             et = SyntheticEventType(
                 id=self._next_uuid(),
                 name=spec["name"],
                 category=spec["category"],
-                description=spec["description"],
+                description=description,
                 default_duration_minutes=spec["duration"],
                 latent_attributes=spec["latent"],
             )
             self.event_types.append(et)
+
+    def _description_for(self, name: str, identity: int, kind: str) -> str:
+        """Render public descriptions using seeded templates without consulting latent data."""
+        phrases = (
+            "share ideas and build useful connections",
+            "explore a practical topic through guided activities",
+            "learn together, exchange perspectives, and try something new",
+            "bring the community together for a hands-on session",
+            "make space for discussion, collaboration, and fresh ideas",
+            "connect people through a relaxed, interactive experience",
+        )
+        templates = (
+            "{name}: {phrase} for the club community.",
+            "Join us for {name}, a chance to {phrase} for the club community.",
+            "A club gathering about {name} to {phrase} for the club community.",
+            "Explore {name} with fellow members; {phrase} for the club community.",
+        )
+        key = f"{self.config.seed}:{kind}:{identity}:{name}".encode("utf-8")
+        digest = hashlib.sha256(key).digest()
+        template = templates[int.from_bytes(digest[:4], "big") % len(templates)]
+        phrase = phrases[int.from_bytes(digest[4:8], "big") % len(phrases)]
+        return template.format(name=name, phrase=phrase)
 
     def _generate_clubs_and_members(self):
         """Generates 3 clubs with 25-60 members each, including cold-start, sparse, and drifting."""
@@ -393,6 +417,7 @@ class SyntheticDatasetGenerator:
                     club_id=club.id,
                     event_type_id=event_type.id,
                     title=f"{event_type.name} #{len(self.events) + 1}",
+                    description=self._description_for(event_type.name, len(self.events), "event"),
                     start_time=event_dt,
                     duration_minutes=event_type.default_duration_minutes,
                     venue=self.rng.choice(venue_options),

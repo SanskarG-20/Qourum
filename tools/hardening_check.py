@@ -25,6 +25,8 @@ def main() -> int:
             relpath = path.relative_to(ROOT)
             if re.search(r"supabase", text, re.IGNORECASE):
                 FAILURES.append(f"{relpath}: hosted database reference")
+            if re.search(r"huggingface\.co|huggingface_hub|hf_hub_download|snapshot_download", text, re.IGNORECASE):
+                FAILURES.append(f"{relpath}: runtime model-host reference or download helper")
             if re.search(r"(?:fonts\.googleapis|fonts\.gstatic|cdn\.)", text, re.IGNORECASE):
                 FAILURES.append(f"{relpath}: external CDN or font reference")
             for match in re.finditer(r"https?://[^\s\"'`<>]+", text, re.IGNORECASE):

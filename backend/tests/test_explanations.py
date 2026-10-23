@@ -16,7 +16,7 @@ def test_recommendation_explanation_uses_only_rounded_evidence_values():
         "group_mean": 0.802,
         "group_min": 0.714,
         "group_std": 0.044,
-        "top_factors": factor_summary({"explicit_rating": 0.83, "implicit_attendance": 0.61, "time_affinity": None}),
+        "top_factors": factor_summary({"explicit_rating": 0.83, "implicit_attendance": 0.61, "time_affinity": None, "content_similarity": 0.91}),
         "per_member_satisfaction": {"m1": 0.714, "m2": 0.89},
         "constraint_status": {"feasible": True, "reason_codes": [], "availability_fraction": 0.8, "expected_attendance": 6.25, "quorum_required": 5},
     }
@@ -26,6 +26,7 @@ def test_recommendation_explanation_uses_only_rounded_evidence_values():
     source_values.add(str(evidence["constraint_status"]["quorum_required"]))
     source_values |= {f"{factor['value']:.3f}" for factor in evidence["top_factors"]}
     assert _numeric_tokens(text)
+    assert "content_similarity (0.910)" in text
     assert set(_numeric_tokens(text)) <= source_values
     assert text == render_explanation(evidence)
 

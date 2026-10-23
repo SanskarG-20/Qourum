@@ -64,10 +64,10 @@ def accept_recommendation(
     existing = db.scalars(select(Event).where(Event.club_id == club_id, Event.status.in_(["proposed", "scheduled"]))).all()
     if any(row.start_time < end_time and payload.start_time < row.start_time + timedelta(minutes=row.duration_minutes) for row in existing):
         raise HTTPException(status_code=409, detail="The selected time conflicts with an existing event.")
-    event = Event(id=str(uuid4()), club_id=club_id, event_type_id=event_type.id, title=event_type.name, start_time=payload.start_time, duration_minutes=event_type.default_duration_minutes, venue=payload.venue, status="scheduled")
+    event = Event(id=str(uuid4()), club_id=club_id, event_type_id=event_type.id, title=event_type.name, description=event_type.description, start_time=payload.start_time, duration_minutes=event_type.default_duration_minutes, venue=payload.venue, status="scheduled")
     db.add(event)
     db.commit()
-    return {"id": event.id, "event_type_id": event.event_type_id, "title": event.title, "start_time": event.start_time.isoformat(), "duration_minutes": event.duration_minutes, "venue": event.venue, "status": event.status}
+    return {"id": event.id, "event_type_id": event.event_type_id, "title": event.title, "description": event.description, "start_time": event.start_time.isoformat(), "duration_minutes": event.duration_minutes, "venue": event.venue, "status": event.status}
 
 
 @router.post("/{club_id}/events/{event_id}/rsvp")

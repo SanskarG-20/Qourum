@@ -52,6 +52,7 @@ class SyntheticEvent:
     club_id: str
     event_type_id: str
     title: str
+    description: str
     start_time: datetime
     duration_minutes: int
     venue: str

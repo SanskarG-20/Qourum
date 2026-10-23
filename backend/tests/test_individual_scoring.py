@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 
-from backend.recsys.individual import AttendanceObservation, TimeObservation, score_members
+from backend.recsys.individual import AttendanceObservation, ContentSignal, TimeObservation, score_members
 
 
 NOW = datetime(2026, 1, 1, 12, 0)
@@ -44,3 +44,16 @@ def test_time_affinity_uses_laplace_smoothing_and_bounds():
     assert score.time_affinity == 0.75
     assert 0 <= score.score <= 1
     assert score.component_weights["time"] == 1.0
+
+
+def test_content_similarity_is_monotonic_bounded_and_optional():
+    baseline = score_members(["m"], "talk", 1, 17, {}, {}, {}, now=NOW, popularity_fallback=.5)[0]
+    low = score_members(["m"], "talk", 1, 17, {}, {}, {}, now=NOW, popularity_fallback=.5, content_evidence={"m": ContentSignal(.2, 10)})[0]
+    high = score_members(["m"], "talk", 1, 17, {}, {}, {}, now=NOW, popularity_fallback=.5, content_evidence={"m": ContentSignal(.9, 10)})[0]
+    disabled = score_members(["m"], "talk", 1, 17, {}, {}, {}, now=NOW, popularity_fallback=.5, content_evidence={"m": ContentSignal(.9, 10)}, content_enabled=False)[0]
+    assert 0 <= low.score <= high.score <= 1
+    assert low.score < high.score
+    assert high.content_similarity == .9
+    assert np.isclose(high.confidence["content"], 10 / 13)
+    assert disabled.score == baseline.score
+    assert baseline.is_cold_start and high.is_cold_start is False

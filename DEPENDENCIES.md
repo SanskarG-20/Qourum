@@ -4,3 +4,30 @@
 - `argon2-cffi`: Argon2id password hashing required for local authentication.
 - `httpx`: pinned test client transport for FastAPI authentication and authorization integration tests.
 - `@fontsource/caveat`, `@fontsource/inter`, `@fontsource/jetbrains-mono`, `@fontsource/silkscreen`: build-time font assets so Vite can bundle the existing typefaces for offline runtime use.
+- `sentence-transformers`: runs the vendored MiniLM sentence encoder in-process for local event-description similarity.
+- `torch`: CPU-only tensor runtime required by the sentence-transformers model.
+- `transformers`: tokenizer and transformer model implementation required by sentence-transformers.
+- `tokenizers`: fast local tokenizer implementation required by transformers.
+- `huggingface-hub`: local model file/config utilities used by sentence-transformers with `local_files_only=True`; runtime hub access is blocked by tests.
+- `safetensors`: safe tensor-weight loader for the vendored `model.safetensors` file.
+- `Jinja2`: PyTorch's required template dependency.
+- `MarkupSafe`: Jinja2's required safe string implementation.
+- `PyYAML`: Transformers configuration file support.
+- `annotated-doc`: typer CLI documentation dependency pulled by the pinned Transformers release.
+- `filelock`: PyTorch cache and artifact locking dependency.
+- `fsspec`: PyTorch file-system dependency; model loading is restricted to a local path.
+- `hf-xet`: pinned Hugging Face Hub transfer dependency, unused for local-only inference.
+- `httpcore2`: pinned HTTP transport dependency of the hub client's setup-time transfer library.
+- `httpx2`: pinned HTTP client dependency of the hub client's setup-time transfer library.
+- `markdown-it-py`: rich text rendering dependency of the pinned Transformers CLI stack.
+- `mdurl`: Markdown URL parser required by markdown-it-py.
+- `mpmath`: symbolic arithmetic dependency of PyTorch's SymPy runtime dependency.
+- `networkx`: graph utilities required by PyTorch.
+- `regex`: Unicode tokenization support required by Transformers.
+- `rich`: terminal formatting dependency of the Transformers CLI stack.
+- `setuptools`: build/runtime metadata dependency required by the selected PyTorch wheel.
+- `shellingham`: shell detection dependency of typer.
+- `sympy`: symbolic mathematics dependency required by PyTorch.
+- `tqdm`: local progress display used by sentence-transformers encode operations.
+- `truststore`: system certificate integration dependency of the pinned hub client; no runtime connections are made.
+- `typer`: command-line interface dependency of the pinned Transformers package.

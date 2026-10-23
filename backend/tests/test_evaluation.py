@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from backend.evaluation.runner import paired_comparison_table, temporal_split
+from backend.evaluation.runner import paired_comparison_table, paired_embedding_ablation, temporal_split
 
 
 def test_temporal_split_is_ordered_and_70_15_15_by_time():
@@ -32,3 +32,15 @@ def test_paired_comparison_only_marks_ci_separated_from_zero_as_a_win():
     comparison = paired_comparison_table(per_seed, "club_popularity").set_index("metric")
     assert bool(comparison.loc["mean_satisfaction", "beats_baseline"])
     assert not bool(comparison.loc["brier_score", "beats_baseline"])
+
+
+def test_embedding_ablation_reports_paired_confidence_interval_and_significance():
+    rows = []
+    for seed, delta in enumerate([.01, -.01, .01, -.01, .001]):
+        rows.extend([
+            {"seed": seed, "method": "main_model", "type_hit_rate": .5 + delta},
+            {"seed": seed, "method": "ablation_no_embeddings", "type_hit_rate": .5},
+        ])
+    result = paired_embedding_ablation(pd.DataFrame(rows)).set_index("metric")
+    assert result.loc["type_hit_rate", "ci95_low"] < 0 < result.loc["type_hit_rate", "ci95_high"]
+    assert not bool(result.loc["type_hit_rate", "favorable_significant"])

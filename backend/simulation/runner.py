@@ -105,6 +105,7 @@ def run_simulation(seed: int, rounds: int, output_path: str | Path, *, club_name
                 event = Event(
                     id=event_id, club_id=club.id, event_type_id=event_type.id,
                     title=f"Simulation round {round_index + 1}: {event_type.name}",
+                    description=event_type.description,
                     start_time=selected_start, duration_minutes=int(selected["duration_minutes"]),
                     venue=selected["venue"], status="scheduled",
                 )
@@ -112,7 +113,7 @@ def run_simulation(seed: int, rounds: int, output_path: str | Path, *, club_name
                 db.commit()
                 synthetic_event = SyntheticEvent(
                     id=event_id, club_id=club.id, event_type_id=event_type.id,
-                    title=event.title, start_time=selected_start,
+                    title=event.title, description=event_type.description, start_time=selected_start,
                     duration_minutes=event.duration_minutes, venue=event.venue,
                     status="completed", slot_name=_slot_name(selected_start),
                     week_index=max(0, (selected_start.date() - config.start_date).days // 7),

@@ -11,6 +11,9 @@ Ensures:
 import pytest
 import pandas as pd
 from datetime import date
+import ast
+import inspect
+import textwrap
 
 from backend.synthetic_data.generator import SyntheticDatasetGenerator, GenerationConfig
 from backend.synthetic_data.exporter import (
@@ -60,6 +63,32 @@ def test_seed_reproducibility():
     # Different seed verification
     rsvps_diff = [r.attended for r in gen_diff.rsvps]
     assert rsvps1 != rsvps_diff
+
+
+def test_descriptions_are_seeded_varied_and_share_vocabulary():
+    first = SyntheticDatasetGenerator(GenerationConfig(seed=101))
+    repeated = SyntheticDatasetGenerator(GenerationConfig(seed=101))
+    changed = SyntheticDatasetGenerator(GenerationConfig(seed=102))
+    for generator in (first, repeated, changed):
+        generator.generate_all()
+    first_type_descriptions = [item.description for item in first.event_types]
+    assert first_type_descriptions == [item.description for item in repeated.event_types]
+    assert [item.description for item in first.events] == [item.description for item in repeated.events]
+    assert first_type_descriptions != [item.description for item in changed.event_types]
+    assert len({event.description for event in first.events[:20]}) > 1
+    assert all("club community" in description.lower() for description in first_type_descriptions)
+    exported = export_feature_datasets(first)
+    assert "description" in exported["events"].columns
+    assert exported["events"]["description"].notna().all()
+
+
+def test_description_renderer_has_no_latent_feature_access():
+    source = inspect.getsource(SyntheticDatasetGenerator._description_for)
+    tree = ast.parse(textwrap.dedent(source))
+    identifiers = [node.id.lower() for node in ast.walk(tree) if isinstance(node, ast.Name)]
+    identifiers.extend(node.attr.lower() for node in ast.walk(tree) if isinstance(node, ast.Attribute))
+    for forbidden in ("latent", "persona", "activity_tier", "attendance", "club_metadata"):
+        assert forbidden not in identifiers
 
 
 def test_hard_rule_no_latent_fields_leakage(generator_seed42):

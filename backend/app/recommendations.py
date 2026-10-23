@@ -20,6 +20,7 @@ else:
     from backend.recsys.individual import AttendanceObservation, TimeObservation, score_members
     from backend.recsys.explanations import counterfactual_evidence, factor_summary, render_counterfactual, render_explanation
 from .models import AcademicCalendar, Availability, ClubMember, Event, EventType, FairnessLedger, MemberSettings, Preference, RSVP
+from .embedding_service import content_evidence_for_candidates, embeddings_enabled
 
 
 def load_attendance_rows_before(db: OrmSession, club_id: str, member_ids: list[str], cutoff: datetime):
@@ -75,6 +76,8 @@ def recommend_for_club(
         attendance_history[member_id].append(AttendanceObservation(event_type_id, status, attended, event_start))
         time_history[member_id].append(TimeObservation(event_start.weekday(), event_start.hour, attended))
 
+    content_by_type = content_evidence_for_candidates(db, club_id, member_ids, event_types, cutoff) if embeddings_enabled() else {}
+
     weekly_availability: dict[str, list[tuple[int, time, time]]] = {member_id: [] for member_id in member_ids}
     for row in db.scalars(select(Availability).where(Availability.member_id.in_(member_ids), Availability.day_of_week.is_not(None), Availability.is_available.is_(True))):
         weekly_availability[row.member_id].append((row.day_of_week, row.start_time, row.end_time))
@@ -102,7 +105,7 @@ def recommend_for_club(
         cache_key = (candidate.event_type_id, candidate.start.weekday(), candidate.start.hour)
         if cache_key not in cached_scores:
             population_score = popularity_counts.get(candidate.event_type_id, 0) / total_popularity
-            individual = score_members(member_ids, candidate.event_type_id, candidate.start.weekday(), candidate.start.hour, preferences, attendance_history, time_history, now=now, popularity_fallback=population_score)
+            individual = score_members(member_ids, candidate.event_type_id, candidate.start.weekday(), candidate.start.hour, preferences, attendance_history, time_history, now=now, popularity_fallback=population_score, content_evidence=content_by_type.get(candidate.event_type_id))
             cached_scores[cache_key] = dict(zip(member_ids, (item.score for item in individual)))
             component_cache[cache_key] = {
                 name: (sum(values) / len(values) if values else None)
@@ -110,6 +113,7 @@ def recommend_for_club(
                     "explicit_rating": [item.explicit_rating for item in individual if item.explicit_rating is not None],
                     "implicit_attendance": [item.implicit_attendance for item in individual if item.implicit_attendance is not None],
                     "time_affinity": [item.time_affinity for item in individual if item.time_affinity is not None],
+                    "content_similarity": [item.content_similarity for item in individual if item.content_similarity is not None],
                 }.items()
             }
         scores = cached_scores[cache_key]
@@ -140,6 +144,7 @@ def recommend_for_club(
             "group_min": round(item.group_min, 3),
             "group_std": round(item.group_std, 3),
             "top_factors": factors,
+            "component_means": dict(component_rows[item.candidate_index]),
             "per_member_satisfaction": {member_id: round(value, 3) for member_id, value in zip(member_ids, item.satisfactions)},
             "constraint_status": {
                 "feasible": assessment.feasible,

@@ -14,6 +14,7 @@ from sqlalchemy import (
     Float,
     Index,
     Integer,
+    LargeBinary,
     String,
     Text,
     Time,
@@ -89,10 +90,27 @@ class Event(Base):
     club_id: Mapped[str] = mapped_column(ForeignKey("clubs.id", ondelete="CASCADE"), nullable=False)
     event_type_id: Mapped[str] = mapped_column(ForeignKey("event_types.id", ondelete="RESTRICT"), nullable=False)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
     start_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     venue: Mapped[str] = mapped_column(String(200), nullable=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False)
+
+
+class EmbeddingCache(Base):
+    """A normalized sentence vector keyed by content hash and immutable model revision."""
+
+    __tablename__ = "embedding_cache"
+    __table_args__ = (
+        CheckConstraint("length(text_sha256) = 64 AND text_sha256 NOT GLOB '*[^0-9a-f]*'", name="ck_embedding_cache_hash"),
+        CheckConstraint("dimension > 0", name="ck_embedding_cache_dimension"),
+    )
+
+    text_sha256: Mapped[str] = mapped_column(String(64), primary_key=True)
+    model_revision: Mapped[str] = mapped_column(String(64), primary_key=True)
+    vector: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    dimension: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
 
 
 class RSVP(Base):

@@ -38,6 +38,7 @@ def test_organizer_accepts_slot_and_member_rsvps(tmp_path):
             assert response.status_code == 200
             event = response.json()
             assert event["status"] == "scheduled"
+            assert event["description"]
             conflict = client.post(f"/api/clubs/{club_id}/events", json={"event_type_id": event_type_id, "start_time": start, "venue": "Another Room"}, headers={"X-CSRF-Token": csrf})
             assert conflict.status_code == 409
 

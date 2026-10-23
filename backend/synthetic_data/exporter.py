@@ -93,6 +93,7 @@ def export_feature_datasets(generator: SyntheticDatasetGenerator) -> Dict[str, p
             "club_id": e.club_id,
             "event_type_id": e.event_type_id,
             "title": e.title,
+            "description": e.description,
             "start_time": e.start_time.isoformat(),
             "duration_minutes": e.duration_minutes,
             "venue": e.venue,

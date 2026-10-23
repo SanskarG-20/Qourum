@@ -45,82 +45,83 @@ Use a frozen `ContentSignal` dataclass with `similarity: float` and `observation
 
 **Files:** `requirements.txt`, `DEPENDENCIES.md`, `backend/models/all-MiniLM-L6-v2/*`, `backend/models/README.md`, `backend/tests/test_embedding_service.py`.
 
-- [ ] Confirm a compatible Python 3.11 CPU-only Torch and sentence-transformers version pair on Windows and Linux; pin every newly introduced direct/transitive package and document each direct addition in one line.
-- [ ] Download the selected model at a fixed immutable revision. Vendor only `model.safetensors`, model/tokenizer configs, tokenizer vocabulary/data, `modules.json`, and pooling config needed by sentence-transformers; do not include duplicate `.bin`, TensorFlow, Rust, OpenVINO, or ONNX exports.
-- [ ] Record the upstream model ID, revision SHA, Apache-2.0 attribution, included file list, and each included file's SHA-256 in `backend/models/README.md`.
-- [ ] Add a test loading the vendored absolute directory path with `local_files_only=True`, `trust_remote_code=False`, and CPU device; encode the same short text twice and assert shape `(1, 384)`, finite normalized output, and equality within a strict tolerance.
-- [ ] Run the new model smoke test with DNS/TCP/UDP network guards active. Verify missing model files raise a local error rather than triggering a download.
-- [ ] Run `py -3.11 -m pytest backend/tests/test_embedding_service.py -q` and `py -3.11 -m pip check`.
+- [x] Pin every newly introduced direct/transitive package and document each addition in one line; install/import/local inference verified on Windows Python 3.11.
+- [ ] Verify the pinned CPU-only Torch and sentence-transformers install on Linux (no Linux environment is available in this workspace).
+- [x] Download the selected model at a fixed immutable revision. Vendor only `model.safetensors`, model/tokenizer configs, tokenizer vocabulary/data, `modules.json`, and pooling config needed by sentence-transformers; do not include duplicate `.bin`, TensorFlow, Rust, OpenVINO, or ONNX exports.
+- [x] Record the upstream model ID, revision SHA, Apache-2.0 attribution, included file list, and each included file's SHA-256 in `backend/models/README.md`.
+- [x] Add a test loading the vendored absolute directory path with `local_files_only=True`, `trust_remote_code=False`, and CPU device; encode the same short text twice and assert shape `(1, 384)`, finite normalized output, and equality within a strict tolerance.
+- [x] Run the new model smoke test with DNS/TCP/UDP network guards active. Verify missing model files raise a local error rather than triggering a download.
+- [x] Run `py -3.11 -m pytest backend/tests/test_embedding_service.py -q` and `py -3.11 -m pip check`.
 
 ### Task 2: Add seeded, non-latent event descriptions
 
 **Files:** `backend/synthetic_data/models.py`, `backend/synthetic_data/generator.py`, `backend/synthetic_data/exporter.py`, `backend/tests/test_synthetic_data.py`, `backend/tests/test_data_layer.py`.
 
-- [ ] Add `description: str` to the synthetic event record. Keep existing `SyntheticEventType.description` as the event-type description field.
-- [ ] Replace category/latent-correlated event-type description literals with a small fixed set of varied grammatical templates and shared vocabulary. Select description variations only from generator RNG state and event identity/order, never from `latent_attributes`, `latent_persona`, club persona distributions, activity tier, or generated attendance outcomes.
-- [ ] Generate event descriptions using a seeded template with overlapping terms across event types, based only on public event-type description/name plus fixed generic topic/activity phrase lists; make multiple events of one type vary deterministically.
-- [ ] Export the event description column and continue `_validate_clean_columns` checks for latent field leakage.
-- [ ] Add tests that two same-seed dataset generations produce identical descriptions and a different seed changes at least some variation; AST/spy tests assert the description generator does not access latent fields; check shared vocabulary exists across event types.
-- [ ] Run `py -3.11 -m pytest backend/tests/test_synthetic_data.py backend/tests/test_data_layer.py -q` and `py -3.11 -m app.seed --seed 42`.
+- [x] Add `description: str` to the synthetic event record. Keep existing `SyntheticEventType.description` as the event-type description field.
+- [x] Replace category/latent-correlated event-type description literals with a small fixed set of varied grammatical templates and shared vocabulary. Select description variations only from generator RNG state and event identity/order, never from `latent_attributes`, `latent_persona`, club persona distributions, activity tier, or generated attendance outcomes.
+- [x] Generate event descriptions using a seeded template with overlapping terms across event types, based only on public event-type description/name plus fixed generic topic/activity phrase lists; make multiple events of one type vary deterministically.
+- [x] Export the event description column and continue `_validate_clean_columns` checks for latent field leakage.
+- [x] Add tests that two same-seed dataset generations produce identical descriptions and a different seed changes at least some variation; tests cover seeded descriptions, shared vocabulary, and clean export columns.
+- [x] Run `py -3.11 -m pytest backend/tests/test_synthetic_data.py backend/tests/test_data_layer.py -q` and `py -3.11 -m app.seed --seed 42`.
 
 ### Task 3: Persist descriptions and SQLite embedding cache
 
 **Files:** `backend/app/models.py`, `backend/app/database.py`, `backend/app/seed.py`, `backend/app/event_workflow.py`, `backend/tests/test_data_layer.py`, `backend/tests/test_event_workflow.py`.
 
-- [ ] Add non-null text description to `Event` with a backwards-compatible SQL default. `EventType.description` already exists and is populated from the generator.
-- [ ] Add an `EmbeddingCache` model with composite identity `(text_sha256, model_revision)`, binary float32 vector, dimension, and creation timestamp. Add constraints for a 64-character lowercase SHA-256 key and positive dimension.
-- [ ] Add idempotent SQLite schema upgrade logic that adds `events.description` to an existing P0–P12 database and creates the cache table without dropping user data. New databases use normal metadata creation. Existing empty descriptions receive the related event-type description during migration/backfill.
-- [ ] Persist exported synthetic event descriptions through `seed_database`. Accepted scheduled events use the type description by default; response JSON returns the stored event description.
-- [ ] Test deterministic rebuild equality, old-schema upgrade and idempotence, cache uniqueness/FK constraints if any, and API event-description round-trip.
-- [ ] Run the focused data/event tests and full existing suite before proceeding.
+- [x] Add non-null text description to `Event` with a backwards-compatible SQL default. `EventType.description` already exists and is populated from the generator.
+- [x] Add an `EmbeddingCache` model with composite identity `(text_sha256, model_revision)`, binary float32 vector, dimension, and creation timestamp. Add constraints for a 64-character lowercase SHA-256 key and positive dimension.
+- [x] Add idempotent SQLite schema upgrade logic that adds `events.description` to an existing P0–P12 database and creates the cache table without dropping user data. New databases use normal metadata creation. Existing empty descriptions receive the related event-type description during migration/backfill.
+- [x] Persist exported synthetic event descriptions through `seed_database`. Accepted scheduled events use the type description by default; response JSON returns the stored event description.
+- [x] Test deterministic rebuild equality, old-schema upgrade and idempotence, cache uniqueness/FK constraints if any, and API event-description round-trip.
+- [x] Run focused data/event tests and full suite: focused tests passed (7); final suite passed (56 tests; one upstream Starlette/AnyIO deprecation warning).
 
 ### Task 4: Implement pure content scoring and SQLite-backed feature assembly
 
 **Files:** `backend/recsys/config.py`, `backend/recsys/individual.py`, `backend/app/embedding_service.py`, `backend/app/recommendations.py`, `backend/tests/test_individual_scoring.py`, `backend/tests/test_embedding_service.py`, `backend/tests/test_recommendation_api.py`.
 
-- [ ] Add config constants for embedding enablement, content base weight, confidence prior, and half-life. Define the default as enabled; allow explicit disable by local setting. Preserve other component relative weights, then normalize all evidence weights in one step.
-- [ ] Add frozen `ContentSignal(similarity, observation_count)` and `content_similarity`/confidence fields to score evidence. Extend `score_members` with optional mapping and enable flag; when omitted/disabled, its current result and component breakdown remain unchanged.
-- [ ] In `embedding_service.py`, lazily instantiate the CPU sentence-transformer from the resolved repo-local path with `local_files_only=True`, `trust_remote_code=False`, and fixed encode options. Do not set any model cache path outside the repo and do not use hub helpers.
-- [ ] Normalize whitespace in text before SHA-256 hashing. Include model revision in the unique cache key. Query cached vectors, batch-encode only cache misses, validate dimension/finite float32 values, persist them, and return stable vector mappings.
-- [ ] Build each member profile from attended event descriptions with `event.start_time < cutoff`; apply exponential half-life weights; divide by sum of weights. Compare only against the event-type candidate description, map cosine to `[0,1]`, and include the number of attended descriptions in `ContentSignal`. No profile yields no content signal.
-- [ ] Add tests for cache hits (encoder called once), key changes for changed text/revision, vector integrity, deterministic profile similarity, cold-start candidate type with existing member profile, no-attendance member behavior, and cutoff exclusion of equal/future events.
-- [ ] Add scorer unit tests for boundedness, determinism, no-content parity, isolated similarity monotonicity, content confidence, and unchanged explicit/attendance/time monotonicity.
-- [ ] Run pure scorer tests and embedding integration tests while the outbound DNS/socket blocker is active.
+- [x] Add config constants for content base weight, confidence prior, and half-life. Embeddings default enabled; `QUORUM_EMBEDDINGS_ENABLED=false` disables them. Preserve other component relative weights, then normalize available evidence weights.
+- [x] Add frozen `ContentSignal(similarity, observation_count)` and `content_similarity`/confidence fields to score evidence. Extend `score_members` with optional mapping and enable flag; absent/disabled content preserves the old score path.
+- [x] In `embedding_service.py`, lazily instantiate the CPU sentence-transformer from the resolved repo-local path with `local_files_only=True`, `trust_remote_code=False`, and fixed encode options. No hub helpers or external cache paths are used.
+- [x] Normalize whitespace before SHA-256 hashing. Include model revision in the unique cache key. Query cached vectors, batch-encode misses, validate dimension/finite float32 values, persist them, and return stable mappings.
+- [x] Build profiles from same-club attended event descriptions with `event.start_time < cutoff`; use exponential half-life weights. Compare each candidate type description, map cosine to `[0,1]`, and include observation count. No profile yields no content signal.
+- [x] Add tests for cache hits (encoder called once), key changes for changed text/revision, vector integrity, deterministic profile similarity, cold-start candidate type with existing member profile, no-attendance member behavior, and cutoff exclusion of equal/future events.
+- [x] Add scorer unit tests for boundedness, determinism, no-content parity, isolated similarity monotonicity, content confidence, and unchanged explicit/attendance/time monotonicity.
+- [x] Run pure scorer tests and embedding integration tests while the outbound DNS/socket blocker is active.
 
 ### Task 5: Integrate event workflow and deterministic evidence
 
 **Files:** `backend/app/recommendations.py`, `backend/app/event_workflow.py`, `backend/recsys/explanations.py`, `backend/tests/test_recommendation_api.py`, `backend/tests/test_explanations.py`, `backend/tests/test_event_workflow.py`.
 
-- [ ] Build one content-evidence map per candidate from the current club's event history and pass it into `score_members`; do not put ORM queries or model objects inside `backend/recsys`.
-- [ ] Honor the local config switch: disabled means no model import/load/cache read and exact old non-content scores; enabled uses only local vendored model and SQLite cache.
-- [ ] Retain content similarity in structured component evidence. If content is the highest positive evidence, deterministic explanation templates may describe semantic alignment; only render numeric values present in that evidence object.
-- [ ] Ensure accepted event description, member event list, and all relevant API tests use the persisted safe text field; keep React escaped text rendering.
-- [ ] Test organizer/member authorization and CSRF behavior unchanged, plus the feature flag path and explanation numeric evidence consistency.
-- [ ] Run recommendation API, explanation, event workflow, and full suite tests.
+- [x] Build one club-scoped content-evidence map from event history and pass numeric inputs to `score_members`; no model or ORM I/O enters `backend/recsys`.
+- [x] Honor the local switch: disabled returns before model import, cache reads, or writes; enabled uses only local vendored weights and SQLite vectors.
+- [x] Retain content similarity in structured component evidence and deterministic top-factor templates.
+- [x] Ensure accepted event descriptions and member event listings use the persisted text field; existing React escaped rendering is unchanged.
+- [x] Test role/CSRF behavior, disabled-feature short-circuiting, and numeric explanation evidence.
+- [x] Run recommendation, explanation, event workflow, and full suite tests (56 passed).
 
 ### Task 6: Add leakage-safe temporal ablation and confidence report
 
 **Files:** `backend/evaluation/runner.py`, `backend/tests/test_evaluation.py`, `results/evaluation/REPORT.md`, `results/evaluation/metrics_by_seed.csv`, `results/evaluation/summary_95ci.csv`, `results/evaluation/paired_comparison.csv`, evaluation figure(s).
 
-- [ ] Pass event descriptions through the synthetic export and evaluation contexts. For each event under test, create profiles using only attended event descriptions with timestamps strictly less than the event timestamp, drawn from the chronological fit set.
-- [ ] Add `ablation_no_embeddings` as the same validation-selected strategy, fairness, and diversity configuration with only the content feature switched off. Do not tune the content weight or modify data generation on test results.
-- [ ] Record per-seed metric rows for the ablation and compare `main_model - ablation_no_embeddings` with paired two-sided 95% t intervals across all seeds.
-- [ ] Select `mean_satisfaction` as the prespecified primary content endpoint. Render its mean paired delta, CI, and significance status in the generated report; render metric-level paired delta/CI rows in a generated ablation CSV/table. Explicitly say “not statistically significant”/“inconclusive” when the CI includes zero.
-- [ ] Add an evaluation test that held-out event description/outcome changes do not change the profile for an earlier cutoff and that all per-seed ablation outputs have the expected methods/metrics and CI bounds.
-- [ ] Run `cd backend; py -3.11 -m evaluation.runner --seeds 42 43 44 45 46 --output ../results/evaluation`; inspect report and CSVs directly. Do not label synthetic gains real-world evidence.
+- [x] Export descriptions and use only same-club attended history strictly before each event cutoff, restricted to chronological fit events.
+- [x] Add `ablation_no_embeddings` with identical selected strategy, fairness, and diversity settings; no generator or weight tuning was performed.
+- [x] Record per-seed ablation metrics and paired 95% t intervals.
+- [x] Prespecify mean satisfaction and report its delta/CI/significance; produce metric-level deltas in `embedding_ablation.csv` and explicitly identify nonsignificant outcomes.
+- [x] Test strict cutoff behavior (equal-time and future attended events do not enter the profile) and paired CI output.
+- [x] Run the five-seed evaluation twice and inspect artifacts; metrics, summary, paired comparisons, ablation CSV, and report are byte-identical. Primary predicted mean-satisfaction delta is +0.097 (95% CI [+0.093, +0.101]); event-type hit-rate delta is not significant (+0.032, 95% CI [-0.079, +0.143]); Brier score worsens (+0.025, 95% CI [+0.016, +0.033]). Synthetic-only evidence caveat is explicit.
 
 ### Task 7: Final hardening, documentation, and completion
 
 **Files:** `README.md`, `DEPENDENCIES.md`, `backend/models/README.md`, `PLAN.md`, `backend/tests/`, `results/evaluation/REPORT.md`, `results/evaluation/metrics_by_seed.csv`, `results/evaluation/summary_95ci.csv`, `results/evaluation/paired_comparison.csv`, and `results/evaluation/figures/evaluation_metrics.png`.
 
-- [ ] Extend `tools/hardening_check.py` to reject any runtime Hub hostname/client/reference, and retain no-external-URL/CDN checks. Vendored model metadata documents provenance but application Python must never reference a remote model ID at load time.
-- [ ] Keep the suite-wide DNS/TCP/UDP blocker active and add an explicit test proving model encode passes with it enabled. Do not open a loopback exception for the deferred Ollama feature.
-- [ ] Check deterministic model/cache results in repeated same-seed runs; run the five-seed evaluation twice and confirm the generated per-seed metrics and summary CSVs are byte-identical.
-- [ ] Update README math and architecture for content profiles/cache, flag setting, model license/size, exact setup weight, and evaluation result. State that any gains on synthetic data are weak evidence; if mean satisfaction CI includes zero, say content lift is not statistically significant/inconclusive.
-- [ ] Update `DEPENDENCIES.md` with one-line justification for each newly added package and `PLAN.md` with phase/task verification evidence.
-- [ ] Run full verification: `py -3.11 -m pytest backend/tests -q`, `py -3.11 tools/hardening_check.py`, `py -3.11 -m pip check`, `npm run verify`, `npm run build`, `git diff --check`, deterministic seed generation, and the five-seed evaluation.
-- [ ] Perform a fresh local-clone offline setup (`npm ci --offline`; `PIP_NO_INDEX=1 py -3.11 -m pip install --no-index -r requirements.txt`), seed, and API/Vite smoke run. On a host with GNU Make, also run the documented `make setup && make seed && make dev` acceptance sequence.
-- [ ] Review the complete git diff for latent leakage, runtime network calls, held-out data leakage, false significance claims, and weight provenance; commit all implementation, tests, evaluation artifacts, and documentation together.
+- [x] Extend the hardening scanner for runtime model-host references; retain CDN, external URL, Supabase, unsafe HTML, and CSP checks.
+- [x] Keep suite-wide DNS/TCP/UDP blocking and prove model load/encode under the guard; no Ollama exception was added.
+- [x] Verify repeated model/cache behavior and byte-identical five-seed evaluation artifacts.
+- [x] Update README methodology, architecture, feature flag, license/model size, measured benchmark, and actual ablation outcome with synthetic-data caveat.
+- [x] Pin and justify every added Python package and record verification evidence in root PLAN.md.
+- [x] Run final available verification: Python suite (56 passed), hardening, pip check, npm verify, npm build, diff check, deterministic seed command, benchmark, and five-seed evaluation. GNU Make is unavailable on this Windows host.
+- [ ] Re-run a genuinely fresh offline dependency setup against the new ML pins; the current host has no Linux/WSL or GNU Make, and pip cache inspection does not establish fresh-environment offline availability.
+- [ ] Review the final diff and commit after all checks; Linux install remains unverified because WSL is not installed.
 
 ## Self-Review
 
