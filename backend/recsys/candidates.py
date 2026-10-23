@@ -139,8 +139,8 @@ def assess_candidate(
     fraction = len(available) / len(member_scores)
     expected = sum(member_scores[member_id] for member_id in available)
     required = quorum if quorum is not None else max(quorum_minimum, ceil(quorum_fraction * len(member_scores)))
-    if required < 1 or required > len(member_scores):
-        raise ValueError("Quorum must be between one and the club membership size.")
+    if required < 1:
+        raise ValueError("Quorum must be at least one.")
     quorum_met = expected >= required
     if not available:
         reason_codes.append("no_available_members")
