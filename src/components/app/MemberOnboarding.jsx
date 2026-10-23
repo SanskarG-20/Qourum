@@ -1,8 +1,30 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './member-onboarding.css';
+import { OrganizerWorkflow } from './OrganizerWorkflow.jsx';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const HOURS = Array.from({ length: 15 }, (_, index) => index + 8);
+
+function MemberEventRsvps({ clubId }) {
+  const [events, setEvents] = useState([]);
+  const [notice, setNotice] = useState('');
+  const [error, setError] = useState('');
+  const refresh = () => request(`/api/clubs/${clubId}/events`).then(setEvents).catch((reason) => setError(reason.message));
+  useEffect(() => { refresh(); }, [clubId]);
+  const respond = async (eventId, status) => {
+    setError(''); setNotice('');
+    try {
+      const { csrf_token: csrf } = await request('/api/auth/csrf');
+      await request(`/api/clubs/${clubId}/events/${eventId}/rsvp`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify({ status }) });
+      setNotice('Your RSVP has been saved.'); await refresh();
+    } catch (reason) { setError(reason.message); }
+  };
+  const upcoming = events.filter((event) => event.status === 'scheduled' && new Date(event.start_time) > new Date());
+  return <section className="quorum-app__card quorum-app__member-events"><h2>Upcoming club events</h2>
+    {error && <p role="alert" className="quorum-app__error">{error}</p>}{notice && <p role="status" className="quorum-app__notice">{notice}</p>}
+    {upcoming.length === 0 ? <p>No upcoming events have been scheduled.</p> : <ul className="quorum-app__event-list">{upcoming.map((event) => <li key={event.id}><div><strong>{event.title}</strong><span>{new Date(event.start_time).toLocaleString()} · {event.venue}</span></div><div className="quorum-app__rsvp-actions">{['yes', 'maybe', 'no'].map((status) => <button type="button" className={event.my_rsvp === status ? 'is-selected' : ''} key={status} onClick={() => respond(event.id, status)}>{status}</button>)}</div></li>)}</ul>}
+  </section>;
+}
 
 async function request(path, options = {}) {
   const response = await fetch(path, { credentials: 'same-origin', ...options });
@@ -85,6 +107,11 @@ export function QuorumMemberApp() {
     } finally { setUser(null); setClubId(''); }
   };
 
+  const activeClub = user?.clubs.find((club) => club.id === clubId);
+  if (user && activeClub?.role === 'organizer') {
+    return <OrganizerWorkflow clubId={clubId} clubName={clubName} onLogout={logout} />;
+  }
+
   return <main className="quorum-app">
     <header className="quorum-app__header"><a href="/" className="quorum-app__brand">QUORUM<span> / MEMBER SETUP</span></a>{user && <button type="button" className="quorum-app__quiet" onClick={logout}>Log out</button>}</header>
     {!user ? <section className="quorum-app__card quorum-app__login"><p className="quorum-app__eyebrow">LOCAL CLUB PLANNING</p><h1>Sign in</h1><p>Use the demo member credentials listed in the README.</p><form onSubmit={login} className="quorum-app__stack"><label>Email<input type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required /></label><label>Password<input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label><button className="quorum-app__button" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button></form></section> : <section className="quorum-app__content">
@@ -96,6 +123,7 @@ export function QuorumMemberApp() {
         <section className="quorum-app__card"><h2>Scheduling dealbreaker</h2><label className="quorum-app__inline">I cannot start an event after <input type="time" value={latestStart} onChange={(event) => setLatestStart(event.target.value)} /></label><button type="button" className="quorum-app__quiet" onClick={() => setLatestStart('')}>No latest-start limit</button></section>
         <button className="quorum-app__button" disabled={busy}>{busy ? 'Saving…' : 'Save preferences'}</button>
       </form>
+      <MemberEventRsvps clubId={clubId} />
     </section>}
   </main>;
 }

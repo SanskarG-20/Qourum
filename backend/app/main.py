@@ -15,6 +15,7 @@ from .auth import router as auth_router
 from .clubs import router as clubs_router
 from .recommendation_api import router as recommendations_router
 from .feedback import router as feedback_router
+from .event_workflow import router as event_workflow_router
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DIST_DIRECTORY = REPOSITORY_ROOT / "dist"
@@ -40,6 +41,7 @@ app.include_router(auth_router)
 app.include_router(clubs_router)
 app.include_router(recommendations_router)
 app.include_router(feedback_router)
+app.include_router(event_workflow_router)
 app.mount(
     "/assets",
     StaticFiles(directory=ASSETS_DIRECTORY, check_dir=False),

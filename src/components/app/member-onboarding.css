@@ -28,3 +28,30 @@
 .quorum-app__notice,.quorum-app__error { padding: .8rem 1rem; border-radius: 6px; background: var(--color-green-tint); }
 .quorum-app__error { background: var(--color-magenta-tint); }
 @media (max-width: 680px) { .quorum-app__grid { grid-template-columns: 2.5rem repeat(15, 1.6rem); } }
+.quorum-app__controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .9rem; align-items: end; }
+.quorum-app__controls .quorum-app__button { grid-column: 1 / -1; }
+.quorum-app__check { display: flex !important; align-items: center; gap: .5rem !important; min-height: 2.5rem; }
+.quorum-app__check input { width: 1rem; height: 1rem; accent-color: var(--color-cyan-primary); }
+.quorum-app__recommendations { display: grid; gap: .9rem; margin: 2rem 0; }
+.quorum-app__recommendations > h2 { margin-bottom: 0; }
+.quorum-app__recommendation h3 { margin: .4rem 0; font-size: 1.35rem; }
+.quorum-app__rec-head { display: flex; gap: 1rem; align-items: center; justify-content: space-between; }
+.quorum-app__rec-head p { margin: .2rem 0; }
+.quorum-app__recommendation-stats { padding: .65rem; background: var(--color-bg-card-muted); border-radius: 5px; font: .78rem var(--font-mono); }
+.quorum-app__explanation { line-height: 1.55; }
+.quorum-app details { margin-top: .75rem; }
+.quorum-app summary { cursor: pointer; font-weight: 600; }
+.quorum-app__member-scores,.quorum-app__counterfactuals { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: .3rem 1rem; max-height: 230px; overflow: auto; padding: .75rem 1.25rem; }
+.quorum-app__member-scores li { display: flex; justify-content: space-between; gap: .5rem; font-size: .85rem; }
+.quorum-app__counterfactuals li { line-height: 1.4; font-size: .85rem; }
+.quorum-app__event-list { list-style: none; margin: 1rem 0 0; padding: 0; }
+.quorum-app__event-list li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .8rem 0; border-top: 1px solid var(--color-border-subtle); }
+.quorum-app__event-list li > div:first-child { display: grid; gap: .3rem; }
+.quorum-app__event-list span { color: var(--color-text-muted); font-size: .85rem; }
+.quorum-app__roster { max-height: 360px; overflow: auto; border-block: 1px solid var(--color-border-subtle); }
+.quorum-app__roster-row { display: flex; justify-content: space-between; align-items: center; min-height: 2.7rem; gap: .7rem; border-bottom: 1px solid var(--color-border-subtle); }
+.quorum-app__roster-row select { width: 5.5rem; }
+.quorum-app__rsvp-actions { display: flex; gap: .35rem; }
+.quorum-app__rsvp-actions button { border: 1px solid var(--color-border-ruler); border-radius: 5px; padding: .4rem .55rem; background: white; cursor: pointer; text-transform: capitalize; }
+.quorum-app__rsvp-actions button.is-selected { border-color: var(--color-text-primary); background: var(--color-cyan-tint); }
+@media (max-width: 680px) { .quorum-app__rec-head,.quorum-app__event-list li { align-items: flex-start; flex-direction: column; } }

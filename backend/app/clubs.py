@@ -138,6 +138,7 @@ def club_events(
             "duration_minutes": event.duration_minutes,
             "venue": event.venue,
             "status": event.status,
+            "my_rsvp": db.scalar(select(RSVP.status).where(RSVP.event_id == event.id, RSVP.member_id == access.user.id)),
         }
         for event in list_events(db, access.club_id)
     ]
