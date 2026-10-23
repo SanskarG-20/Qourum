@@ -1,10 +1,56 @@
 # Quorum
 
-Quorum is a local-first recommender for choosing college club events. It ranks event types, dates, and start times using member preferences, availability, attendance history, scheduling constraints, and group decision strategies. The included data and evaluation are synthetic; they do not represent real clubs or members.
+## Project Overview
 
-## Quick start
+Quorum helps college clubs choose events that fit member interests, availability, and group needs. It ranks event types and feasible dates and times, then gives organizers evidence for comparing and scheduling recommendations. The application runs locally and uses reproducible synthetic data for development and evaluation.
 
-Requirements: Python 3.11+, Node.js 20.19+, and npm.
+## Key Features
+
+- Member preferences, weekly availability, and scheduling dealbreakers.
+- Organizer recommendations with configurable group strategies, quorum, fairness, and diversity.
+- Scheduling constraints for member availability, existing events, holidays, exam periods, and quorum.
+- RSVP, attendance, and rating feedback that informs later recommendations.
+- Deterministic explanations and counterfactuals based on computed evidence.
+- Local authentication, SQLite persistence, and a vendored text-embedding model; no hosted services required.
+
+## Tech Stack
+
+- **Backend:** Python 3.11+, FastAPI, SQLAlchemy 2.x, SQLite.
+- **Recommendation and evaluation:** NumPy, pandas, SciPy, scikit-learn, pytest, matplotlib.
+- **Local semantic features:** sentence-transformers with CPU PyTorch and a vendored `all-MiniLM-L6-v2` model.
+- **Frontend:** React 18 and Vite 8.
+
+Python and npm dependencies are pinned in `requirements.txt` and `package-lock.json`.
+
+## System Architecture
+
+```mermaid
+flowchart LR
+    UI[React application] -->|relative /api requests| API[FastAPI]
+    API --> DB[(SQLite)]
+    API --> ASSEMBLY[Recommendation assembly]
+    ASSEMBLY --> RECSYS[Pure Python scoring and group ranking]
+    ASSEMBLY --> EMBED[Local embedding service]
+    EMBED --> MODEL[Vendored MiniLM model]
+    EMBED --> DB
+    SEED[Synthetic data generator] --> DB
+    SIM[Seeded feedback simulation] --> RECSYS
+    SIM --> SEED
+    EVAL[Temporal evaluation] --> SEED
+    EVAL --> RECSYS
+```
+
+FastAPI serves the built frontend and API from one origin. During development, Vite proxies `/api` to FastAPI. Recommendation scoring is separated from database access and model inference in `backend/recsys`.
+
+## Recommendation Engine
+
+Member-event scores combine explicit event-type ratings, recency-weighted attendance, smoothed weekday/hour affinity, and (by default) similarity between local text embeddings of previously attended events and the candidate event description. History is restricted to the scoring cutoff. Evidence confidence controls each component's contribution; a member with no evidence falls back to club popularity and is marked cold start. Model files are loaded locally, and embeddings are cached in SQLite. Set `QUORUM_EMBEDDINGS_ENABLED=false` to disable this component.
+
+Candidate generation checks availability, latest-start dealbreakers, existing-event conflicts, holidays, exam weeks, and expected attendance against quorum. Feasible candidates are ranked with average, least misery, most pleasure, multiplicative, Borda, approval voting, or average-without-misery. Optional fairness weighting prioritizes members with lower past satisfaction; MMR reranking reduces repeated event types. Explanations are deterministic templates over the computed evidence.
+
+## Installation & Setup
+
+Prerequisites: Python 3.11+, Node.js 20.19+, and npm.
 
 ```sh
 npm ci
@@ -15,7 +61,7 @@ cd ..
 python tools/dev.py
 ```
 
-Open `http://127.0.0.1:5173/app` during development. The application uses SQLite at `data/quorum.db`; runtime operation is local and does not require external services or network access. Re-running the seed command with the same seed recreates the same synthetic dataset.
+Open `http://127.0.0.1:5173/app`. The database is created at `data/quorum.db`; seeding with the same value reproduces the same dataset. The generator and evaluation data are synthetic, not real club or member records.
 
 Run checks:
 
@@ -25,52 +71,40 @@ python -m pytest backend/tests -q
 python tools/hardening_check.py
 ```
 
-Build and serve the single-origin application:
+Build and run the single-origin application:
 
 ```sh
 npm run build
 python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
 ```
 
-Run evaluation from the repository root:
+## Evaluation
+
+`backend/evaluation/runner.py` uses chronological 70/15/15 train, validation, and test splits across five seeds; tuning uses validation data only. Metrics include Precision@K, Recall@K, NDCG@K, event-type/slot hit rate, satisfaction, quorum success, Brier score, coverage, and intra-list diversity. Full results are in [`results/evaluation/REPORT.md`](results/evaluation/REPORT.md).
+
+Reproduce the evaluation from the repository root:
 
 ```sh
 cd backend
 python -m evaluation.runner --seeds 42 43 44 45 46 --output ../results/evaluation
 ```
 
-For a seeded feedback simulation, run `python -m app.simulate --seed 42` from `backend/`.
+Against the validation-selected club-popularity baseline, the model's mean satisfaction was higher by **0.037** (paired 95% CI **[0.013, 0.061]**). Precision@3 was lower by 0.017, with an interval crossing zero; Brier score was worse (0.209 vs. 0.191, where lower is better). In the embedding ablation, predicted mean satisfaction rose by 0.097 (95% CI [0.093, 0.101]), while event-type hit-rate change was not significant and Brier score worsened.
 
-## Demo credentials
+These results are based only on synthetic behavior and descriptions. They are weak evidence and do not establish real-world improvements; offline history also cannot reveal attendance for events that were not held.
 
-The seed command creates these local demo accounts (all use the same role-specific password):
+## Project Structure
 
-| Club | Organizer | Member |
-| --- | --- | --- |
-| ACM & Robotics Guild | `organizer.acm@quorum.local` | `member.acm@quorum.local` |
-| Design & Creative Commons | `organizer.design@quorum.local` | `member.design@quorum.local` |
-| Student AI & Data Society | `organizer.ai-data@quorum.local` | `member.ai-data@quorum.local` |
-
-Organizer password: `QuorumOrganizer42!`. Member password: `QuorumMember42!`.
-
-## Recommendation method
-
-Individual scores combine explicit event-type ratings, recency-weighted attendance, smoothed weekday/hour affinity, and optional local description embeddings. Component weights and scoring constants are centralized in `backend/recsys/config.py`. Embeddings use the vendored `all-MiniLM-L6-v2` model and a SQLite text-hash cache; set `QUORUM_EMBEDDINGS_ENABLED=false` to disable them. Scoring and explanation rendering are deterministic, and the recommender does not use generator-only latent persona fields.
-
-Candidate generation checks availability, member dealbreakers, existing events, holidays, exam periods, and quorum. Feasible candidates are aggregated using average, least misery, most pleasure, multiplicative, Borda, approval voting, or average-without-misery. Optional fairness weighting and diversity reranking affect group ranking. Explanations and “why not” comparisons render computed evidence with deterministic templates.
-
-## Evaluation
-
-The evaluation uses a chronological 70/15/15 train/validation/test split across five seeds; tuning uses validation data only. Metrics cover individual ranking, group satisfaction and fairness, quorum success, attendance calibration, coverage, and list diversity. Baselines include random, popularity, recent-event, same-week-last-year, and aggregation-only approaches. Results and figures are written to `results/evaluation/`; see [`REPORT.md`](results/evaluation/REPORT.md) for the latest report.
-
-The recorded benchmark measured p95 **258.36 ms** for 60 members and 500 candidates over 10 runs, with content evidence precomputed. It excludes database access and cold model loading/encoding.
-
-In the five-seed embedding ablation, predicted mean satisfaction increased by **0.097** (paired 95% CI **[0.093, 0.101]**). Event-type hit-rate change was **0.032** (95% CI **[-0.079, 0.143]**), which was not significant; Brier score worsened by **0.025** (95% CI **[0.016, 0.033]**, lower is better). The recommender also trails club popularity on Precision@3, Recall@3, and NDCG@3 in the reported baseline comparison. Since both behavior and event descriptions are synthetic, these findings are weak evidence and do not establish real-world attendance or satisfaction gains.
-
-## Data, security, and limitations
-
-The seeded generator creates three clubs, 25–60 members per club, twelve event types, and 18 months of synthetic history, including cold-start, sparse-history, and interest-drifting members. Descriptions come from seeded templates and are not generated from latent personas. The feedback simulation uses the generator behavior model independently of recommender features.
-
-SQLite is configured with foreign keys, WAL mode, and a busy timeout. Authentication uses Argon2id hashes, server-side SQLite sessions, HttpOnly SameSite cookies, CSRF protection, login throttling, and club-scoped role checks. The test suite includes a socket-blocking test and source checks for external services and unsafe references.
-
-Key limitations: attendance is an imperfect proxy for interest; availability and one-hour slots simplify scheduling; attendance estimates assume additive member probabilities; offline evaluation cannot observe outcomes for unheld alternatives; and synthetic performance does not establish performance for a real college population. Group strategies and fairness weights encode configurable trade-offs rather than a universal fairness definition.
+```text
+backend/
+  app/             FastAPI routes, auth, persistence, and workflow
+  recsys/          Pure scoring, candidate assessment, group ranking, explanations
+  synthetic_data/  Seeded synthetic behavior and dataset generation
+  simulation/      Recommendation/attendance/feedback simulation
+  evaluation/      Temporal metrics, baselines, and reports
+  tests/           Backend test suite
+  models/          Vendored local embedding model
+src/               React application and components
+results/evaluation/ CSV metrics, report, and figures
+data/               Local SQLite database (generated, git-ignored)
+```
