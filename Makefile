@@ -20,7 +20,7 @@ test:
 	$(PYTHON) -m pytest backend/tests -q
 
 eval:
-	npm run verify
+	cd backend && $(PYTHON) -m evaluation.runner --seeds 42 43 44 45 46 --output ../results/evaluation
 
 build:
 	npm run build

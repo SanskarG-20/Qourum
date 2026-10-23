@@ -1,0 +1,16 @@
+metric,baseline,mean_paired_delta,ci95_low,ci95_high,direction,beats_baseline
+precision_at_3,club_popularity,-0.01934449998633604,-0.07113257614083585,0.03244357616816377,higher_is_better,False
+recall_at_3,club_popularity,-0.058033499959008104,-0.21339772842250754,0.09733072850449132,higher_is_better,False
+ndcg_at_3,club_popularity,-0.036731743288423116,-0.14543622022576522,0.07197273364891899,higher_is_better,False
+hit_rate,club_popularity,-0.058033499959008104,-0.21339772842250754,0.09733072850449132,higher_is_better,False
+brier_score,club_popularity,-0.006156228743470826,-0.012364189343660872,5.173185671921918e-05,lower_is_better,False
+quorum_success_rate,club_popularity,0.0,0.0,0.0,higher_is_better,False
+mean_satisfaction,club_popularity,0.03489374768120633,0.009829111708058051,0.05995838365435461,higher_is_better,True
+min_satisfaction,club_popularity,0.0271621284879786,0.017940613194323753,0.036383643781633446,higher_is_better,True
+satisfaction_std,club_popularity,0.011304898315002981,0.00016986944138209364,0.02243992718862387,lower_is_better,False
+type_hit_rate,club_popularity,0.009086956521739135,-0.10509444314936184,0.1232683561928401,higher_is_better,False
+expected_attendance,club_popularity,1.4943298877795126,0.3725362226005957,2.6161235529584292,informational,False
+satisfaction_gini,club_popularity,-0.007078013182445697,-0.015160953339114247,0.0010049269742228532,lower_is_better,False
+slot_hit_rate,club_popularity,0.0,0.0,0.0,higher_is_better,False
+coverage,club_popularity,0.5666666666666667,0.48009578052636936,0.6532375528069639,higher_is_better,True
+intra_list_diversity,club_popularity,0.23905665349143615,0.22091889466755163,0.25719441231532064,higher_is_better,True

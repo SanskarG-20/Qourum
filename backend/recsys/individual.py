@@ -54,6 +54,8 @@ def score_members(
     *,
     now: datetime,
     popularity_fallback: float = 0.5,
+    recency_decay: bool = True,
+    time_affinity_enabled: bool = True,
 ) -> list[MemberScore]:
     """Score members in [0,1] from explicit, recency-weighted, and time evidence.
 
@@ -99,11 +101,11 @@ def score_members(
                 else:
                     values[item_index] = config.IMPLICIT_IGNORED_VALUE
                 ages[item_index] = max(0.0, (now - row.timestamp).total_seconds() / 86400.0)
-            recency = np.exp(-np.log(2.0) * ages / config.ATTENDANCE_HALF_LIFE_DAYS)
+            recency = np.exp(-np.log(2.0) * ages / config.ATTENDANCE_HALF_LIFE_DAYS) if recency_decay else np.ones_like(ages)
             implicit[index] = float(np.average(values, weights=recency))
             confidence_implicit[index] = len(matching) / (len(matching) + config.IMPLICIT_CONFIDENCE_PRIOR)
 
-        slots = time_history.get(member_id, ())
+        slots = time_history.get(member_id, ()) if time_affinity_enabled else ()
         matching_slots = [row for row in slots if row.day_of_week == day_of_week and row.hour == hour]
         if slots:
             successes = sum(row.attended for row in matching_slots)
