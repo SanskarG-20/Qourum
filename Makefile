@@ -10,7 +10,7 @@ setup:
 	$(PYTHON) -m pip install -r requirements.txt
 
 seed:
-	$(PYTHON) -m backend.synthetic_data.cli --seed $(SEED)
+	cd backend && $(PYTHON) -m app.seed --seed $(SEED)
 
 dev:
 	npm run dev

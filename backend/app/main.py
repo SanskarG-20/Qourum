@@ -1,11 +1,16 @@
 """Local FastAPI entry point serving the built single-origin application."""
 
 import mimetypes
+from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import AsyncIterator
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+
+from .database import database_path
+from .seed import seed_database
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DIST_DIRECTORY = REPOSITORY_ROOT / "dist"
@@ -14,7 +19,16 @@ INDEX_FILE = DIST_DIRECTORY / "index.html"
 mimetypes.add_type("font/woff", ".woff")
 mimetypes.add_type("font/woff2", ".woff2")
 
-app = FastAPI(title="Quorum", docs_url=None, redoc_url=None)
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    """Create and deterministically seed the configured database when absent."""
+    selected_database = database_path()
+    if not selected_database.is_file():
+        seed_database(db_path=selected_database)
+    yield
+
+
+app = FastAPI(title="Quorum", docs_url=None, redoc_url=None, lifespan=lifespan)
 app.mount(
     "/assets",
     StaticFiles(directory=ASSETS_DIRECTORY, check_dir=False),

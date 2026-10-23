@@ -4,7 +4,7 @@ Quorum is a group-aware event recommender for college clubs. It ranks event type
 
 ## Current status
 
-P0 establishes a local-only foundation. The existing React/Vite landing page and browser demo remain available; the authenticated application workflow and Python recommendation service are scheduled for later phases. The bundled browser demo is illustrative and does not persist data.
+P0 and P1 establish the local-only foundation and deterministic SQLite data layer. The authenticated workflow and Python recommendation logic are scheduled for later phases. The existing React/Vite landing page and illustrative browser demo remain available; the browser demo does not persist data.
 
 ## Stack
 
@@ -31,11 +31,11 @@ Useful commands:
 make test    # JavaScript verification harness and Python tests
 make build   # production frontend build
 make run     # local FastAPI server
-make seed    # generate and summarize the synthetic dataset with the selected seed
+make seed    # rebuild data/quorum.db with the selected deterministic seed
 make eval    # current seeded verification harness
 ```
 
-The current `make seed` command runs the standalone synthetic-data generator; deterministic SQLite seeding is added in P1. Override `PYTHON` or `SEED` when needed, for example `make seed PYTHON="py -3.11" SEED=42` on Windows.
+The seed command rebuilds the local SQLite database. The FastAPI server also seeds it when the database file is missing. To run the CLI directly, use `cd backend && python -m app.seed --seed 42`. Override `PYTHON` or `SEED` when needed, for example `make seed PYTHON="py -3.11" SEED=42` on Windows.
 
 ## Recommendation approach
 
@@ -54,9 +54,10 @@ Runtime operation is local and requires no cloud service, external API, analytic
 ```text
 backend/app/          FastAPI application and persistence
 backend/recsys/       Pure recommendation logic
-backend/simulation/   Synthetic behavior and feedback simulation
-backend/evaluation/   Temporal evaluation and reporting
-backend/tests/        Backend tests
-src/                  Existing React/Vite landing page and future /app UI
-data/                 Local SQLite database (not committed)
+backend/synthetic_data/  Reproducible synthetic research data generator
+backend/simulation/      Feedback simulation (later phase)
+backend/evaluation/      Temporal evaluation and reporting
+backend/tests/           Backend tests
+src/                     Existing React/Vite landing page and future /app UI
+data/                    Local SQLite database (not committed)
 ```
