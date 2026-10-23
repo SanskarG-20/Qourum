@@ -3,7 +3,7 @@ SEED ?= 42
 HOST ?= 127.0.0.1
 PORT ?= 8000
 
-.PHONY: setup seed dev test eval build run
+.PHONY: setup seed dev test eval build run simulate
 
 setup:
 	npm ci
@@ -27,3 +27,6 @@ build:
 
 run: build
 	$(PYTHON) -m uvicorn app.main:app --app-dir backend --host $(HOST) --port $(PORT)
+
+simulate:
+	cd backend && $(PYTHON) -m app.simulate --seed $(SEED)

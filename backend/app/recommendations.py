@@ -22,6 +22,27 @@ else:
 from .models import AcademicCalendar, Availability, ClubMember, Event, EventType, FairnessLedger, MemberSettings, Preference, RSVP
 
 
+def load_attendance_rows_before(db: OrmSession, club_id: str, member_ids: list[str], cutoff: datetime):
+    """Load member events strictly before a temporal recommendation cutoff."""
+    return db.execute(
+        select(RSVP.member_id, RSVP.event_id, RSVP.status, RSVP.attended, Event.event_type_id, Event.start_time)
+        .join(Event, Event.id == RSVP.event_id)
+        .where(RSVP.member_id.in_(member_ids), Event.club_id == club_id, Event.start_time < cutoff)
+        .order_by(Event.start_time)
+    ).all()
+
+
+def load_fairness_records_before(db: OrmSession, club_id: str, cutoff: datetime) -> dict[str, FairnessRecord]:
+    """Load only ledger values visible at the same temporal recommendation cutoff."""
+    return {
+        row.member_id: FairnessRecord(row.satisfaction, row.updated_at)
+        for row in db.scalars(select(FairnessLedger).where(
+            FairnessLedger.club_id == club_id,
+            (FairnessLedger.updated_at.is_(None)) | (FairnessLedger.updated_at <= cutoff),
+        ))
+    }
+
+
 def recommend_for_club(
     db: OrmSession,
     club_id: str,
@@ -45,15 +66,12 @@ def recommend_for_club(
     for member_id, event_type_id, rating in db.execute(select(Preference.member_id, Preference.event_type_id, Preference.rating).where(Preference.member_id.in_(member_ids))):
         preferences[member_id][event_type_id] = rating
 
-    rows = db.execute(
-        select(RSVP.member_id, RSVP.status, RSVP.attended, Event.event_type_id, Event.start_time)
-        .join(Event, Event.id == RSVP.event_id)
-        .where(RSVP.member_id.in_(member_ids), Event.club_id == club_id, Event.start_time < datetime.combine(selected_date, time.min))
-        .order_by(Event.start_time)
-    ).all()
+    cutoff = datetime.combine(selected_date, time.min)
+    now = cutoff
+    rows = load_attendance_rows_before(db, club_id, member_ids, cutoff)
     attendance_history: dict[str, list[AttendanceObservation]] = {member_id: [] for member_id in member_ids}
     time_history: dict[str, list[TimeObservation]] = {member_id: [] for member_id in member_ids}
-    for member_id, status, attended, event_type_id, event_start in rows:
+    for member_id, _event_id, status, attended, event_type_id, event_start in rows:
         attendance_history[member_id].append(AttendanceObservation(event_type_id, status, attended, event_start))
         time_history[member_id].append(TimeObservation(event_start.weekday(), event_start.hour, attended))
 
@@ -67,10 +85,7 @@ def recommend_for_club(
     calendar = [CalendarBlock(row.start_date, row.end_date, row.period_type) for row in db.scalars(select(AcademicCalendar).where((AcademicCalendar.club_id == club_id) | (AcademicCalendar.club_id.is_(None))))]
     events = [ScheduledBlock(row.start_time, row.duration_minutes, row.venue, row.status) for row in db.scalars(select(Event).where(Event.club_id == club_id, Event.start_time >= datetime.combine(selected_date, time.min), Event.start_time < datetime.combine(selected_date + timedelta(days=horizon_days), time.min)))]
     venues = sorted(set(db.scalars(select(Event.venue).where(Event.club_id == club_id)).all())) or ["Club Room"]
-    ledger = {
-        row.member_id: FairnessRecord(row.satisfaction, row.updated_at)
-        for row in db.scalars(select(FairnessLedger).where(FairnessLedger.club_id == club_id))
-    }
+    ledger = load_fairness_records_before(db, club_id, now)
 
     candidates = generate_candidates([(event_type.id, event_type.default_duration_minutes) for event_type in event_types], start_date=selected_date, horizon_days=horizon_days, opening_hour=9, closing_hour=21, venues=venues)
     assessments = []
@@ -78,7 +93,6 @@ def recommend_for_club(
     component_rows: list[dict[str, float | None]] = []
     cached_scores: dict[tuple[str, int, int], dict[str, float]] = {}
     component_cache: dict[tuple[str, int, int], dict[str, float | None]] = {}
-    now = datetime.combine(selected_date, time.min)
     popularity_counts: dict[str, int] = {event_type.id: 0 for event_type in event_types}
     for row in db.scalars(select(Event.event_type_id).where(Event.club_id == club_id)):
         popularity_counts[row] = popularity_counts.get(row, 0) + 1
