@@ -1,17 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './member-onboarding.css';
-
-async function api(path, options = {}) {
-  const response = await fetch(path, { credentials: 'same-origin', ...options });
-  const result = response.status === 204 ? null : await response.json();
-  if (!response.ok) throw new Error(result?.detail || `Request failed (${response.status})`);
-  return result;
-}
-
-async function csrfHeaders(extra = {}) {
-  const { csrf_token: token } = await api('/api/auth/csrf');
-  return { ...extra, 'X-CSRF-Token': token };
-}
+import { api, apiWrite } from '../../utils/apiClient.js';
 
 export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
   const [strategy, setStrategy] = useState('average');
@@ -41,9 +30,8 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
   const runRecommendations = async (event) => {
     event?.preventDefault(); setBusy(true); setError(''); setNotice('');
     try {
-      const result = await api(`/api/clubs/${clubId}/recommendations`, {
-        method: 'POST', headers: await csrfHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ strategy, top_n: Number(topN), quorum: quorum ? Number(quorum) : null, horizon_days: Number(horizon), fairness, diversity }),
+      const result = await apiWrite(`/api/clubs/${clubId}/recommendations`, {
+        body: { strategy, top_n: Number(topN), quorum: quorum ? Number(quorum) : null, horizon_days: Number(horizon), fairness, diversity },
       });
       setRecommendations(result.recommendations);
       if (!result.recommendations.length) setNotice(result.message || 'No candidates met the selected constraints.');
@@ -55,11 +43,21 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
   const accept = async (recommendation) => {
     setBusy(true); setError(''); setNotice('');
     try {
-      const created = await api(`/api/clubs/${clubId}/events`, {
-        method: 'POST', headers: await csrfHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ event_type_id: recommendation.event_type_id, start_time: recommendation.start, venue: recommendation.venue }),
+      const created = await apiWrite(`/api/clubs/${clubId}/events`, {
+        body: { event_type_id: recommendation.event_type_id, start_time: recommendation.start, venue: recommendation.venue },
       });
       setNotice(`Scheduled ${created.title} for ${new Date(created.start_time).toLocaleString()}.`);
+      await loadEvents();
+    } catch (reason) { setError(reason.message); }
+    finally { setBusy(false); }
+  };
+
+  const cancel = async (scheduled) => {
+    if (!window.confirm(`Cancel ${scheduled.title} on ${new Date(scheduled.start_time).toLocaleString()}?`)) return;
+    setBusy(true); setError(''); setNotice('');
+    try {
+      await apiWrite(`/api/clubs/${clubId}/events/${scheduled.id}/cancel`);
+      setNotice(`Cancelled ${scheduled.title}.`);
       await loadEvents();
     } catch (reason) { setError(reason.message); }
     finally { setBusy(false); }
@@ -73,9 +71,7 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
     event.preventDefault(); setBusy(true); setError(''); setNotice('');
     try {
       const roster = members.map((member) => ({ member_id: member.id, attended: Boolean(attendance[member.id]?.attended), rating: attendance[member.id]?.attended && attendance[member.id]?.rating ? Number(attendance[member.id].rating) : null }));
-      const result = await api(`/api/clubs/${clubId}/events/${selectedFeedbackEvent}/feedback`, {
-        method: 'POST', headers: await csrfHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify({ attendees: roster }),
-      });
+      const result = await apiWrite(`/api/clubs/${clubId}/events/${selectedFeedbackEvent}/feedback`, { body: { attendees: roster } });
       setNotice(`Recorded attendance for ${result.recorded_members} club members.`);
       await loadEvents();
     } catch (reason) { setError(reason.message); }
@@ -105,7 +101,7 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
         {item.why_not.length > 0 && <details><summary>Why not these alternatives?</summary><ul className="quorum-app__counterfactuals">{item.why_not.map((alternative, index) => <li key={index}>{alternative.text}</li>)}</ul></details>}
       </article>)}</div>
 
-      <section className="quorum-app__card"><h2>Scheduled events</h2>{events.filter((event) => event.status === 'scheduled').length === 0 ? <p>No scheduled events yet.</p> : <ul className="quorum-app__event-list">{events.filter((event) => event.status === 'scheduled').map((event) => <li key={event.id}><strong>{event.title}</strong><span>{new Date(event.start_time).toLocaleString()} · {event.venue}</span></li>)}</ul>}</section>
+      <section className="quorum-app__card"><h2>Scheduled events</h2>{events.filter((event) => event.status === 'scheduled').length === 0 ? <p>No scheduled events yet.</p> : <ul className="quorum-app__event-list">{events.filter((event) => event.status === 'scheduled').map((event) => <li key={event.id}><strong>{event.title}</strong><span>{new Date(event.start_time).toLocaleString()} · {event.venue}</span>{new Date(event.start_time) > new Date() && <button type="button" className="quorum-app__quiet" disabled={busy} onClick={() => cancel(event)}>Cancel event</button>}</li>)}</ul>}</section>
 
       <section className="quorum-app__card"><h2>Record attendance and feedback</h2><p>Select a past event, mark every club member present or absent, and rate attendees.</p><form onSubmit={saveAttendance} className="quorum-app__stack">
         <label>Past event<select value={selectedFeedbackEvent} onChange={(e) => { setSelectedFeedbackEvent(e.target.value); setAttendance({}); }} required><option value="">Choose an event</option>{pastEvents.map((event) => <option key={event.id} value={event.id}>{event.title} · {new Date(event.start_time).toLocaleString()}</option>)}</select></label>

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './member-onboarding.css';
 import { OrganizerWorkflow } from './OrganizerWorkflow.jsx';
+import { api as request, apiWrite } from '../../utils/apiClient.js';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const HOURS = Array.from({ length: 15 }, (_, index) => index + 8);
@@ -14,8 +15,7 @@ function MemberEventRsvps({ clubId }) {
   const respond = async (eventId, status) => {
     setError(''); setNotice('');
     try {
-      const { csrf_token: csrf } = await request('/api/auth/csrf');
-      await request(`/api/clubs/${clubId}/events/${eventId}/rsvp`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify({ status }) });
+      await apiWrite(`/api/clubs/${clubId}/events/${eventId}/rsvp`, { body: { status } });
       setNotice('Your RSVP has been saved.'); await refresh();
     } catch (reason) { setError(reason.message); }
   };
@@ -24,13 +24,6 @@ function MemberEventRsvps({ clubId }) {
     {error && <p role="alert" className="quorum-app__error">{error}</p>}{notice && <p role="status" className="quorum-app__notice">{notice}</p>}
     {upcoming.length === 0 ? <p>No upcoming events have been scheduled.</p> : <ul className="quorum-app__event-list">{upcoming.map((event) => <li key={event.id}><div><strong>{event.title}</strong><span>{new Date(event.start_time).toLocaleString()} · {event.venue}</span></div><div className="quorum-app__rsvp-actions">{['yes', 'maybe', 'no'].map((status) => <button type="button" className={event.my_rsvp === status ? 'is-selected' : ''} key={status} onClick={() => respond(event.id, status)}>{status}</button>)}</div></li>)}</ul>}
   </section>;
-}
-
-async function request(path, options = {}) {
-  const response = await fetch(path, { credentials: 'same-origin', ...options });
-  const body = response.status === 204 ? null : await response.json();
-  if (!response.ok) throw new Error(body?.detail || `Request failed (${response.status})`);
-  return body;
 }
 
 export function QuorumMemberApp() {
@@ -54,7 +47,7 @@ export function QuorumMemberApp() {
     setRatings(Object.fromEntries(result.preferences.map((item) => [item.event_type_id, String(item.rating)])));
     setWindows(result.availability);
     setLatestStart(result.latest_start_time || '21:00');
-    if (result.is_cold_start) setNotice('Cold-start profile: recommendations can fall back to club event popularity until attendance history builds.');
+    if (result.is_cold_start) setNotice('Cold-start profile: recommendations can fall back to the typical club attendance rate until your own history builds.');
   };
 
   useEffect(() => {
@@ -72,8 +65,7 @@ export function QuorumMemberApp() {
   const login = async (event) => {
     event.preventDefault(); setError(''); setBusy(true);
     try {
-      const { csrf_token: csrf } = await request('/api/auth/csrf');
-      const result = await request('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify({ email, password }) });
+      const result = await apiWrite('/api/auth/login', { body: { email, password } });
       setUser(result.user);
       const club = result.user.clubs[0];
       if (club) { setClubId(club.id); setClubName(club.name); await loadOnboarding(club.id); }
@@ -92,9 +84,8 @@ export function QuorumMemberApp() {
   const save = async (event) => {
     event.preventDefault(); setError(''); setNotice(''); setBusy(true);
     try {
-      const { csrf_token: csrf } = await request('/api/auth/csrf');
       const preferences = Object.entries(ratings).filter(([, rating]) => rating).map(([event_type_id, rating]) => ({ event_type_id, rating: Number(rating) }));
-      const result = await request(`/api/clubs/${clubId}/onboarding`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }, body: JSON.stringify({ preferences, availability: windows, latest_start_time: latestStart || null }) });
+      const result = await apiWrite(`/api/clubs/${clubId}/onboarding`, { method: 'PUT', body: { preferences, availability: windows, latest_start_time: latestStart || null } });
       setNotice(`Saved ${result.preferences.length} ratings and ${result.availability.length} availability windows.`);
     } catch (reason) { setError(reason.message); }
     finally { setBusy(false); }
@@ -102,8 +93,7 @@ export function QuorumMemberApp() {
 
   const logout = async () => {
     try {
-      const { csrf_token: csrf } = await request('/api/auth/csrf');
-      await request('/api/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': csrf } });
+      await apiWrite('/api/auth/logout');
     } finally { setUser(null); setClubId(''); }
   };
 
