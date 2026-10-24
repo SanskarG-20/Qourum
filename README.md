@@ -10,6 +10,7 @@ Quorum helps college clubs choose events that fit member interests, availability
 - Organizer recommendations with configurable group strategies, quorum, fairness, and diversity.
 - Scheduling constraints for member availability, existing events, holidays, exam periods, and quorum.
 - RSVP, attendance, and rating feedback that informs later recommendations.
+- Organizers can schedule a recommendation and cancel upcoming events, which releases the slot.
 - Deterministic explanations and counterfactuals based on computed evidence.
 - Local authentication, SQLite persistence, and a vendored text-embedding model; no hosted services required.
 
@@ -40,13 +41,13 @@ flowchart LR
     EVAL --> RECSYS
 ```
 
-FastAPI serves the built frontend and API from one origin. During development, Vite proxies `/api` to FastAPI. Recommendation scoring is separated from database access and model inference in `backend/recsys`.
+The site root (`/`) is a landing page with an in-browser demo sandbox that uses a simplified JavaScript engine on a small sample dataset; the real application is at `/app` and uses the Python backend. FastAPI serves the built frontend and API from one origin. During development, Vite proxies `/api` to FastAPI. Recommendation scoring is separated from database access and model inference in `backend/recsys`.
 
 ## Recommendation Engine
 
-Member-event scores combine explicit event-type ratings, recency-weighted attendance, smoothed weekday/hour affinity, and (by default) similarity between local text embeddings of previously attended events and the candidate event description. History is restricted to the scoring cutoff. Evidence confidence controls each component's contribution; a member with no evidence falls back to club popularity and is marked cold start. Model files are loaded locally, and embeddings are cached in SQLite. Set `QUORUM_EMBEDDINGS_ENABLED=false` to disable this component.
+Member-event scores combine explicit event-type ratings, recency-weighted attendance, smoothed weekday/hour affinity, and (by default) similarity between local text embeddings of previously attended events and the candidate event description. History is restricted to the scoring cutoff. Evidence confidence controls each component's contribution; a member with no evidence falls back to the club's smoothed attendance rate for that event type and is marked cold start. Model files are loaded locally, and embeddings are cached in SQLite. Set `QUORUM_EMBEDDINGS_ENABLED=false` to disable this component.
 
-Candidate generation checks availability, latest-start dealbreakers, existing-event conflicts, holidays, exam weeks, and expected attendance against quorum. Feasible candidates are ranked with average, least misery, most pleasure, multiplicative, Borda, approval voting, or average-without-misery. Optional fairness weighting prioritizes members with lower past satisfaction; MMR reranking reduces repeated event types. Explanations are deterministic templates over the computed evidence.
+Candidate generation checks availability, existing-event conflicts, holidays, exam weeks, and expected attendance against quorum. A member's latest-start dealbreaker removes only that member from a slot's available set; the slot is rejected only if quorum is then not met. Feasible candidates are ranked with average, least misery, most pleasure, multiplicative, Borda, approval voting, or average-without-misery. Optional fairness weighting prioritizes members with lower past satisfaction; MMR reranking reduces repeated event types. Explanations are deterministic templates over the computed evidence.
 
 ## Installation & Setup
 
@@ -61,7 +62,9 @@ cd ..
 python tools/dev.py
 ```
 
-Open `http://127.0.0.1:5173/app`. The database is created at `data/quorum.db`; seeding with the same value reproduces the same dataset. The generator and evaluation data are synthetic, not real club or member records.
+Open `http://127.0.0.1:5173/app`. The database is created at `data/quorum.db`; seeding with the same value reproduces the same dataset. The generator and evaluation data are synthetic, not real club or member records. Demo logins are `organizer.acm@quorum.local` (password `QuorumOrganizer42!`) and `member.acm@quorum.local` (password `QuorumMember42!`); the other seeded clubs use the `design` and `ai-data` slugs in the same pattern.
+
+Session cookies are not marked `Secure` by default because the app runs over local HTTP. Set `QUORUM_COOKIE_SECURE=true` (see `.env.example`) when serving behind HTTPS.
 
 Run checks:
 
@@ -70,6 +73,8 @@ npm run verify
 python -m pytest backend/tests -q
 python tools/hardening_check.py
 ```
+
+`npm run verify` exercises the landing-page demo engine and confirms the evaluation table on the landing page matches `results/evaluation`. These checks also run in GitHub Actions (`.github/workflows/ci.yml`).
 
 Build and run the single-origin application:
 
@@ -91,6 +96,8 @@ python -m evaluation.runner --seeds 42 43 44 45 46 --output ../results/evaluatio
 
 Against the validation-selected club-popularity baseline, the model's mean satisfaction was higher by **0.037** (paired 95% CI **[0.013, 0.061]**). Precision@3 was lower by 0.017, with an interval crossing zero; Brier score was worse (0.209 vs. 0.191, where lower is better). In the embedding ablation, predicted mean satisfaction rose by 0.097 (95% CI [0.093, 0.101]), while event-type hit-rate change was not significant and Brier score worsened.
 
+`mean_satisfaction`, `min_satisfaction`, and the other satisfaction metrics are the model's own predicted scores for the event type each method selects, so they favor methods that agree with the scoring model; `type_hit_rate`, the ranking metrics, and Brier score compare predictions with what actually happened. After changing the model or evaluation code, rerun the command above and refresh the landing page table with `python tools/export_landing_results.py`.
+
 These results are based only on synthetic behavior and descriptions. They are weak evidence and do not establish real-world improvements; offline history also cannot reveal attendance for events that were not held.
 
 ## Project Structure
@@ -104,7 +111,8 @@ backend/
   evaluation/      Temporal metrics, baselines, and reports
   tests/           Backend test suite
   models/          Vendored local embedding model
-src/               React application and components
+src/               React landing page (/) and member/organizer app (/app)
+tools/             Dev server, hardening check, verification, landing results export
 results/evaluation/ CSV metrics, report, and figures
 data/               Local SQLite database (generated, git-ignored)
 ```
