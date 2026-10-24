@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
 const PHRASES = [
   'Planning a club event?',
-  'Welcome to Qourum',
+  'Welcome to Quorum',
 ];
 
 export function IntroSplashBubble({ onComplete }) {
@@ -98,7 +98,7 @@ export function IntroSplashBubble({ onComplete }) {
   return (
     <div
       role="dialog"
-      aria-label="Welcome to Qourum Introduction"
+      aria-label="Welcome to Quorum Introduction"
       onClick={handleDismiss}
       style={{
         position: 'fixed',

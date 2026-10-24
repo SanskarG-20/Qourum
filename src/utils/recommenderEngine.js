@@ -1,4 +1,4 @@
-// Quorum Recommender Engine, Schema Validator & Seeded Evaluation Harness (prd.md Modules A-F)
+// Quorum in-browser demo engine and CSV schema validator (landing page only; the real recommender is backend/recsys)
 import { DAYS_OF_WEEK, TIME_SLOTS, EVENT_TYPES } from '../config/siteConfig.js';
 
 // Seeded PRNG (Mulberry32) for FR-016 / FR-018 Reproducibility
@@ -301,79 +301,5 @@ export function runQuorumPipeline(club, options = {}) {
     lowConfidenceClub,
     hasColdStartMember,
     totalCandidatesEvaluated: allCandidates.length,
-  };
-}
-
-// Module F: FR-016, FR-017, FR-018 Seeded Evaluation Harness across Club Types
-export function runSeededEvaluationHarness(seed = 42) {
-  const rng = createSeededRng(seed);
-  const jitter = () => (rng() - 0.5) * 0.014;
-
-  return {
-    seed,
-    command: `npm run verify -- --seed ${seed}`,
-    rows: [
-      {
-        method: 'Random Baseline (FR-007)',
-        family: 'Baseline',
-        mae: Number((1.92 + jitter()).toFixed(2)),
-        rmse: Number((2.34 + jitter()).toFixed(2)),
-        hitAt3: '22.0%',
-        homoMinSat: '0.41',
-        conflictMinSat: '0.24',
-        giniInequality: '0.29',
-      },
-      {
-        method: 'Most-Popular Baseline (FR-007)',
-        family: 'Baseline',
-        mae: Number((1.41 + jitter()).toFixed(2)),
-        rmse: Number((1.76 + jitter()).toFixed(2)),
-        hitAt3: '54.0%',
-        homoMinSat: '0.68',
-        conflictMinSat: '0.32',
-        giniInequality: '0.24',
-      },
-      {
-        method: 'Repeat-Last Baseline (FR-007)',
-        family: 'Baseline',
-        mae: Number((1.35 + jitter()).toFixed(2)),
-        rmse: Number((1.68 + jitter()).toFixed(2)),
-        hitAt3: '58.0%',
-        homoMinSat: '0.65',
-        conflictMinSat: '0.29',
-        giniInequality: '0.26',
-      },
-      {
-        method: 'Quorum + Average (FR-009)',
-        family: 'Group Rec',
-        mae: Number((0.78 + jitter()).toFixed(2)),
-        rmse: Number((0.96 + jitter()).toFixed(2)),
-        hitAt3: '81.0%',
-        homoMinSat: '0.79',
-        conflictMinSat: '0.42',
-        giniInequality: '0.19',
-      },
-      {
-        method: 'Quorum + Least-Misery (FR-010)',
-        family: 'Group Rec',
-        mae: Number((0.82 + jitter()).toFixed(2)),
-        rmse: Number((1.01 + jitter()).toFixed(2)),
-        hitAt3: '76.0%',
-        homoMinSat: '0.81',
-        conflictMinSat: '0.69',
-        giniInequality: '0.09',
-      },
-      {
-        method: 'Quorum + Fairness-Aware (FR-011)',
-        family: 'Group Rec (Proposed)',
-        mae: Number((0.74 + jitter()).toFixed(2)),
-        rmse: Number((0.91 + jitter()).toFixed(2)),
-        hitAt3: '84.0%',
-        homoMinSat: '0.82',
-        conflictMinSat: '0.72',
-        giniInequality: '0.07',
-        isHighlight: true,
-      },
-    ],
   };
 }

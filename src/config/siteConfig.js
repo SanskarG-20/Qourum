@@ -1,4 +1,4 @@
-// Configuration & PRD Constants for Quorum (RS_Mini Project 2026-27)
+// Configuration constants for the Quorum landing-page demo
 
 export const WORKING_TITLES = [
   { id: 'QUORUM', label: 'QUORUM', tag: 'Working Title (Default)', subtitle: 'Group-Aware Event Recommendation for College Clubs' },

@@ -137,8 +137,8 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
       imageAlt: 'a lone figure standing on golden sand dunes',
       technicalSpecs: [
         'FR-016 Synthetic Generator: Controllable conflict parameter with explicit is_synthetic=1 labeling',
-        'FR-017 Metrics: Attendance MAE/RMSE, Hit@3 agreement, Min-Member Satisfaction, and Gini inequality',
-        'Sec 12.3 Caveat: Combines historical agreement with simulated ground-truth satisfaction',
+        'FR-017 Metrics: Precision@K, NDCG@K, event-type hit rate, Brier score, coverage, diversity, and predicted-satisfaction fairness (Gini)',
+        'Sec 12.3 Caveat: Historical events cannot show attendance for options that were never held; results are synthetic and weak evidence',
       ],
     },
   ];

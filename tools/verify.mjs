@@ -1,28 +1,27 @@
 #!/usr/bin/env node
 /**
- * Quorum — verification harness (FR-017, FR-018)
+ * Quorum — landing-page verification harness
  *
- * Reproduces every table quoted in the README and the Evaluation section of the
- * demo UI, straight from the recommender engine, with no browser and no
- * dependencies beyond Node itself.
+ * Checks the in-browser demo engine and confirms the evaluation numbers shown
+ * on the landing page match the committed backend results, with no browser and
+ * no dependencies beyond Node itself.
  *
- *   node tools/verify.mjs                 # default seed 42
- *   node tools/verify.mjs --seed 7        # a different seed
- *   node tools/verify.mjs --all           # every seed used in the UI
+ *   node tools/verify.mjs
  *
  * Exits non-zero if any documented invariant is broken, so it doubles as a
  * smoke test in CI.
  */
 
+import { readFileSync } from 'node:fs';
 import {
-  runSeededEvaluationHarness,
   runQuorumPipeline,
   validateCsvDataset,
 } from '../src/utils/recommenderEngine.js';
 import { SAMPLE_CLUBS, CSV_VALIDATION_TEST_SAMPLE } from '../src/data/clubsDataset.js';
 import { AGGREGATION_STRATEGIES, PREFERENCE_MODELS } from '../src/config/siteConfig.js';
 
-const UI_SEEDS = [42, 7, 2026];
+const RESULTS_DIRECTORY = new URL('../results/evaluation/', import.meta.url);
+const LANDING_RESULTS = new URL('../src/data/evaluationResults.json', import.meta.url);
 const EXPECTED_CSV = { total: 30, valid: 27, errors: 3 };
 
 const failures = [];
@@ -44,59 +43,32 @@ const table = (headers, rows) => {
   rows.forEach((r) => process.stdout.write(`${line(r)}\n`));
 };
 
-const parseArgs = (argv) => {
-  const args = { seed: 42, all: false };
-  for (let i = 0; i < argv.length; i += 1) {
-    if (argv[i] === '--seed') {
-      args.seed = Number(argv[i + 1]);
-      i += 1;
-    } else if (argv[i] === '--all') {
-      args.all = true;
-    } else if (argv[i] === '--help' || argv[i] === '-h') {
-      process.stdout.write(
-        'Usage: node tools/verify.mjs [--seed <n>] [--all]\n' +
-          '  --seed <n>  seed for the evaluation harness (default 42)\n' +
-          '  --all       run every seed the demo UI offers (42, 7, 2026)\n'
-      );
-      process.exit(0);
-    }
-  }
-  if (!Number.isFinite(args.seed)) {
-    process.stderr.write(`Invalid --seed value\n`);
-    process.exit(2);
-  }
-  return args;
+const parseCsv = (text) => {
+  const [header, ...lines] = text.trim().split(/\r?\n/);
+  const columns = header.split(',');
+  return lines.map((line) => Object.fromEntries(line.split(',').map((value, index) => [columns[index], value])));
 };
 
-const runHarness = (seed) => {
-  heading(`Evaluation harness (seed ${seed})`);
-  const data = runSeededEvaluationHarness(seed);
+// The landing page renders src/data/evaluationResults.json; it must never drift
+// from the CSVs produced by backend/evaluation (regenerate with
+// `python tools/export_landing_results.py`).
+const runEvaluationSnapshot = () => {
+  heading('Landing-page evaluation snapshot vs results/evaluation');
+  const landing = JSON.parse(readFileSync(LANDING_RESULTS, 'utf8'));
+  const summary = parseCsv(readFileSync(new URL('summary_95ci.csv', RESULTS_DIRECTORY), 'utf8'));
+  const meanOf = (method, metric) => Number(summary.find((row) => row.method === method && row.metric === metric)?.mean);
+  let mismatches = 0;
+  for (const row of landing.rows) {
+    for (const metric of landing.metrics) {
+      if (row.metrics[metric].mean !== Number(meanOf(row.id, metric).toFixed(3))) mismatches += 1;
+    }
+  }
+  const mainRow = landing.rows.find((row) => row.family === 'Main');
   table(
-    ['Method', 'MAE', 'RMSE', 'Hit@3', 'MinSat homo', 'MinSat conflict', 'Gini'],
-    data.rows.map((r) => [
-      r.method,
-      r.mae,
-      r.rmse,
-      r.hitAt3,
-      r.homoMinSat,
-      r.conflictMinSat,
-      r.giniInequality,
-    ])
+    ['Method', ...landing.metrics],
+    [mainRow, ...landing.rows.filter((row) => row !== mainRow)].map((row) => [row.label.slice(0, 28), ...landing.metrics.map((metric) => row.metrics[metric].mean)])
   );
-
-  // FR-018: the same seed must reproduce the same table exactly.
-  const repeat = runSeededEvaluationHarness(seed);
-  check(`harness determinism (seed ${seed})`, repeat.rows, data.rows);
-
-  // The fairness-aware row is the headline claim; it must lead on both
-  // minimum-satisfaction metrics and on the inequality metric.
-  const fair = data.rows.find((r) => r.isHighlight);
-  const avg = data.rows.find((r) => r.method.includes('Average'));
-  const least = data.rows.find((r) => r.method.includes('Least-Misery'));
-  check('fairness-aware beats average on conflict min-satisfaction', Number(fair.conflictMinSat) > Number(avg.conflictMinSat), true);
-  check('least-misery beats average on conflict min-satisfaction', Number(least.conflictMinSat) > Number(avg.conflictMinSat), true);
-  check('fairness-aware has the lowest Gini', Number(fair.giniInequality) < Number(avg.giniInequality), true);
-  return data;
+  check('landing snapshot matches summary_95ci.csv', mismatches, 0);
 };
 
 const runValidator = () => {
@@ -216,12 +188,10 @@ const runModelComparison = () => {
 };
 
 const main = () => {
-  const args = parseArgs(process.argv.slice(2));
   process.stdout.write('Quorum verification harness\n');
   process.stdout.write(`node ${process.version}\n`);
 
-  const seeds = args.all ? UI_SEEDS : [args.seed];
-  seeds.forEach((seed) => runHarness(seed));
+  runEvaluationSnapshot();
   runValidator();
   runPipeline();
   runStrategyComparison();

@@ -24,6 +24,8 @@ The model column uses the validation-selected aggregation strategy with fairness
 
 Read the metrics and paired intervals together. Improvements are claimed only where the paired 95% interval excludes zero in the favorable direction. Historical event data cannot observe counterfactual attendance for recommendations that were not held.
 
+`mean_satisfaction`, `min_satisfaction`, `satisfaction_std` and `satisfaction_gini` are the model's own predicted member scores for the event type each method selects, not observed outcomes, so they favor methods that agree with the scoring model. Treat `type_hit_rate`, the ranking metrics, and `brier_score` as the measures that compare predictions with what actually happened.
+
 ## Embedding ablation
 
 Deltas compare the full model with the same model with content embeddings disabled, paired by seed. Positive deltas are favorable except for Brier score, where lower is better.
@@ -39,6 +41,6 @@ Deltas compare the full model with the same model with content embeddings disabl
 
 Primary endpoint: mean-satisfaction gain was statistically significant (+0.097, 95% CI [+0.093, +0.101]).
 
-Paired intervals show significant embedding gains for: mean_satisfaction, min_satisfaction, expected_attendance.
+Paired intervals show significant embedding gains for: mean_satisfaction, min_satisfaction.
 
 These results use synthetic data only. Any gain is weak evidence and does not establish performance on real clubs.

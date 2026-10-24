@@ -154,7 +154,7 @@ export function DemoLabSection({
               lineHeight: 1.5,
             }}
           >
-            Interactive MVP workbench (FR-019): switch clubs, validate raw CSVs, tune the hard availability threshold, and compare group aggregation strategies in real time.
+            In-browser sandbox on a small sample dataset: switch clubs, validate raw CSVs, tune the hard availability threshold, and compare group aggregation strategies in real time. It runs a simplified demo engine; the full recommender is the Python backend behind /app.
           </p>
         </div>
 
