@@ -29,7 +29,7 @@ from .models import (
     User,
 )
 from .security import hash_demo_password
-if __package__ == "app" or __package__.startswith("app."):
+if (__package__ or "").partition(".")[0] == "app":
     from synthetic_data.calendar import ACADEMIC_CALENDAR_PERIODS
     from synthetic_data.exporter import export_feature_datasets
     from synthetic_data.generator import GenerationConfig, SyntheticDatasetGenerator

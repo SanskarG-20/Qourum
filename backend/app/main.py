@@ -59,7 +59,7 @@ def health() -> dict[str, str]:
 def frontend_root() -> FileResponse:
     """Serve the built React application at the site root."""
     if not INDEX_FILE.is_file():
-        raise HTTPException(status_code=503, detail="Frontend build is missing; run `make build`.")
+        raise HTTPException(status_code=503, detail="Frontend build is missing; run `npm run build`.")
     return FileResponse(INDEX_FILE)
 
 
@@ -69,7 +69,7 @@ def frontend_route(requested_path: str) -> FileResponse:
     if requested_path == "api" or requested_path.startswith("api/"):
         raise HTTPException(status_code=404, detail="API route not found.")
     if not INDEX_FILE.is_file():
-        raise HTTPException(status_code=503, detail="Frontend build is missing; run `make build`.")
+        raise HTTPException(status_code=503, detail="Frontend build is missing; run `npm run build`.")
 
     resolved_dist = DIST_DIRECTORY.resolve()
     requested_file = (DIST_DIRECTORY / requested_path).resolve()

@@ -9,7 +9,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session as OrmSession
 
-if __package__ == "app" or __package__.startswith("app."):
+if (__package__ or "").partition(".")[0] == "app":
     from recsys.candidates import CalendarBlock, ScheduledBlock, assess_candidate, generate_candidates
     from recsys.group import FairnessRecord, fairness_weights, mmr_rerank, rank_group_candidates
     from recsys.individual import AttendanceObservation, TimeObservation, club_attendance_fallback, score_members

@@ -14,7 +14,7 @@ import numpy as np
 from sqlalchemy import select
 from sqlalchemy.orm import Session as OrmSession
 
-if __package__ == "app" or __package__.startswith("app."):
+if (__package__ or "").partition(".")[0] == "app":
     from recsys import config
     from recsys.individual import ContentSignal
 else:

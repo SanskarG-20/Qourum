@@ -18,7 +18,7 @@ from scipy.stats import sem, t
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session as OrmSession
 
-if __package__ == "evaluation" or __package__.startswith("evaluation."):
+if (__package__ or "").partition(".")[0] == "evaluation":
     from recsys import config
     from recsys.group import STRATEGIES, FairnessRecord, aggregate_scores, fairness_weights, mmr_rerank, rank_group_candidates
     from recsys.individual import AttendanceObservation, ContentSignal, TimeObservation, club_attendance_fallback, score_members

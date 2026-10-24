@@ -76,11 +76,14 @@ def _onboarding_payload(db: OrmSession, member_id: str, club_id: str) -> dict[st
     ) or 0
     is_cold_start = not preferences or attended_count < 3
     event_types = db.scalars(select(EventType).order_by(EventType.name)).all()
-    total_events = db.scalar(select(func.count(Event.id)).where(Event.club_id == club_id)) or 0
-    popularity = []
-    for event_type in event_types:
-        count = db.scalar(select(func.count(Event.id)).where(Event.club_id == club_id, Event.event_type_id == event_type.id)) or 0
-        popularity.append({"event_type_id": event_type.id, "name": event_type.name, "score": count / total_events if total_events else 0.0})
+    counts_by_type = dict(db.execute(
+        select(Event.event_type_id, func.count(Event.id)).where(Event.club_id == club_id).group_by(Event.event_type_id)
+    ).all())
+    total_events = sum(counts_by_type.values())
+    popularity = [
+        {"event_type_id": event_type.id, "name": event_type.name, "score": counts_by_type.get(event_type.id, 0) / total_events if total_events else 0.0}
+        for event_type in event_types
+    ]
     return {
         "preferences": [{"event_type_id": value.event_type_id, "rating": value.rating} for value in preferences],
         "availability": [{"day_of_week": value.day_of_week, "start_time": value.start_time.strftime("%H:%M"), "end_time": value.end_time.strftime("%H:%M")} for value in windows],
@@ -129,6 +132,9 @@ def club_events(
     db: OrmSession = Depends(get_db),
 ) -> list[dict[str, object]]:
     """List events visible to a current club member or organizer."""
+    my_rsvps = dict(db.execute(
+        select(RSVP.event_id, RSVP.status).where(RSVP.member_id == access.user.id)
+    ).all())
     return [
         {
             "id": event.id,
@@ -139,7 +145,7 @@ def club_events(
             "duration_minutes": event.duration_minutes,
             "venue": event.venue,
             "status": event.status,
-            "my_rsvp": db.scalar(select(RSVP.status).where(RSVP.event_id == event.id, RSVP.member_id == access.user.id)),
+            "my_rsvp": my_rsvps.get(event.id),
         }
         for event in list_events(db, access.club_id)
     ]

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+import os
 import secrets
 import hashlib
 
@@ -32,6 +33,7 @@ from .throttle import (
 from sqlalchemy import select
 
 SESSION_TTL_SECONDS = 60 * 60 * 24 * 7
+COOKIE_SECURE = os.environ.get("QUORUM_COOKIE_SECURE", "false").strip().lower() in {"1", "true", "yes"}
 DUMMY_PASSWORD_HASH = PASSWORD_HASHER.hash(
     "Quorum authentication timing sentinel",
     salt=hashlib.sha256(b"quorum-invalid-login-sentinel").digest()[:16],
@@ -65,7 +67,7 @@ def _set_auth_cookies(response: Response, raw_session: str, csrf_token: str) -> 
         raw_session,
         max_age=SESSION_TTL_SECONDS,
         httponly=True,
-        secure=False,
+        secure=COOKIE_SECURE,
         samesite="lax",
         path="/",
     )
@@ -74,7 +76,7 @@ def _set_auth_cookies(response: Response, raw_session: str, csrf_token: str) -> 
         csrf_token,
         max_age=SESSION_TTL_SECONDS,
         httponly=True,
-        secure=False,
+        secure=COOKIE_SECURE,
         samesite="lax",
         path="/",
     )
@@ -116,7 +118,7 @@ def csrf_token(
         token,
         max_age=SESSION_TTL_SECONDS,
         httponly=True,
-        secure=False,
+        secure=COOKIE_SECURE,
         samesite="lax",
         path="/",
     )
@@ -201,7 +203,7 @@ def logout(
     db.delete(auth.session)
     db.commit()
     response.headers["Cache-Control"] = "no-store"
-    response.delete_cookie(SESSION_COOKIE, path="/", httponly=True, samesite="lax")
-    response.delete_cookie(CSRF_COOKIE, path="/", httponly=True, samesite="lax")
+    response.delete_cookie(SESSION_COOKIE, path="/", httponly=True, secure=COOKIE_SECURE, samesite="lax")
+    response.delete_cookie(CSRF_COOKIE, path="/", httponly=True, secure=COOKIE_SECURE, samesite="lax")
     response.status_code = status.HTTP_204_NO_CONTENT
     return response

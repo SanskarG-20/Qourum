@@ -11,7 +11,7 @@ import uuid
 
 from sqlalchemy import select
 
-if __package__ == "simulation" or __package__.startswith("simulation."):
+if (__package__ or "").partition(".")[0] == "simulation":
     from app.database import create_database_engine, make_session_factory
     from app.feedback import AttendanceFeedback, EventFeedback, record_event_feedback
     from app.models import Club, ClubMember, Event, User

@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-if __package__ == "app" or __package__.startswith("app."):
+if (__package__ or "").partition(".")[0] == "app":
     from simulation.runner import run_simulation
 else:
     from backend.simulation.runner import run_simulation
