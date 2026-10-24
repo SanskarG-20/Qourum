@@ -10,7 +10,6 @@ from sqlalchemy import inspect, select
 from backend.app import main
 from backend.app.database import create_database_engine, make_session_factory
 from backend.app.models import Base, Club, LoginAttempt, Session as SessionRecord, User
-from backend.app.seed import seed_database
 from backend.app.security import hash_password, verify_password
 
 ORGANIZER_PASSWORD = "QuorumOrganizer42!"
@@ -41,9 +40,9 @@ def _club_for_role(user_payload: dict, role: str) -> str:
     return next(club["id"] for club in user_payload["clubs"] if club["role"] == role)
 
 
-def test_local_login_session_csrf_and_logout(tmp_path):
+def test_local_login_session_csrf_and_logout(seeded_database, tmp_path):
     db_path = tmp_path / "auth-session.db"
-    seed_database(seed=42, db_path=db_path)
+    seeded_database(db_path)
     old_path = os.environ.get("QUORUM_DB_PATH")
     os.environ["QUORUM_DB_PATH"] = str(db_path)
     try:
@@ -97,9 +96,9 @@ def test_local_login_session_csrf_and_logout(tmp_path):
             os.environ["QUORUM_DB_PATH"] = old_path
 
 
-def test_password_hash_is_argon2id_and_club_roles_are_enforced(tmp_path):
+def test_password_hash_is_argon2id_and_club_roles_are_enforced(seeded_database, tmp_path):
     db_path = tmp_path / "auth-roles.db"
-    seed_database(seed=42, db_path=db_path)
+    seeded_database(db_path)
     old_path = os.environ.get("QUORUM_DB_PATH")
     os.environ["QUORUM_DB_PATH"] = str(db_path)
     try:
@@ -141,9 +140,9 @@ def test_password_hash_is_argon2id_and_club_roles_are_enforced(tmp_path):
             os.environ["QUORUM_DB_PATH"] = old_path
 
 
-def test_invalid_passwords_are_throttled_in_sqlite(tmp_path):
+def test_invalid_passwords_are_throttled_in_sqlite(seeded_database, tmp_path):
     db_path = tmp_path / "auth-throttle.db"
-    seed_database(seed=42, db_path=db_path)
+    seeded_database(db_path)
     old_path = os.environ.get("QUORUM_DB_PATH")
     os.environ["QUORUM_DB_PATH"] = str(db_path)
     try:

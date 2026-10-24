@@ -9,7 +9,7 @@ from sqlalchemy import select
 from backend.app.database import create_database_engine, make_session_factory
 from backend.app.main import app
 from backend.app.models import EventType, utc_now
-from backend.app.seed import DEMO_PASSWORDS, seed_database
+from backend.app.seed import DEMO_PASSWORDS
 
 
 def _login(client: TestClient, email: str, password: str) -> dict:
@@ -19,9 +19,9 @@ def _login(client: TestClient, email: str, password: str) -> dict:
     return response.json()
 
 
-def test_organizer_accepts_slot_and_member_rsvps(tmp_path):
+def test_organizer_accepts_slot_and_member_rsvps(seeded_database, tmp_path):
     database = tmp_path / "event-workflow.db"
-    seed_database(seed=42, db_path=database)
+    seeded_database(database)
     engine = create_database_engine(database)
     with make_session_factory(engine)() as db:
         event_type_id = db.scalar(select(EventType.id).order_by(EventType.id))
@@ -62,9 +62,9 @@ def test_organizer_accepts_slot_and_member_rsvps(tmp_path):
             os.environ["QUORUM_DB_PATH"] = old_path
 
 
-def test_only_organizers_cancel_upcoming_events_and_slot_is_released(tmp_path):
+def test_only_organizers_cancel_upcoming_events_and_slot_is_released(seeded_database, tmp_path):
     database = tmp_path / "event-cancel.db"
-    seed_database(seed=42, db_path=database)
+    seeded_database(database)
     engine = create_database_engine(database)
     with make_session_factory(engine)() as db:
         event_type_id = db.scalar(select(EventType.id).order_by(EventType.id))

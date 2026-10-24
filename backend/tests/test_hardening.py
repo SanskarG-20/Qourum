@@ -8,7 +8,6 @@ from fastapi.testclient import TestClient
 
 from backend.app import main
 from backend.app.models import utc_now
-from backend.app.seed import seed_database
 from backend.recsys.individual import AttendanceObservation, TimeObservation, score_members
 
 
@@ -35,9 +34,9 @@ def test_score_range_and_repeatability_over_generated_inputs():
     assert all(np.isfinite(item.score) and 0 <= item.score <= 1 for item in first)
 
 
-def test_injection_and_xss_strings_remain_data_and_requests_are_validated(tmp_path, monkeypatch):
+def test_injection_and_xss_strings_remain_data_and_requests_are_validated(seeded_database, tmp_path, monkeypatch):
     db_path = tmp_path / "hardening.db"
-    seed_database(seed=42, db_path=db_path)
+    seeded_database(db_path)
     monkeypatch.setenv("QUORUM_DB_PATH", str(db_path))
     with TestClient(main.app) as client:
         csrf = client.get("/api/auth/csrf").json()["csrf_token"]

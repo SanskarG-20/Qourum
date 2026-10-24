@@ -11,7 +11,7 @@ from sqlalchemy import delete, func, select
 from backend.app.main import app
 from backend.app.database import create_database_engine, make_session_factory
 from backend.app.models import Availability, ClubMember, EmbeddingCache
-from backend.app.seed import DEMO_PASSWORDS, seed_database
+from backend.app.seed import DEMO_PASSWORDS
 
 
 def _login(client: TestClient, email: str, password: str) -> dict:
@@ -21,9 +21,9 @@ def _login(client: TestClient, email: str, password: str) -> dict:
     return response.json()
 
 
-def test_recommendation_endpoint_role_validation_and_response(tmp_path):
+def test_recommendation_endpoint_role_validation_and_response(seeded_database, tmp_path):
     database = tmp_path / "recommendations.db"
-    seed_database(seed=42, db_path=database)
+    seeded_database(database)
     engine = create_database_engine(database)
     with make_session_factory(engine)() as session:
         member_ids = list(session.scalars(select(ClubMember.member_id).distinct()))

@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from backend.app.database import create_database_engine, make_session_factory
 from backend.app.models import Club, EventType
-from backend.app.seed import DEMO_PASSWORDS, seed_database
+from backend.app.seed import DEMO_PASSWORDS
 
 
 def _login(client: TestClient, email: str, password: str) -> dict:
@@ -17,9 +17,9 @@ def _login(client: TestClient, email: str, password: str) -> dict:
     return response.json()["user"]
 
 
-def test_member_onboarding_validation_and_cold_start_fallback(tmp_path):
+def test_member_onboarding_validation_and_cold_start_fallback(seeded_database, tmp_path):
     db_path = tmp_path / "onboarding.db"
-    seed_database(seed=42, db_path=db_path)
+    seeded_database(db_path)
     old_path = os.environ.get("QUORUM_DB_PATH")
     os.environ["QUORUM_DB_PATH"] = str(db_path)
     try:

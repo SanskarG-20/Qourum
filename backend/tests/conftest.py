@@ -1,9 +1,29 @@
-"""Suite-wide guard against accidental outbound socket connections."""
+"""Suite-wide guard against accidental outbound socket connections, plus a shared seeded database."""
 
 import ipaddress
+import shutil
 import socket
 
 import pytest
+
+from backend.app.seed import seed_database
+
+
+@pytest.fixture(scope="session")
+def _seeded_template(tmp_path_factory):
+    """Seed the deterministic seed-42 database once; tests copy it instead of rebuilding it."""
+    path = tmp_path_factory.mktemp("seed-template") / "template.db"
+    seed_database(seed=42, db_path=path)
+    return path
+
+
+@pytest.fixture
+def seeded_database(_seeded_template):
+    """Return a function that copies the seed-42 database to a destination path."""
+    def copy_to(destination):
+        shutil.copyfile(_seeded_template, destination)
+        return destination
+    return copy_to
 
 
 @pytest.fixture(autouse=True)

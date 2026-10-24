@@ -10,7 +10,7 @@ from sqlalchemy import select
 from backend.app.database import create_database_engine, make_session_factory
 from backend.app.main import app
 from backend.app.models import Club, ClubMember, Event, EventType, FairnessLedger, RSVP, utc_now
-from backend.app.seed import DEMO_PASSWORDS, seed_database
+from backend.app.seed import DEMO_PASSWORDS
 from backend.app.recommendations import load_attendance_rows_before, load_fairness_records_before
 
 
@@ -21,9 +21,9 @@ def _login(client: TestClient, email: str, password: str) -> dict:
     return response.json()
 
 
-def test_feedback_updates_attendance_and_fairness_and_rejects_future_events(tmp_path):
+def test_feedback_updates_attendance_and_fairness_and_rejects_future_events(seeded_database, tmp_path):
     database = tmp_path / "feedback.db"
-    seed_database(seed=42, db_path=database)
+    seeded_database(database)
     engine = create_database_engine(database)
     with make_session_factory(engine)() as db:
         club_id = db.scalar(select(Club.id).where(Club.name.like("ACM%")))
