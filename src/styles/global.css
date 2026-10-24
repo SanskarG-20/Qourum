@@ -18,6 +18,11 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+html.has-custom-cursor,
+html.has-custom-cursor * {
+  cursor: none !important;
+}
+
 /* 1. 125px x 125px Graph Paper Canvas Background (design.md Section D & Section 3) */
 .canvas-grid-bg {
   background-color: var(--color-bg-canvas);

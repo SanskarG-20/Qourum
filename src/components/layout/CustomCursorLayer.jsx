@@ -29,6 +29,8 @@ export function CustomCursorLayer() {
       return undefined;
     }
 
+    document.documentElement.classList.add('has-custom-cursor');
+
     let rafId;
 
     const loop = () => {
@@ -39,10 +41,10 @@ export function CustomCursorLayer() {
         pillPos.current.y += (mousePos.current.y - pillPos.current.y) * 0.16;
 
         if (dotRef.current) {
-          dotRef.current.style.transform = `translate3d(${dotPos.current.x}px, ${dotPos.current.y}px, 0) translate(-50%, -50%)`;
+          dotRef.current.style.transform = `translate3d(${dotPos.current.x}px, ${dotPos.current.y}px, 0)`;
         }
         if (pillRef.current) {
-          pillRef.current.style.transform = `translate3d(${pillPos.current.x + 8}px, ${pillPos.current.y + 16}px, 0)`;
+          pillRef.current.style.transform = `translate3d(${pillPos.current.x + 14}px, ${pillPos.current.y + 18}px, 0)`;
         }
         if (seeCircleRef.current) {
           seeCircleRef.current.style.transform = `translate3d(${dotPos.current.x}px, ${dotPos.current.y}px, 0) translate(-50%, -50%)`;
@@ -116,6 +118,7 @@ export function CustomCursorLayer() {
       cancelAnimationFrame(rafId);
       window.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseleave', handleMouseLeave);
+      document.documentElement.classList.remove('has-custom-cursor');
     };
   }, []);
 
@@ -173,21 +176,34 @@ export function CustomCursorLayer() {
         </span>
       </div>
 
-      {/* 14px Solid #111111 Circle with 1.5px Solid #FFFFFF Border */}
+      {/* Custom arrow pointer with a white outline for contrast over the grid and hero art. */}
       <div
         ref={dotRef}
         style={{
           position: 'absolute',
           top: 0,
           left: 0,
-          width: '14px',
-          height: '14px',
-          borderRadius: '50%',
-          backgroundColor: '#111111',
-          border: '1.5px solid #FFFFFF',
+          width: '20px',
+          height: '24px',
           willChange: 'transform',
         }}
-      />
+      >
+        <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
+          <path
+            d="M1.25 1.25V21.25L6.5 16L10.25 23L14.1 20.9L10.45 13.8H19L1.25 1.25Z"
+            fill="#111111"
+            stroke="#FFFFFF"
+            strokeWidth="2.25"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M1.25 1.25V21.25L6.5 16L10.25 23L14.1 20.9L10.45 13.8H19L1.25 1.25Z"
+            stroke="#111111"
+            strokeWidth="0.75"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </div>
 
       {/* Trailing Elastic "YOU" Pill */}
       <div
