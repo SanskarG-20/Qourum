@@ -24,27 +24,27 @@ export function validateCsvDataset(rows, maxClubSize = 10) {
     const rowIssues = [];
     // FR-004 PII Check (no emails or @ symbols)
     if (String(r.member_id).includes('@')) {
-      rowIssues.push('FR-004 PII Violation: Email detected in member_id');
+      rowIssues.push('PII violation: email detected in member_id');
     }
     // Foreign key member_id check
     if (!validMembers.has(r.member_id)) {
-      rowIssues.push(`FR-002 Foreign Key Error: member_id "${r.member_id}" not in member table`);
+      rowIssues.push(`Foreign key error: member_id "${r.member_id}" not in member table`);
     }
     // Rating 1-5 integer check
     if (!Number.isInteger(r.rating) || r.rating < 1 || r.rating > 5) {
-      rowIssues.push(`FR-001/003 Range Error: rating=${r.rating} outside [1..5]`);
+      rowIssues.push(`Range error: rating=${r.rating} outside [1..5]`);
     }
     // ISO Date check
     const dateMatch = /^\d{4}-(\d{2})-(\d{2})$/.exec(r.date || '');
     if (!dateMatch || Number(dateMatch[1]) > 12 || Number(dateMatch[2]) > 31) {
-      rowIssues.push(`FR-002 Date Parse Error: "${r.date}" is not a valid ISO date`);
+      rowIssues.push(`Date parse error: "${r.date}" is not a valid ISO date`);
     }
     // Attendance <= club size check
     if (r.attendance_count > maxClubSize || r.attendance_count < 0) {
-      rowIssues.push(`FR-002 Attendance Bound Error: count=${r.attendance_count} > club_size (${maxClubSize})`);
+      rowIssues.push(`Attendance bound error: count=${r.attendance_count} > club_size (${maxClubSize})`);
     }
     if (!validSlots.has(r.slot) || !validTypes.has(r.type_id)) {
-      rowIssues.push('FR-003 Enum Error: unknown slot or event type_id');
+      rowIssues.push('Enum error: unknown slot or event type_id');
     }
 
     if (rowIssues.length > 0) {
@@ -153,7 +153,7 @@ export function aggregateCandidateScores(availableMemberDetails, strategy = 'ave
     // FR-010: Minimum member score over available members (with tiny mean tie-breaker)
     groupScore = minScore + mean * 0.02;
   } else if (strategy === 'fairness_aware') {
-    // FR-011: Weighted mean by historical disadvantage minus variance penalty (lambda = 0.45)
+    // FR-011: Weighted mean by historical disadvantage minus variance penalty (lambda = 0.38)
     const totalWeight = availableMemberDetails.reduce((acc, d) => acc + (d.historyWeight || 1.0), 0);
     const weightedMean =
       availableMemberDetails.reduce((acc, d) => acc + d.score * (d.historyWeight || 1.0), 0) /

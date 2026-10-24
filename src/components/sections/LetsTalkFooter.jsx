@@ -131,7 +131,7 @@ export function LetsTalkFooter({ organizerAvatar, onJumpToDemo }) {
                   marginBottom: '14px',
                 }}
               >
-                Comment • Definition of Done (Section 19)
+                Comment • Definition of Done
               </div>
 
               <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>

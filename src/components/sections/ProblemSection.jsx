@@ -11,7 +11,7 @@ const SKILL_ROWS = [
     {
       id: 'preference',
       label: 'Preference Learning',
-      code: 'FR-007 / FR-008',
+      code: 'MODEL',
       bg: '#E5B433',
       text: '#111111',
       tile: 'gold',
@@ -21,7 +21,7 @@ const SKILL_ROWS = [
     {
       id: 'availability',
       label: 'Hard Slot Filter',
-      code: 'FR-005 / FR-006',
+      code: 'FILTER',
       bg: '#3BCF81',
       text: '#111111',
       tile: 'green',
@@ -33,7 +33,7 @@ const SKILL_ROWS = [
     {
       id: 'aggregation',
       label: 'Fair Aggregation',
-      code: 'FR-009 to FR-011',
+      code: 'GROUP',
       bg: '#D0075A',
       text: '#FFFFFF',
       tile: 'magenta',
@@ -43,7 +43,7 @@ const SKILL_ROWS = [
     {
       id: 'explainable',
       label: 'Explainable Top-K',
-      code: 'FR-012 to FR-015',
+      code: 'EXPLAIN',
       bg: '#42D2ED',
       text: '#111111',
       tile: 'cyan',

@@ -21,7 +21,6 @@ export default function LandingPage() {
   const [activeSection, setActiveSection] = useActiveSection(sectionIds);
 
   // Global Interactive Quorum State shared across Hero HUD, Demo Lab, Evaluation, and Survey
-  const [workingTitleId, setWorkingTitleId] = useState('QUORUM');
   const [clubs, setClubs] = useState(SAMPLE_CLUBS);
   const [selectedClubId, setSelectedClubId] = useState('CLUB-01');
   const [strategy, setStrategy] = useState('fairness_aware');
@@ -88,8 +87,6 @@ export default function LandingPage() {
       <main>
         {/* 1. Hero Stage (QUORUM Selection Box, Difference-Blend Hover Lens, Inline Icons, HUD Slider) */}
         <HeroSection
-          workingTitleId={workingTitleId}
-          onChangeWorkingTitle={setWorkingTitleId}
           thresholdPct={thresholdPct}
           onChangeThreshold={setThresholdPct}
           organizerAvatar={MEDIA_ASSETS.organizerPortrait}

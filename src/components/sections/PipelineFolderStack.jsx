@@ -23,7 +23,7 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
       tabLeft: '0%',
       tabWidth: '25.5%',
       flushLeft: true,
-      reqCode: 'FR-001 TO FR-004 • MODULE A',
+      reqCode: 'MODULE A',
       title: 'Schema & Anonymization',
       hook: 'When survey responses and attendance logs validate cleanly without storing a single name, email, or roll number.',
       ctaText: 'TEST CSV VALIDATOR ↗',
@@ -33,7 +33,7 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
       subTextColor: '#1F2D33',
       pillBg: '#FFFFFF',
       pillText: '#111111',
-      tags: ['ZERO PII (FR-004)', 'ROW-LEVEL VALIDATOR'],
+      tags: ['ZERO PII', 'ROW-LEVEL VALIDATOR'],
       selectionBorder: '#111111',
       handleFill: '#42D2ED',
       handleStroke: '#111111',
@@ -44,8 +44,8 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
       imageAlt: 'a group of students collaborating on a blue campus court',
       technicalSpecs: [
         'Entities: Club (1:N Member, 1:N Event), Rating (1–5 int), Availability (0/1), Attendance (0/1)',
-        'FR-002 Import Acceptance: 30-row sample with 3 bad rows loads 27 valid rows & reports 3 errors',
-        'FR-004 Privacy Guarantee: Automated regex scan blocks emails, names, or roll numbers before modeling',
+        'Import Acceptance: 30-row sample with 3 bad rows loads 27 valid rows & reports 3 errors',
+        'Privacy Guarantee: Automated regex scan blocks emails, names, or roll numbers before modeling',
       ],
     },
     {
@@ -54,7 +54,7 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
       tabLeft: '21.5%',
       tabWidth: '26.5%',
       flushLeft: false,
-      reqCode: 'FR-005 TO FR-008 • MODULES B & C',
+      reqCode: 'MODULES B & C',
       title: 'Hard Filter & Preference Model',
       hook: 'From "When is everyone free?" to predicting p(member, type, slot) ∈ [0,1] while dropping impossible exam-week slots.',
       ctaText: 'CONFIGURE FILTER & MODEL ↗',
@@ -74,9 +74,9 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
       imageSrc: mediaAssets.card02StudyRoom,
       imageAlt: 'a student thinking near sunlit windows and indoor plants',
       technicalSpecs: [
-        'Weekly Grid (FR-005): 7 days × 5 slots (Morning, Midday, Afternoon, Evening, Late Evening)',
-        'Hard Filter (FR-006): Drops slots below configurable threshold (default 50%) with automatic fallback banner',
-        'Baselines (FR-007): Random, Most-Popular, and Repeat-Last evaluated on identical metrics',
+        'Weekly Grid: 7 days × 5 slots (Morning, Midday, Afternoon, Evening, Late Evening)',
+        'Hard Filter: Drops slots below configurable threshold (default 50%) with automatic fallback banner',
+        'Baselines: Random, Most-Popular, and Repeat-Last evaluated on identical metrics',
       ],
     },
     {
@@ -85,7 +85,7 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
       tabLeft: '44.5%',
       tabWidth: '26.5%',
       flushLeft: false,
-      reqCode: 'FR-009 TO FR-015 • MODULES D & E',
+      reqCode: 'MODULES D & E',
       title: 'Group Aggregation & Fairness',
       hook: 'Helping organizers see exactly who is left behind when Average and Least-Misery disagree on a polarized club.',
       ctaText: 'COMPARE 3 STRATEGIES ↗',
@@ -105,9 +105,9 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
       imageSrc: mediaAssets.card03YellowCourtyard,
       imageAlt: 'two dogs sitting in front of a yellow tiled courtyard with red striped awning',
       technicalSpecs: [
-        'FR-009 Average: Mean score over available members (maximizes aggregate utility)',
-        'FR-010 Least-Misery: Minimum member score over available members (protects the worst-off attendee)',
-        'FR-011 Fairness-Aware: Historical disadvantage weighting minus intra-group variance penalty',
+        'Average: Mean score over available members (maximizes aggregate utility)',
+        'Least-Misery: Minimum member score over available members (protects the worst-off attendee)',
+        'Fairness-Aware: Historical disadvantage weighting minus intra-group variance penalty',
       ],
     },
     {
@@ -116,7 +116,7 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
       tabLeft: '67.5%',
       tabWidth: '26.5%',
       flushLeft: false,
-      reqCode: 'FR-016 TO FR-018 • MODULE F',
+      reqCode: 'MODULE F',
       title: 'Seeded Synthetic & Eval Harness',
       hook: 'Reproducible temporal-split benchmarks across Homogeneous, Mixed, and Conflicting synthetic clubs.',
       ctaText: 'RUN SEED=42 HARNESS ↗',
@@ -136,9 +136,9 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
       imageSrc: mediaAssets.card04SunsetDunes,
       imageAlt: 'a lone figure standing on golden sand dunes',
       technicalSpecs: [
-        'FR-016 Synthetic Generator: Controllable conflict parameter with explicit is_synthetic=1 labeling',
-        'FR-017 Metrics: Precision@K, NDCG@K, event-type hit rate, Brier score, coverage, diversity, and predicted-satisfaction fairness (Gini)',
-        'Sec 12.3 Caveat: Historical events cannot show attendance for options that were never held; results are synthetic and weak evidence',
+        'Synthetic Generator: Controllable conflict parameter with explicit is_synthetic=1 labeling',
+        'Metrics: Precision@K, NDCG@K, event-type hit rate, Brier score, coverage, diversity, and predicted-satisfaction fairness (Gini)',
+        'Caveat: Historical events cannot show attendance for options that were never held; results are synthetic and weak evidence',
       ],
     },
   ];
@@ -370,7 +370,7 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
                             cursor: 'pointer',
                           }}
                         >
-                          {showSpecs ? 'SHOW PHOTO VIEW' : 'VIEW PRD SPECS'}
+                          {showSpecs ? 'SHOW PHOTO VIEW' : 'VIEW SPECS'}
                         </button>
                       </div>
                     </div>
@@ -458,7 +458,7 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
                             fontWeight: 700,
                           }}
                         >
-                          PRD
+                          SPEC
                         </span>
                         <span>{card.fileBadgeLabel}</span>
                       </div>

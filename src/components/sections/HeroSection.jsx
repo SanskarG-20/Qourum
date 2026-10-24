@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { WORKING_TITLES } from '../../config/siteConfig.js';
+import { PRODUCT_TITLE } from '../../config/siteConfig.js';
 import { SelectionBox } from '../ui/SelectionBox.jsx';
 import { CursorBadge } from '../ui/CursorBadge.jsx';
 import { PixelDisplayHeading } from '../ui/PixelDisplayHeading.jsx';
 import { InlineTargetIcon, InlineFlowerIcon, HandUnderline } from '../ui/GeometricIcons.jsx';
 
 export function HeroSection({
-  workingTitleId,
-  onChangeWorkingTitle,
   thresholdPct,
   onChangeThreshold,
   organizerAvatar,
@@ -21,8 +19,6 @@ export function HeroSection({
   const [rightAvatarExpanded, setRightAvatarExpanded] = useState(false);
   const [isLensDragging, setIsLensDragging] = useState(false);
 
-  const currentTitleObj = WORKING_TITLES.find((t) => t.id === workingTitleId) || WORKING_TITLES[0];
-
   useLayoutEffect(() => {
     const formatTime = () => {
       const now = new Date();
@@ -32,7 +28,7 @@ export function HeroSection({
           minute: '2-digit',
           second: '2-digit',
           hour12: true,
-        }) + ' • RS_MINI PROJECT 2026-27'
+        }) + ' • QUORUM'
       );
     };
     if (clockRef.current) {
@@ -326,7 +322,7 @@ export function HeroSection({
               boxShadow: '0 4px 14px rgba(0,0,0,0.05)',
             }}
           >
-            Currently: {currentTitleObj.tag}
+            {PRODUCT_TITLE.tag}
           </div>
 
           {/* Top-Right Tilted Pastel Yellow Ribbon (+8 deg on desktop, clean row on mobile) */}
@@ -367,7 +363,7 @@ export function HeroSection({
             }}
           >
             <PixelDisplayHeading
-              lines={[currentTitleObj.label]}
+              lines={[PRODUCT_TITLE.label]}
               as="h1"
               size="var(--text-display-hero)"
               scrollFade={false}
@@ -477,7 +473,7 @@ export function HeroSection({
                 textTransform: 'uppercase',
               }}
             >
-              MIN AVAILABILITY (FR-006):
+              MIN AVAILABILITY:
             </span>
             <input
               type="range"
@@ -504,43 +500,6 @@ export function HeroSection({
             >
               {thresholdPct}%
             </span>
-          </div>
-
-          <div style={{ width: '1px', height: '20px', backgroundColor: '#444444' }} className="hide-mobile" />
-
-          {/* Working Title Switcher (prd.md Section 0 & Section 17.3 Open Question #1) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '11px',
-                color: '#AAAAAA',
-                textTransform: 'uppercase',
-                marginRight: '4px',
-              }}
-            >
-              TITLE:
-            </span>
-            {WORKING_TITLES.map((wt) => (
-              <button
-                key={wt.id}
-                type="button"
-                onClick={() => onChangeWorkingTitle(wt.id)}
-                style={{
-                  backgroundColor: workingTitleId === wt.id ? 'var(--color-cyan-primary)' : '#333333',
-                  color: workingTitleId === wt.id ? '#111111' : '#FFFFFF',
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '4px 10px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                {wt.id}
-              </button>
-            ))}
           </div>
         </div>
 

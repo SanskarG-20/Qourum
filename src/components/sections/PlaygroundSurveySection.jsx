@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { EVENT_TYPES, PRD_OPEN_QUESTIONS } from '../../config/siteConfig.js';
+import { EVENT_TYPES, FAQ_ITEMS } from '../../config/siteConfig.js';
 import { PixelDisplayHeading } from '../ui/PixelDisplayHeading.jsx';
 import { SelectionBox } from '../ui/SelectionBox.jsx';
 
@@ -31,7 +31,7 @@ export function PlaygroundSurveySection({
   // Section 17.3 Open Questions Interactive Reactions & Selected Answers
   const [questionStates, setQuestionStates] = useState(() => {
     const init = {};
-    PRD_OPEN_QUESTIONS.forEach((q) => {
+    FAQ_ITEMS.forEach((q) => {
       init[q.id] = {
         count: q.reactionCount,
         reacted: false,
@@ -138,7 +138,7 @@ export function PlaygroundSurveySection({
               lineHeight: 1.5,
             }}
           >
-            Complete the under-3-minute anonymized Member Preference &amp; Availability Survey dry-run (FR-001 / US-4) and inspect the Section 17.3 Open Questions.
+            Try the anonymized Member Preference &amp; Availability Survey dry-run, then read the answers to common questions.
           </p>
         </div>
 
@@ -177,7 +177,7 @@ export function PlaygroundSurveySection({
                     fontWeight: 700,
                   }}
                 >
-                  FR-001 • US-4 MEMBER SURVEY DRY-RUN (MEDIAN TIME &lt; 90 SEC)
+                  MEMBER SURVEY DRY-RUN
                 </span>
                 <h3
                   style={{
@@ -229,7 +229,7 @@ export function PlaygroundSurveySection({
                       marginBottom: '12px',
                     }}
                   >
-                    1. RATE EVENT TYPES (INTEGER 1–5 • FR-001):
+                    1. RATE EVENT TYPES (INTEGER 1–5):
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {EVENT_TYPES.map((et) => (
@@ -285,7 +285,7 @@ export function PlaygroundSurveySection({
                         marginBottom: '12px',
                       }}
                     >
-                      2. SELECT YOUR FREE SLOTS (BINARY 0/1 • FR-005):
+                      2. SELECT YOUR FREE SLOTS (BINARY 0/1):
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                       {quickSlotOptions.map((s) => {
@@ -375,7 +375,7 @@ export function PlaygroundSurveySection({
                         onChange={(e) => setConsentChecked(e.target.checked)}
                       />
                       <span>
-                        <strong>Section 11.3 Consent:</strong> I consent to anonymous aggregation. No name, email, or roll number is collected.
+                        <strong>Consent:</strong> I consent to anonymous aggregation. No name, email, or roll number is collected.
                       </span>
                     </label>
 
@@ -428,7 +428,7 @@ export function PlaygroundSurveySection({
             gap: '32px',
           }}
         >
-          {PRD_OPEN_QUESTIONS.map((item) => {
+          {FAQ_ITEMS.map((item) => {
             const st = questionStates[item.id];
             return (
               <article
@@ -455,8 +455,8 @@ export function PlaygroundSurveySection({
                     justifyContent: 'space-between',
                   }}
                 >
-                  <span>Question ({item.id})</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>PRD SEC 17.3</span>
+                  <span>Question</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>FAQ</span>
                 </div>
 
                 {/* User Question Row */}

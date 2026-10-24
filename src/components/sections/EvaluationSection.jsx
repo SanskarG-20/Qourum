@@ -303,7 +303,7 @@ export function EvaluationSection({ onLoadClubRegime }) {
           >
             <div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 600, color: '#555555', marginBottom: '8px' }}>
-                SYNTHETIC CONFLICT GENERATOR (FR-016 &amp; SECTION 12.3)
+                SYNTHETIC CONFLICT GENERATOR
               </div>
               <h3
                 style={{

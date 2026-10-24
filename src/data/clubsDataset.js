@@ -155,10 +155,10 @@ export const SAMPLE_CLUBS = [
   {
     club_id: 'CLUB-04',
     name: 'Quantum Hardware Reading Group (<5 Members)',
-    regime: 'Small Club Boundary Case (Sec 8 Warning)',
+    regime: 'Small Club Boundary Case (Low-Confidence Warning)',
     conflictBadgeColor: '#42D2ED',
     is_synthetic: true,
-    description: '4-member mini-group designed to test the Section 8 boundary condition: clubs with fewer than 5 members trigger an explicit Low-Confidence Warning badge.',
+    description: '4-member mini-group designed to test the small-club boundary condition: clubs with fewer than 5 members trigger an explicit Low-Confidence Warning badge.',
     lastEvent: { type_id: 'talk', day: 'Wed', slot: 'afternoon', date: '2026-10-01', attendanceCount: 3 },
     members: [
       { member_id: 'M-01', personaTag: 'Physics Grad', historyWeight: 1.0, pastEventsAttended: 3, ratings: { talk: 5, workshop: 5, quiz: 3, hackathon: 4, social: 2 }, availability: { 'Wed-afternoon': 1, 'Fri-evening': 1 } },

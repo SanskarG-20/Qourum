@@ -3,8 +3,8 @@ import { NAV_ITEMS } from '../../config/siteConfig.js';
 import { BrandArchLogo, NavTabIcon } from '../ui/GeometricIcons.jsx';
 
 const TOOLTIP_TEXT = {
-  sc: 'FR-004: ZERO PII • ANONYMIZED MEMBER_ID SCHEMA',
-  sd: 'FR-018: SEED=42 DETERMINISTIC HARNESS',
+  sc: 'ZERO PII • ANONYMIZED MEMBER_ID SCHEMA',
+  sd: 'SEED=42 • DETERMINISTIC SEED DATA',
   avatar: 'DOWNLOAD RESUME • ORGANIZER SPEC',
 };
 
@@ -154,7 +154,7 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
           <button
             ref={scRef}
             type="button"
-            aria-label="Inspect Anonymized CSV Schema (FR-004)"
+            aria-label="Inspect Anonymized CSV Schema"
             onMouseEnter={() => setActiveTooltip('sc')}
             onMouseLeave={() => setActiveTooltip((prev) => (prev === 'sc' ? null : prev))}
             onClick={() => {
@@ -184,7 +184,7 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
           <button
             ref={sdRef}
             type="button"
-            aria-label="Inspect Reproducible Seed (FR-018)"
+            aria-label="Inspect Reproducible Seed"
             onMouseEnter={() => setActiveTooltip('sd')}
             onMouseLeave={() => setActiveTooltip((prev) => (prev === 'sd' ? null : prev))}
             onClick={() => {
@@ -217,7 +217,7 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
             onMouseEnter={() => setActiveTooltip('avatar')}
             onMouseLeave={() => setActiveTooltip((prev) => (prev === 'avatar' ? null : prev))}
             onClick={() => onSelectSection('problem')}
-            aria-label="Club Organizer Persona (Section 5)"
+            aria-label="Club organizer"
             style={{
               width: '38px',
               height: '38px',
