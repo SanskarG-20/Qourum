@@ -404,6 +404,7 @@ export function PixelDisplayHeading({
   waitingForArrival = false,
 }) {
   const containerRef = useRef(null);
+  const scrollFrameRef = useRef(0);
   const fullLabel = lines.join(' ');
   const totalChars = lines.reduce((sum, l) => sum + l.length, 0);
 
@@ -431,9 +432,45 @@ export function PixelDisplayHeading({
       });
     };
 
-    window.addEventListener('scroll', updateCharOpacities, { passive: true });
-    updateCharOpacities();
-    return () => window.removeEventListener('scroll', updateCharOpacities);
+    const setAllCharactersVisible = () => {
+      const el = containerRef.current;
+      if (!el) return;
+      el.querySelectorAll('[data-char-pos]').forEach((span) => {
+        span.style.opacity = '1';
+      });
+    };
+
+    const scheduleUpdate = () => {
+      if (scrollFrameRef.current) return;
+      scrollFrameRef.current = requestAnimationFrame(() => {
+        scrollFrameRef.current = 0;
+        updateCharOpacities();
+      });
+    };
+
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const applyMotionPreference = () => {
+      if (motionPreference.matches) {
+        if (scrollFrameRef.current) cancelAnimationFrame(scrollFrameRef.current);
+        scrollFrameRef.current = 0;
+        setAllCharactersVisible();
+        return;
+      }
+      updateCharOpacities();
+    };
+
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', scheduleUpdate, { passive: true });
+    motionPreference.addEventListener('change', applyMotionPreference);
+    applyMotionPreference();
+
+    return () => {
+      window.removeEventListener('scroll', scheduleUpdate);
+      window.removeEventListener('resize', scheduleUpdate);
+      motionPreference.removeEventListener('change', applyMotionPreference);
+      if (scrollFrameRef.current) cancelAnimationFrame(scrollFrameRef.current);
+      scrollFrameRef.current = 0;
+    };
   }, [scrollFade]);
 
   let globalCharIndex = 0;

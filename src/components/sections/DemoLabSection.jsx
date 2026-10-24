@@ -11,6 +11,7 @@ import { runQuorumPipeline, validateCsvDataset } from '../../utils/recommenderEn
 import { PixelDisplayHeading } from '../ui/PixelDisplayHeading.jsx';
 import { SelectionBox } from '../ui/SelectionBox.jsx';
 import { CursorBadge } from '../ui/CursorBadge.jsx';
+import { scrollToElement } from '../../utils/scrollToElement.js';
 
 export function DemoLabSection({
   clubs,
@@ -122,9 +123,7 @@ export function DemoLabSection({
   const scrollToSubZone = (zoneId) => {
     setActiveSubZone(zoneId);
     const el = document.getElementById(`demo-zone-${zoneId}`);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    scrollToElement(el);
   };
 
   return (

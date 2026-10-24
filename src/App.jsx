@@ -15,6 +15,7 @@ import { EvaluationSection } from './components/sections/EvaluationSection.jsx';
 import { PlaygroundSurveySection } from './components/sections/PlaygroundSurveySection.jsx';
 import { LetsTalkFooter } from './components/sections/LetsTalkFooter.jsx';
 import { QuorumMemberApp } from './components/app/MemberOnboarding.jsx';
+import { scrollToElement } from './utils/scrollToElement.js';
 
 function LandingPage() {
   const sectionIds = useMemo(() => NAV_ITEMS.map((item) => item.id), []);
@@ -33,9 +34,7 @@ function LandingPage() {
   const scrollToSection = (id) => {
     setActiveSection(id);
     const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    scrollToElement(el);
   };
 
   const handleInspectModuleInDemo = (target) => {

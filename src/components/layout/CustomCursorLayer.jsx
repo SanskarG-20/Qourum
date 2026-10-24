@@ -25,15 +25,14 @@ export function CustomCursorLayer() {
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const coarsePointer = window.matchMedia('(pointer: coarse)');
-    if (mediaQuery.matches || coarsePointer.matches) {
-      return undefined;
-    }
-
-    document.documentElement.classList.add('has-custom-cursor');
-
-    let rafId;
+    let rafId = 0;
+    let cursorEnabled = false;
 
     const loop = () => {
+      if (!cursorEnabled) {
+        rafId = 0;
+        return;
+      }
       if (initialized.current) {
         dotPos.current.x += (mousePos.current.x - dotPos.current.x) * 0.28;
         dotPos.current.y += (mousePos.current.y - dotPos.current.y) * 0.28;
@@ -56,9 +55,25 @@ export function CustomCursorLayer() {
       rafId = requestAnimationFrame(loop);
     };
 
-    rafId = requestAnimationFrame(loop);
+    const syncCursorAvailability = () => {
+      const shouldEnable = !mediaQuery.matches && !coarsePointer.matches;
+      if (!shouldEnable) {
+        cursorEnabled = false;
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = 0;
+        initialized.current = false;
+        if (containerRef.current) containerRef.current.style.display = 'none';
+        document.documentElement.classList.remove('has-custom-cursor');
+        return;
+      }
+      if (cursorEnabled) return;
+      cursorEnabled = true;
+      document.documentElement.classList.add('has-custom-cursor');
+      rafId = requestAnimationFrame(loop);
+    };
 
     const handleMouseMove = (e) => {
+      if (!cursorEnabled) return;
       if (!initialized.current) {
         dotPos.current = { x: e.clientX, y: e.clientY };
         pillPos.current = { x: e.clientX, y: e.clientY };
@@ -113,11 +128,17 @@ export function CustomCursorLayer() {
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     document.addEventListener('mouseleave', handleMouseLeave);
+    mediaQuery.addEventListener('change', syncCursorAvailability);
+    coarsePointer.addEventListener('change', syncCursorAvailability);
+    syncCursorAvailability();
 
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseleave', handleMouseLeave);
+      mediaQuery.removeEventListener('change', syncCursorAvailability);
+      coarsePointer.removeEventListener('change', syncCursorAvailability);
+      cursorEnabled = false;
       document.documentElement.classList.remove('has-custom-cursor');
     };
   }, []);

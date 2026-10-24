@@ -1,27 +1,68 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PixelDisplayHeading } from '../ui/PixelDisplayHeading.jsx';
 import { SelectionBox } from '../ui/SelectionBox.jsx';
 import { RulerBar } from '../layout/RulerBar.jsx';
 
 export function LetsTalkFooter({ organizerAvatar, onJumpToDemo }) {
   const eyesGroupRef = useRef(null);
+  const eyeOffsetRef = useRef({ x: 0, y: 0 });
+  const eyeTargetRef = useRef({ x: 0, y: 0 });
+  const eyeFrameRef = useRef(0);
   const [reactionCount, setReactionCount] = useState(1);
   const [reacted, setReacted] = useState(false);
   const [bannerHovered, setBannerHovered] = useState(false);
 
+  const animateEyes = () => {
+    const eyes = eyesGroupRef.current;
+    if (!eyes) {
+      eyeFrameRef.current = 0;
+      return;
+    }
+
+    const current = eyeOffsetRef.current;
+    const target = eyeTargetRef.current;
+    current.x += (target.x - current.x) * 0.2;
+    current.y += (target.y - current.y) * 0.2;
+
+    if (Math.abs(target.x - current.x) < 0.08 && Math.abs(target.y - current.y) < 0.08) {
+      current.x = target.x;
+      current.y = target.y;
+      eyeFrameRef.current = 0;
+    } else {
+      eyeFrameRef.current = requestAnimationFrame(animateEyes);
+    }
+
+    eyes.setAttribute('transform', `translate(${current.x.toFixed(2)}, ${current.y.toFixed(2)})`);
+  };
+
+  const setEyeTarget = (x, y) => {
+    eyeTargetRef.current = { x, y };
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      eyeOffsetRef.current = { x, y };
+      eyesGroupRef.current?.setAttribute('transform', `translate(${x}, ${y})`);
+      return;
+    }
+    if (!eyeFrameRef.current) eyeFrameRef.current = requestAnimationFrame(animateEyes);
+  };
+
   const handleMouseMove = (e) => {
-    if (!eyesGroupRef.current) return;
+    if (!eyesGroupRef.current || window.matchMedia('(pointer: coarse)').matches) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const relX = (e.clientX - rect.left) / (rect.width || 1) - 0.5;
     const relY = (e.clientY - rect.top) / (rect.height || 1) - 0.5;
-    const ox = Math.round(relX * 18);
-    const oy = Math.round(relY * 14);
-    eyesGroupRef.current.setAttribute('transform', `translate(${ox}, ${oy})`);
+    setEyeTarget(Math.round(relX * 18), Math.round(relY * 14));
   };
+
+  const handleMouseLeave = () => setEyeTarget(0, 0);
+
+  useEffect(() => () => {
+    if (eyeFrameRef.current) cancelAnimationFrame(eyeFrameRef.current);
+  }, []);
 
   return (
     <footer
       onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       style={{
         position: 'relative',
         paddingTop: '48px',
@@ -184,6 +225,7 @@ export function LetsTalkFooter({ organizerAvatar, onJumpToDemo }) {
             style={{ cursor: 'pointer', maxWidth: '100%' }}
           >
             <SelectionBox
+              className="footer-contact-selection"
               borderColor={bannerHovered ? '#FFFFFF' : '#111111'}
               handleFill={bannerHovered ? '#111111' : '#42D2ED'}
               handleStroke={bannerHovered ? '#FFFFFF' : '#111111'}
@@ -194,7 +236,7 @@ export function LetsTalkFooter({ organizerAvatar, onJumpToDemo }) {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '24px',
-                transition: 'all 200ms cubic-bezier(0.16, 1, 0.3, 1)',
+                transition: 'background-color 200ms cubic-bezier(0.16, 1, 0.3, 1)',
               }}
             >
               <div

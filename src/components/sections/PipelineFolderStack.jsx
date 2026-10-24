@@ -3,6 +3,7 @@ import { PixelDisplayHeading } from '../ui/PixelDisplayHeading.jsx';
 import { StickyNote } from '../ui/StickyNote.jsx';
 import { SelectionBox } from '../ui/SelectionBox.jsx';
 import { HandUnderline, NavTabIcon } from '../ui/GeometricIcons.jsx';
+import { scrollToElement } from '../../utils/scrollToElement.js';
 
 export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
   const [activeOverlayCard, setActiveOverlayCard] = useState({});
@@ -233,9 +234,7 @@ export function PipelineFolderStack({ mediaAssets, onInspectModuleInDemo }) {
                     onClick={(e) => {
                       e.stopPropagation();
                       const el = document.getElementById(`folder-card-${card.id}`);
-                      if (el) {
-                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      }
+                      scrollToElement(el);
                     }}
                     className={`folder-tab-top ${card.flushLeft ? 'folder-tab-top--flush-left' : ''}`}
                     style={{
