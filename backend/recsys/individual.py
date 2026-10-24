@@ -85,14 +85,16 @@ def score_members(
         raise ValueError("Popularity fallback must be in [0, 1].")
 
     count = len(member_ids)
-    explicit = np.full(count, np.nan, dtype=np.float64)
-    implicit = np.full(count, np.nan, dtype=np.float64)
-    time_affinity = np.full(count, np.nan, dtype=np.float64)
-    confidence_explicit = np.zeros(count, dtype=np.float64)
-    confidence_implicit = np.zeros(count, dtype=np.float64)
-    confidence_time = np.zeros(count, dtype=np.float64)
-    content = np.full(count, np.nan, dtype=np.float64)
-    confidence_content = np.zeros(count, dtype=np.float64)
+    nan = float("nan")
+    explicit = [nan] * count
+    implicit = [nan] * count
+    time_affinity = [nan] * count
+    content = [nan] * count
+    confidence_explicit = [0.0] * count
+    confidence_implicit = [0.0] * count
+    confidence_time = [0.0] * count
+    confidence_content = [0.0] * count
+    decay_rate = np.log(2.0)
 
     for index, member_id in enumerate(member_ids):
         rating = preferences.get(member_id, {}).get(event_type_id)
@@ -116,8 +118,12 @@ def score_members(
                 else:
                     values[item_index] = config.IMPLICIT_IGNORED_VALUE
                 ages[item_index] = max(0.0, (now - row.timestamp).total_seconds() / 86400.0)
-            recency = np.exp(-np.log(2.0) * ages / config.ATTENDANCE_HALF_LIFE_DAYS) if recency_decay else np.ones_like(ages)
-            implicit[index] = float(np.average(values, weights=recency))
+            recency = np.exp(-decay_rate * ages / config.ATTENDANCE_HALF_LIFE_DAYS) if recency_decay else np.ones_like(ages)
+            # Same arithmetic as np.average(values, weights=recency), without its per-call overhead.
+            total_recency = recency.sum()
+            if total_recency == 0:
+                raise ZeroDivisionError("Weights sum to zero, can't be normalized")
+            implicit[index] = float((values * recency).sum() / total_recency)
             confidence_implicit[index] = len(matching) / (len(matching) + config.IMPLICIT_CONFIDENCE_PRIOR)
 
         slots = time_history.get(member_id, ()) if time_affinity_enabled else ()
@@ -134,16 +140,17 @@ def score_members(
             content[index] = signal.similarity
             confidence_content[index] = signal.observation_count / (signal.observation_count + config.CONTENT_CONFIDENCE_PRIOR)
 
+    components = (
+        ("explicit", explicit, confidence_explicit, config.EXPLICIT_BASE_WEIGHT),
+        ("implicit", implicit, confidence_implicit, config.IMPLICIT_BASE_WEIGHT),
+        ("time", time_affinity, confidence_time, config.TIME_BASE_WEIGHT),
+        ("content", content, confidence_content, config.CONTENT_BASE_WEIGHT),
+    )
     result: list[MemberScore] = []
     for index in range(count):
         available: list[tuple[str, float, float]] = []
-        for name, values, confidence, base in (
-            ("explicit", explicit, confidence_explicit, config.EXPLICIT_BASE_WEIGHT),
-            ("implicit", implicit, confidence_implicit, config.IMPLICIT_BASE_WEIGHT),
-            ("time", time_affinity, confidence_time, config.TIME_BASE_WEIGHT),
-            ("content", content, confidence_content, config.CONTENT_BASE_WEIGHT),
-        ):
-            if not np.isnan(values[index]):
+        for name, values, confidence, base in components:
+            if values[index] == values[index]:  # not NaN
                 available.append((name, float(values[index]), float(base * confidence[index])))
         if available and sum(weight for _, _, weight in available) > 0:
             total_weight = sum(weight for _, _, weight in available)
@@ -155,11 +162,11 @@ def score_members(
             weights = {"club_popularity": config.COLD_START_BASE_WEIGHT}
             is_cold_start = True
         result.append(MemberScore(
-            score=float(np.clip(score, 0.0, 1.0)),
-            explicit_rating=None if np.isnan(explicit[index]) else float(explicit[index]),
-            implicit_attendance=None if np.isnan(implicit[index]) else float(implicit[index]),
-            time_affinity=None if np.isnan(time_affinity[index]) else float(time_affinity[index]),
-            content_similarity=None if np.isnan(content[index]) else float(content[index]),
+            score=float(min(1.0, max(0.0, score))),
+            explicit_rating=None if explicit[index] != explicit[index] else float(explicit[index]),
+            implicit_attendance=None if implicit[index] != implicit[index] else float(implicit[index]),
+            time_affinity=None if time_affinity[index] != time_affinity[index] else float(time_affinity[index]),
+            content_similarity=None if content[index] != content[index] else float(content[index]),
             confidence={"explicit": float(confidence_explicit[index]), "implicit": float(confidence_implicit[index]), "time": float(confidence_time[index]), "content": float(confidence_content[index])},
             component_weights=weights,
             is_cold_start=is_cold_start,
