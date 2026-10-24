@@ -107,6 +107,7 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
                   key={item.id}
                   href={item.href}
                   data-nav-section={item.id}
+                  aria-current={isActive ? 'location' : undefined}
                   className={`nav-tab-link ${isActive ? 'is-active' : ''}`}
                   onClick={(e) => {
                     e.preventDefault();
@@ -126,7 +127,7 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
                     letterSpacing: '0.05em',
                     textTransform: 'uppercase',
                     textDecoration: 'none',
-                    transition: 'background-color 160ms ease',
+                    transition: 'background-color 360ms cubic-bezier(0.22, 1, 0.36, 1), color 240ms ease',
                     whiteSpace: 'nowrap',
                   }}
                 >

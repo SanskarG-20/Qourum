@@ -52,12 +52,16 @@ export function IntroSplashBubble({ onComplete }) {
       if (displayText.length < currentTarget.length) {
         loopTimerRef.current = setTimeout(() => {
           setDisplayText(currentTarget.slice(0, displayText.length + 1));
-        }, 75);
+        }, 34);
       } else {
         // Full phrase typed: pause comfortably to read
-        const pauseTime = phraseIndex === 0 ? 1100 : 1250;
+        const pauseTime = phraseIndex === 0 ? 420 : 640;
         loopTimerRef.current = setTimeout(() => {
-          setIsDeleting(true);
+          if (phraseIndex === PHRASES.length - 1) {
+            handleDismiss();
+          } else {
+            setIsDeleting(true);
+          }
         }, pauseTime);
       }
     } else {
@@ -65,7 +69,7 @@ export function IntroSplashBubble({ onComplete }) {
       if (displayText.length > 0) {
         loopTimerRef.current = setTimeout(() => {
           setDisplayText(currentTarget.slice(0, displayText.length - 1));
-        }, 40);
+        }, 20);
       } else {
         // Fully deleted
         if (phraseIndex < PHRASES.length - 1) {
@@ -73,11 +77,6 @@ export function IntroSplashBubble({ onComplete }) {
             setIsDeleting(false);
             setPhraseIndex((prev) => prev + 1);
           }, 240);
-        } else {
-          // Both lines typed & deleted: dissolve out bubble to trigger hero QUORUM arrival
-          loopTimerRef.current = setTimeout(() => {
-            handleDismiss();
-          }, 140);
         }
       }
     }

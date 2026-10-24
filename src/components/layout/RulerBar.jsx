@@ -1,27 +1,36 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 export function RulerBar({ position = 'top' }) {
   const stripRef = useRef(null);
   const guideRef = useRef(null);
+  const frameRef = useRef(0);
+  const pointerXRef = useRef(0);
 
-  const handleMouseMove = (e) => {
+  const handlePointerMove = (e) => {
+    if (e.pointerType === 'touch' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const cursorX = e.clientX - rect.left;
-    const relX = (cursorX / (rect.width || 1)) - 0.5;
-    const scrubOffset = relX * -120;
+    pointerXRef.current = e.clientX - rect.left;
+    if (frameRef.current) return;
+    frameRef.current = requestAnimationFrame(() => {
+      frameRef.current = 0;
+      const cursorX = pointerXRef.current;
+      const relX = (cursorX / (rect.width || 1)) - 0.5;
+      const scrubOffset = relX * -120;
 
-    if (stripRef.current) {
-      stripRef.current.style.transition = 'transform 60ms linear';
-      stripRef.current.style.transform = `translate3d(${scrubOffset}px, 0, 0)`;
-    }
-
-    if (guideRef.current) {
-      guideRef.current.style.display = 'block';
-      guideRef.current.style.transform = `translate3d(${cursorX}px, 0, 0)`;
-    }
+      if (stripRef.current) {
+        stripRef.current.style.transition = 'transform 90ms linear';
+        stripRef.current.style.transform = `translate3d(${scrubOffset}px, 0, 0)`;
+      }
+      if (guideRef.current) {
+        guideRef.current.style.display = 'block';
+        guideRef.current.style.transform = `translate3d(${cursorX}px, 0, 0)`;
+      }
+    });
   };
 
   const handleMouseLeave = () => {
+    if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    frameRef.current = 0;
     if (stripRef.current) {
       stripRef.current.style.transition = 'transform 420ms cubic-bezier(0.22, 1, 0.36, 1)';
       stripRef.current.style.transform = 'translate3d(0px, 0, 0)';
@@ -31,6 +40,10 @@ export function RulerBar({ position = 'top' }) {
     }
   };
 
+  useEffect(() => () => {
+    if (frameRef.current) cancelAnimationFrame(frameRef.current);
+  }, []);
+
   const ticks = [];
   for (let val = 0; val <= 1600; val += 50) {
     ticks.push(val);
@@ -39,8 +52,8 @@ export function RulerBar({ position = 'top' }) {
   return (
     <div
       aria-hidden="true"
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handleMouseLeave}
       style={{
         width: '100%',
         height: 'var(--ruler-height)',

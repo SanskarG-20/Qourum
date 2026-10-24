@@ -61,6 +61,7 @@ export function LetsTalkFooter({ organizerAvatar, onJumpToDemo }) {
 
   return (
     <footer
+      data-motion-section
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       style={{

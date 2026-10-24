@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { NAV_ITEMS } from './config/siteConfig.js';
 import { SAMPLE_CLUBS } from './data/clubsDataset.js';
 import { MEDIA_ASSETS } from './assets/mediaAssets.js';
-import { useActiveSection } from './hooks/useScrollReveal.js';
+import { useActiveSection, SectionRevealObserver } from './hooks/useScrollReveal.js';
 import { TopNavbar } from './components/layout/TopNavbar.jsx';
 import { RulerBar } from './components/layout/RulerBar.jsx';
 import { CustomCursorLayer } from './components/layout/CustomCursorLayer.jsx';
@@ -64,6 +64,7 @@ function LandingPage() {
 
   return (
     <div className="canvas-grid-bg" style={{ minHeight: '100vh', position: 'relative' }}>
+      <SectionRevealObserver />
       {/* Global Multiplayer 'YOU' Cursor & Contextual 'See' Circle */}
       <CustomCursorLayer />
 
