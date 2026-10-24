@@ -270,7 +270,7 @@ export function HeroSection({
           {''}
         </div>
 
-        {/* 2. Handwritten Kicker ('working title is' / 'my name is' from frame_005) */}
+        {/* 2. Handwritten Kicker ('introducing' / 'my name is' from frame_005) */}
         <div
           style={{
             fontFamily: 'var(--font-hand)',
@@ -283,7 +283,7 @@ export function HeroSection({
             zIndex: 5,
           }}
         >
-          <span>working title is</span>
+          <span>introducing</span>
           <HandUnderline width={118} />
         </div>
 

@@ -323,7 +323,7 @@ export function PlaygroundSurveySection({
                     }}
                   >
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11.5px', fontWeight: 700, marginBottom: '10px' }}>
-                      3. SECTION 3.3 PROBLEM VALIDATION QUESTIONS (FOR FINAL REPORT):
+                      3. PROBLEM VALIDATION QUESTIONS:
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                       <div>

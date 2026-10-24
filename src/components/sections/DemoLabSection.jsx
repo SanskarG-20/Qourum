@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   EVENT_TYPES,
   AGGREGATION_STRATEGIES,
@@ -22,7 +22,7 @@ export function DemoLabSection({
   thresholdPct,
   onChangeThresholdPct,
 }) {
-  const [activeSubZone, setActiveSubZone] = useState('results'); // 'data' | 'config' | 'results'
+  const [activeSubZone, setActiveSubZone] = useState('data'); // 'data' | 'config' | 'results'
   const [topK, setTopK] = useState(3);
   const [excludedMembers, setExcludedMembers] = useState([]);
   const [excludedTypes, setExcludedTypes] = useState([]);
@@ -117,6 +117,31 @@ export function DemoLabSection({
     setExportStatus(`EXPORTED TOP-${topK} CSV (${activeClub.club_id})`);
     setTimeout(() => setExportStatus(''), 3000);
   };
+
+  // Keep the side pill in step with the zone currently near the top of the viewport.
+  useEffect(() => {
+    const zoneIds = ['data', 'config', 'results'];
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const probe = window.innerHeight * 0.4;
+      let current = zoneIds[0];
+      zoneIds.forEach((id) => {
+        const el = document.getElementById(`demo-zone-${id}`);
+        if (el && el.getBoundingClientRect().top <= probe) current = id;
+      });
+      setActiveSubZone(current);
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
 
   const scrollToSubZone = (zoneId) => {
     setActiveSubZone(zoneId);

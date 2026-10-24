@@ -179,7 +179,7 @@ export function EvaluationSection({ onLoadClubRegime }) {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
               gap: '22px',
               marginBottom: '48px',
             }}
@@ -191,6 +191,10 @@ export function EvaluationSection({ onLoadClubRegime }) {
                 style={{
                   backgroundColor: 'var(--color-cyan-primary)',
                   color: '#111111',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  justifyContent: 'center',
+                  gap: '6px',
                 }}
               >
                 <span style={{ fontWeight: 700 }}>{m.name}</span>

@@ -118,7 +118,7 @@ export function ResultsZone({
                           color: '#111111',
                         }}
                       >
-                        <strong>⚠ SECTION 8 LOW-CONFIDENCE CLUB WARNING:</strong> Active club size ({activeClub.members.length - excludedMembers.length} members) is fewer than 5 members. Statistical aggregation has higher variance.
+                        <strong>⚠ LOW-CONFIDENCE CLUB WARNING:</strong> Active club size ({activeClub.members.length - excludedMembers.length} members) is fewer than 5 members. Statistical aggregation has higher variance.
                       </div>
                     )}
 
@@ -156,7 +156,7 @@ export function ResultsZone({
                         marginBottom: '10px',
                       }}
                     >
-                      US-3 LIVE STRATEGY COMPARISON — TOP #1 CHOICE ACROSS ALL 3 AGGREGATION FUNCTIONS:
+                      LIVE STRATEGY COMPARISON — TOP #1 CHOICE ACROSS ALL 3 AGGREGATION FUNCTIONS:
                     </div>
                     <div
                       style={{
@@ -515,7 +515,7 @@ export function ResultsZone({
                   style={{
                     position: 'absolute',
                     right: '-24px',
-                    top: '-18px',
+                    top: '-54px',
                     zIndex: 8,
                   }}
                 >
