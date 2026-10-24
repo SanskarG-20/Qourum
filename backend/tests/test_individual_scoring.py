@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 
-from backend.recsys.individual import AttendanceObservation, ContentSignal, TimeObservation, score_members
+from backend.recsys.individual import AttendanceObservation, ContentSignal, TimeObservation, club_attendance_fallback, score_members
 
 
 NOW = datetime(2026, 1, 1, 12, 0)
@@ -57,3 +57,14 @@ def test_content_similarity_is_monotonic_bounded_and_optional():
     assert np.isclose(high.confidence["content"], 10 / 13)
     assert disabled.score == baseline.score
     assert baseline.is_cold_start and high.is_cold_start is False
+
+
+def test_club_attendance_fallback_is_a_smoothed_probability():
+    assert club_attendance_fallback({}, "talk") == 0.5
+    outcomes = {"talk": (8, 10), "social": (2, 10)}
+    talk = club_attendance_fallback(outcomes, "talk")
+    social = club_attendance_fallback(outcomes, "social")
+    unseen = club_attendance_fallback(outcomes, "workshop")
+    assert 0.0 <= social < unseen < talk <= 1.0
+    assert abs(unseen - 0.5) < 1e-12
+    assert talk < 0.8

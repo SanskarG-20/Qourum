@@ -104,9 +104,13 @@ def assess_candidate(
     """Check conflicts, blocks, dealbreakers, availability, and expected quorum.
 
     A member is considered available when one normalized weekly window on the
-    candidate weekday fully contains the candidate event. Expected attendance
-    is the sum of individual event-slot scores among available members. All
-    independent failure causes are retained in deterministic reason-code order.
+    candidate weekday fully contains the candidate event and the event does not
+    start after their latest-start dealbreaker. A dealbreaker removes only that
+    member from the available set; it makes the slot infeasible, with the
+    `dealbreaker_latest_start` reason, only when the remaining members cannot
+    meet quorum. Expected attendance is the sum of individual event-slot scores
+    among available members. All independent failure causes are retained in
+    deterministic reason-code order.
     """
     if not member_scores:
         raise ValueError("At least one club member is required.")
@@ -130,9 +134,11 @@ def assess_candidate(
 
     available: list[str] = []
     latest = latest_start_times or {}
+    dealbreaker_members: list[str] = []
     for member_id in sorted(member_scores):
         deadline = latest.get(member_id)
         if deadline is not None and start.time() > deadline:
+            dealbreaker_members.append(member_id)
             continue
         if any(day == start.weekday() and window_start <= start.time() and window_end >= end.time() for day, window_start, window_end in weekly_availability.get(member_id, ())):
             available.append(member_id)
@@ -144,9 +150,9 @@ def assess_candidate(
     quorum_met = expected >= required
     if not available:
         reason_codes.append("no_available_members")
-    if any(latest.get(member_id) is not None and start.time() > latest[member_id] for member_id in member_scores):
-        reason_codes.append("dealbreaker_latest_start")
     if not quorum_met:
+        if dealbreaker_members:
+            reason_codes.append("dealbreaker_latest_start")
         reason_codes.append("quorum_not_met")
     return CandidateAssessment(
         candidate=candidate,

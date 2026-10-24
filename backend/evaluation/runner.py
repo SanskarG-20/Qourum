@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session as OrmSession
 if __package__ == "evaluation" or __package__.startswith("evaluation."):
     from recsys import config
     from recsys.group import STRATEGIES, FairnessRecord, aggregate_scores, fairness_weights, mmr_rerank, rank_group_candidates
-    from recsys.individual import AttendanceObservation, ContentSignal, TimeObservation, score_members
+    from recsys.individual import AttendanceObservation, ContentSignal, TimeObservation, club_attendance_fallback, score_members
     from synthetic_data.exporter import export_feature_datasets
     from synthetic_data.generator import GenerationConfig, SyntheticDatasetGenerator
     from app.embedding_service import encode_and_cache
@@ -29,7 +29,7 @@ if __package__ == "evaluation" or __package__.startswith("evaluation."):
 else:
     from backend.recsys import config
     from backend.recsys.group import STRATEGIES, FairnessRecord, aggregate_scores, fairness_weights, mmr_rerank, rank_group_candidates
-    from backend.recsys.individual import AttendanceObservation, ContentSignal, TimeObservation, score_members
+    from backend.recsys.individual import AttendanceObservation, ContentSignal, TimeObservation, club_attendance_fallback, score_members
     from backend.synthetic_data.exporter import export_feature_datasets
     from backend.synthetic_data.generator import GenerationConfig, SyntheticDatasetGenerator
     from backend.app.embedding_service import encode_and_cache
@@ -163,8 +163,11 @@ def evaluate_window(
         observed_history = rsvps_frame[rsvps_frame.event_id.isin(history_ids)]
         attendance: dict[str, list[AttendanceObservation]] = defaultdict(list)
         slots: dict[str, list[TimeObservation]] = defaultdict(list)
+        outcomes_by_type: dict[str, tuple[int, int]] = {}
         for interaction in observed_history.itertuples(index=False):
             historical_event = events_by_id[interaction.event_id]
+            type_attended, type_observed = outcomes_by_type.get(historical_event["event_type_id"], (0, 0))
+            outcomes_by_type[historical_event["event_type_id"]] = (type_attended + int(bool(interaction.attended)), type_observed + 1)
             stamp = historical_event["start_time"].to_pydatetime()
             attendance[interaction.member_id].append(AttendanceObservation(historical_event["event_type_id"], interaction.rsvp_status, bool(interaction.attended), stamp))
             slots[interaction.member_id].append(TimeObservation(stamp.weekday(), stamp.hour, bool(interaction.attended)))
@@ -197,14 +200,13 @@ def evaluate_window(
                     for member_id, (profile, observation_count) in profiles.items()
                 }
         popularity = history_events.event_type_id.value_counts().to_dict()
-        total_count = sum(popularity.values()) or 1
         probability_maps: dict[str, np.ndarray] = {}
         score_maps: dict[str, np.ndarray] = {}
         for event_type in types:
             individual = score_members(
                 member_ids, event_type, event_time.weekday(), event_time.hour,
                 preferences_by_member, attendance, slots, now=event_time,
-                popularity_fallback=popularity.get(event_type, 0) / total_count,
+                popularity_fallback=club_attendance_fallback(outcomes_by_type, event_type),
                 recency_decay=recency_decay, time_affinity_enabled=time_affinity,
                 content_evidence=content_by_type.get(event_type), content_enabled=content_enabled,
             )
@@ -343,7 +345,7 @@ def evaluate_window(
             if selected_type not in hour_score_cache:
                 hour_score_cache[selected_type] = []
                 for hour in range(9, 21):
-                    slot_probs = score_members(member_ids, selected_type, event_time.weekday(), hour, preferences_by_member, attendance, slots, now=event_time, popularity_fallback=popularity.get(selected_type, 0) / total_count, recency_decay=recency_decay, time_affinity_enabled=time_affinity, content_evidence=content_by_type.get(selected_type), content_enabled=content_enabled)
+                    slot_probs = score_members(member_ids, selected_type, event_time.weekday(), hour, preferences_by_member, attendance, slots, now=event_time, popularity_fallback=club_attendance_fallback(outcomes_by_type, selected_type), recency_decay=recency_decay, time_affinity_enabled=time_affinity, content_evidence=content_by_type.get(selected_type), content_enabled=content_enabled)
                     hour_score_cache[selected_type].append(float(np.mean([row.score for row in slot_probs])))
             hour_scores = hour_score_cache[selected_type]
             predicted_hour = 9 + int(np.argmax(hour_scores))
@@ -460,6 +462,8 @@ def run_evaluation(seeds: list[int], output_dir: str | Path) -> tuple[pd.DataFra
         "",
         "Read the metrics and paired intervals together. Improvements are claimed only where the paired 95% interval excludes zero in the favorable direction. Historical event data cannot observe counterfactual attendance for recommendations that were not held.",
         "",
+        "`mean_satisfaction`, `min_satisfaction`, `satisfaction_std` and `satisfaction_gini` are the model's own predicted member scores for the event type each method selects, not observed outcomes, so they favor methods that agree with the scoring model. Treat `type_hit_rate`, the ranking metrics, and `brier_score` as the measures that compare predictions with what actually happened.",
+        "",
         "## Embedding ablation",
         "",
         "Deltas compare the full model with the same model with content embeddings disabled, paired by seed. Positive deltas are favorable except for Brier score, where lower is better.",
@@ -467,7 +471,8 @@ def run_evaluation(seeds: list[int], output_dir: str | Path) -> tuple[pd.DataFra
         "| Metric | Main minus no embeddings (95% CI) | Significant gain? |",
         "| --- | ---: | --- |",
     ])
-    for metric in ["type_hit_rate", "ndcg_at_3", "mean_satisfaction", "min_satisfaction", "brier_score", "quorum_success_rate"]:
+    reported_ablation_metrics = ["type_hit_rate", "ndcg_at_3", "mean_satisfaction", "min_satisfaction", "brier_score", "quorum_success_rate"]
+    for metric in reported_ablation_metrics:
         row = embedding_ablation[embedding_ablation.metric == metric].iloc[0]
         significant = bool(row["ci95_low"] > 0 if metric != "brier_score" else row["ci95_high"] < 0)
         report_lines.append(f"| {metric} | {row['mean_paired_delta']:+.3f} [{row['ci95_low']:+.3f}, {row['ci95_high']:+.3f}] | {significant} |")
@@ -478,9 +483,10 @@ def run_evaluation(seeds: list[int], output_dir: str | Path) -> tuple[pd.DataFra
         report_lines.extend(["", f"Primary endpoint: mean satisfaction was significantly lower with embeddings ({primary['mean_paired_delta']:+.3f}, 95% CI [{primary['ci95_low']:+.3f}, {primary['ci95_high']:+.3f}])."])
     else:
         report_lines.extend(["", f"Primary endpoint: the mean-satisfaction embedding delta was not statistically significant (inconclusive; {primary['mean_paired_delta']:+.3f}, 95% CI [{primary['ci95_low']:+.3f}, {primary['ci95_high']:+.3f}])."])
-    significant_gains = embedding_ablation[
-        ((embedding_ablation.metric != "brier_score") & (embedding_ablation.ci95_low > 0))
-        | ((embedding_ablation.metric == "brier_score") & (embedding_ablation.ci95_high < 0))
+    reported_ablation = embedding_ablation[embedding_ablation.metric.isin(reported_ablation_metrics)]
+    significant_gains = reported_ablation[
+        ((reported_ablation.metric != "brier_score") & (reported_ablation.ci95_low > 0))
+        | ((reported_ablation.metric == "brier_score") & (reported_ablation.ci95_high < 0))
     ].metric.tolist()
     if significant_gains:
         report_lines.extend(["", f"Paired intervals show significant embedding gains for: {', '.join(significant_gains)}."])

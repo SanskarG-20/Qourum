@@ -12,12 +12,12 @@ from sqlalchemy.orm import Session as OrmSession
 if __package__ == "app" or __package__.startswith("app."):
     from recsys.candidates import CalendarBlock, ScheduledBlock, assess_candidate, generate_candidates
     from recsys.group import FairnessRecord, fairness_weights, mmr_rerank, rank_group_candidates
-    from recsys.individual import AttendanceObservation, TimeObservation, score_members
+    from recsys.individual import AttendanceObservation, TimeObservation, club_attendance_fallback, score_members
     from recsys.explanations import counterfactual_evidence, factor_summary, render_counterfactual, render_explanation
 else:
     from backend.recsys.candidates import CalendarBlock, ScheduledBlock, assess_candidate, generate_candidates
     from backend.recsys.group import FairnessRecord, fairness_weights, mmr_rerank, rank_group_candidates
-    from backend.recsys.individual import AttendanceObservation, TimeObservation, score_members
+    from backend.recsys.individual import AttendanceObservation, TimeObservation, club_attendance_fallback, score_members
     from backend.recsys.explanations import counterfactual_evidence, factor_summary, render_counterfactual, render_explanation
 from .models import AcademicCalendar, Availability, ClubMember, Event, EventType, FairnessLedger, MemberSettings, Preference, RSVP
 from .embedding_service import content_evidence_for_candidates, embeddings_enabled
@@ -72,7 +72,10 @@ def recommend_for_club(
     rows = load_attendance_rows_before(db, club_id, member_ids, cutoff)
     attendance_history: dict[str, list[AttendanceObservation]] = {member_id: [] for member_id in member_ids}
     time_history: dict[str, list[TimeObservation]] = {member_id: [] for member_id in member_ids}
+    outcomes_by_type: dict[str, tuple[int, int]] = {}
     for member_id, _event_id, status, attended, event_type_id, event_start in rows:
+        type_attended, type_observed = outcomes_by_type.get(event_type_id, (0, 0))
+        outcomes_by_type[event_type_id] = (type_attended + int(bool(attended)), type_observed + 1)
         attendance_history[member_id].append(AttendanceObservation(event_type_id, status, attended, event_start))
         time_history[member_id].append(TimeObservation(event_start.weekday(), event_start.hour, attended))
 
@@ -96,15 +99,11 @@ def recommend_for_club(
     component_rows: list[dict[str, float | None]] = []
     cached_scores: dict[tuple[str, int, int], dict[str, float]] = {}
     component_cache: dict[tuple[str, int, int], dict[str, float | None]] = {}
-    popularity_counts: dict[str, int] = {event_type.id: 0 for event_type in event_types}
-    for row in db.scalars(select(Event.event_type_id).where(Event.club_id == club_id)):
-        popularity_counts[row] = popularity_counts.get(row, 0) + 1
-    total_popularity = sum(popularity_counts.values()) or 1
 
     for candidate in candidates:
         cache_key = (candidate.event_type_id, candidate.start.weekday(), candidate.start.hour)
         if cache_key not in cached_scores:
-            population_score = popularity_counts.get(candidate.event_type_id, 0) / total_popularity
+            population_score = club_attendance_fallback(outcomes_by_type, candidate.event_type_id)
             individual = score_members(member_ids, candidate.event_type_id, candidate.start.weekday(), candidate.start.hour, preferences, attendance_history, time_history, now=now, popularity_fallback=population_score, content_evidence=content_by_type.get(candidate.event_type_id))
             cached_scores[cache_key] = dict(zip(member_ids, (item.score for item in individual)))
             component_cache[cache_key] = {

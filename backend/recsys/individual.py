@@ -165,3 +165,25 @@ def score_members(
             is_cold_start=is_cold_start,
         ))
     return result
+
+
+def club_attendance_fallback(
+    outcomes_by_type: Mapping[str, tuple[int, int]], event_type_id: str,
+) -> float:
+    """Return the club's smoothed attendance rate for an event type, in [0, 1].
+
+    `outcomes_by_type` maps event type to (attended, observed) member outcomes
+    before the scoring cutoff. The type's rate is shrunk toward the club-wide
+    rate with a pseudo-count prior, so sparse types stay near the club average;
+    with no club history at all the neutral default rate is returned. Unlike a
+    share of past events, this is an attendance probability and sits on the
+    same scale as the other member scores.
+    """
+    total_attended = sum(attended for attended, _ in outcomes_by_type.values())
+    total_observed = sum(observed for _, observed in outcomes_by_type.values())
+    if total_observed == 0:
+        return config.COLD_START_DEFAULT_RATE
+    club_rate = total_attended / total_observed
+    attended, observed = outcomes_by_type.get(event_type_id, (0, 0))
+    prior = config.COLD_START_RATE_PRIOR
+    return float(np.clip((attended + prior * club_rate) / (observed + prior), 0.0, 1.0))
