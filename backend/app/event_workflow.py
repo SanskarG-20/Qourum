@@ -93,3 +93,22 @@ def update_rsvp(
         row.status = payload.status
     db.commit()
     return {"event_id": event_id, "status": row.status}
+
+
+@router.post("/{club_id}/events/{event_id}/cancel")
+def cancel_event(
+    club_id: str,
+    event_id: str,
+    _organizer: ClubAccess = Depends(require_club_organizer),
+    _csrf: AuthContext = Depends(require_csrf),
+    db: OrmSession = Depends(get_db),
+) -> dict[str, str]:
+    """Cancel an upcoming scheduled event so its slot can be recommended again."""
+    event = db.get(Event, event_id)
+    if event is None or event.club_id != club_id:
+        raise HTTPException(status_code=404, detail="Event not found in this club.")
+    if event.status not in {"proposed", "scheduled"} or event.start_time <= utc_now():
+        raise HTTPException(status_code=409, detail="Only upcoming scheduled events can be cancelled.")
+    event.status = "cancelled"
+    db.commit()
+    return {"event_id": event_id, "status": event.status}

@@ -60,3 +60,43 @@ def test_organizer_accepts_slot_and_member_rsvps(tmp_path):
             os.environ.pop("QUORUM_DB_PATH", None)
         else:
             os.environ["QUORUM_DB_PATH"] = old_path
+
+
+def test_only_organizers_cancel_upcoming_events_and_slot_is_released(tmp_path):
+    database = tmp_path / "event-cancel.db"
+    seed_database(seed=42, db_path=database)
+    engine = create_database_engine(database)
+    with make_session_factory(engine)() as db:
+        event_type_id = db.scalar(select(EventType.id).order_by(EventType.id))
+    engine.dispose()
+    old_path = os.environ.get("QUORUM_DB_PATH")
+    os.environ["QUORUM_DB_PATH"] = str(database)
+    try:
+        with TestClient(app) as client:
+            organizer = _login(client, "organizer.acm@quorum.local", DEMO_PASSWORDS["organizer"])
+            club_id = organizer["user"]["clubs"][0]["id"]
+            csrf = client.get("/api/auth/csrf").json()["csrf_token"]
+            headers = {"X-CSRF-Token": csrf}
+            start = (utc_now() + timedelta(days=12)).replace(minute=0, second=0, microsecond=0).isoformat()
+            payload = {"event_type_id": event_type_id, "start_time": start, "venue": "Local Club Room"}
+            event = client.post(f"/api/clubs/{club_id}/events", json=payload, headers=headers).json()
+
+            client.cookies.clear()
+            member = _login(client, "member.acm@quorum.local", DEMO_PASSWORDS["member"])
+            member_csrf = client.get("/api/auth/csrf").json()["csrf_token"]
+            denied = client.post(f"/api/clubs/{member['user']['clubs'][0]['id']}/events/{event['id']}/cancel", headers={"X-CSRF-Token": member_csrf})
+            assert denied.status_code == 403
+
+            client.cookies.clear()
+            _login(client, "organizer.acm@quorum.local", DEMO_PASSWORDS["organizer"])
+            headers = {"X-CSRF-Token": client.get("/api/auth/csrf").json()["csrf_token"]}
+            cancelled = client.post(f"/api/clubs/{club_id}/events/{event['id']}/cancel", headers=headers)
+            assert cancelled.status_code == 200 and cancelled.json()["status"] == "cancelled"
+            assert client.post(f"/api/clubs/{club_id}/events/{event['id']}/cancel", headers=headers).status_code == 409
+            assert client.post(f"/api/clubs/{club_id}/events/missing/cancel", headers=headers).status_code == 404
+            assert client.post(f"/api/clubs/{club_id}/events", json=payload, headers=headers).status_code == 200
+    finally:
+        if old_path is None:
+            os.environ.pop("QUORUM_DB_PATH", None)
+        else:
+            os.environ["QUORUM_DB_PATH"] = old_path
