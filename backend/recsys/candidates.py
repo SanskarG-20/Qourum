@@ -100,6 +100,7 @@ def assess_candidate(
     quorum: int | None = None,
     quorum_fraction: float = config.DEFAULT_QUORUM_FRACTION,
     quorum_minimum: int = config.DEFAULT_QUORUM_MINIMUM,
+    availability_cache: dict[tuple[int, time, time], tuple[tuple[str, ...], tuple[str, ...]]] | None = None,
 ) -> CandidateAssessment:
     """Check conflicts, blocks, dealbreakers, availability, and expected quorum.
 
@@ -111,6 +112,11 @@ def assess_candidate(
     meet quorum. Expected attendance is the sum of individual event-slot scores
     among available members. All independent failure causes are retained in
     deterministic reason-code order.
+
+    `availability_cache` lets a caller assessing many candidates against the same
+    members, weekly windows, and latest-start times reuse each distinct
+    weekday/start/end availability result; it must not be shared across inputs
+    that differ in those arguments.
     """
     if not member_scores:
         raise ValueError("At least one club member is required.")
@@ -132,16 +138,24 @@ def assess_candidate(
     if any(period.period_type == "exam_week" for period in matching_periods):
         reason_codes.append("exam_week")
 
-    available: list[str] = []
     latest = latest_start_times or {}
-    dealbreaker_members: list[str] = []
-    for member_id in sorted(member_scores):
-        deadline = latest.get(member_id)
-        if deadline is not None and start.time() > deadline:
-            dealbreaker_members.append(member_id)
-            continue
-        if any(day == start.weekday() and window_start <= start.time() and window_end >= end.time() for day, window_start, window_end in weekly_availability.get(member_id, ())):
-            available.append(member_id)
+    weekday, start_time, end_time = start.weekday(), start.time(), end.time()
+    cache_key = (weekday, start_time, end_time)
+    cached = availability_cache.get(cache_key) if availability_cache is not None else None
+    if cached is None:
+        available_list: list[str] = []
+        dealbreaker_list: list[str] = []
+        for member_id in sorted(member_scores):
+            deadline = latest.get(member_id)
+            if deadline is not None and start_time > deadline:
+                dealbreaker_list.append(member_id)
+                continue
+            if any(day == weekday and window_start <= start_time and window_end >= end_time for day, window_start, window_end in weekly_availability.get(member_id, ())):
+                available_list.append(member_id)
+        cached = (tuple(available_list), tuple(dealbreaker_list))
+        if availability_cache is not None:
+            availability_cache[cache_key] = cached
+    available, dealbreaker_members = cached
     fraction = len(available) / len(member_scores)
     expected = sum(member_scores[member_id] for member_id in available)
     required = quorum if quorum is not None else max(quorum_minimum, ceil(quorum_fraction * len(member_scores)))

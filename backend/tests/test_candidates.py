@@ -61,3 +61,16 @@ def test_dealbreaker_reason_is_reported_when_it_causes_quorum_failure():
     result = assess_candidate(SLOT, members, availability, latest_start_times={"m1": time(17), "m2": time(17)}, quorum=2)
     assert not result.feasible
     assert result.reason_codes == ("dealbreaker_latest_start", "quorum_not_met")
+
+
+def test_availability_cache_does_not_change_assessments():
+    members = {"m1": 0.9, "m2": 0.8, "m3": 0.7}
+    availability = {"m1": [(0, time(17), time(20))], "m2": [(0, time(18), time(19))], "m3": [(1, time(9), time(21))]}
+    latest = {"m2": time(18, 30)}
+    candidates = [Candidate("talk", datetime(2026, 10, 26, hour), 60, "Room A") for hour in (17, 18, 19, 20)]
+    cache: dict = {}
+    for candidate in candidates * 2:
+        plain = assess_candidate(candidate, members, availability, latest_start_times=latest, quorum=1)
+        cached = assess_candidate(candidate, members, availability, latest_start_times=latest, quorum=1, availability_cache=cache)
+        assert cached == plain
+    assert len(cache) == len(candidates)

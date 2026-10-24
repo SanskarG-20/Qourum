@@ -99,6 +99,7 @@ def recommend_for_club(
     component_rows: list[dict[str, float | None]] = []
     cached_scores: dict[tuple[str, int, int], dict[str, float]] = {}
     component_cache: dict[tuple[str, int, int], dict[str, float | None]] = {}
+    availability_cache: dict = {}
 
     for candidate in candidates:
         cache_key = (candidate.event_type_id, candidate.start.weekday(), candidate.start.hour)
@@ -116,7 +117,7 @@ def recommend_for_club(
                 }.items()
             }
         scores = cached_scores[cache_key]
-        assessment = assess_candidate(candidate, scores, weekly_availability, existing_events=events, calendar_blocks=calendar, latest_start_times=latest_start, quorum=quorum)
+        assessment = assess_candidate(candidate, scores, weekly_availability, existing_events=events, calendar_blocks=calendar, latest_start_times=latest_start, quorum=quorum, availability_cache=availability_cache)
         if not assessment.feasible:
             continue
         assessments.append(assessment)
