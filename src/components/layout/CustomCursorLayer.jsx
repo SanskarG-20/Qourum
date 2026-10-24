@@ -12,6 +12,7 @@ const DEFAULT_PILL = { bg: '#111111', text: '#FFFFFF' };
 
 export function CustomCursorLayer() {
   const containerRef = useRef(null);
+  const textLensRef = useRef(null);
   const dotRef = useRef(null);
   const pillRef = useRef(null);
   const seeCircleRef = useRef(null);
@@ -33,6 +34,22 @@ export function CustomCursorLayer() {
 
     let rafId;
 
+    const positionTextLens = (x, y, visible) => {
+      const lens = textLensRef.current;
+      if (!lens) return;
+
+      const lensWidth = 410;
+      const lensHeight = 430;
+      const anchorX = 123;
+      const anchorY = 129;
+      const navbarHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--navbar-height')) || 62;
+      const left = Math.min(Math.max(x - anchorX, 0), Math.max(0, window.innerWidth - lensWidth));
+      const top = Math.min(Math.max(y - anchorY, navbarHeight), Math.max(navbarHeight, window.innerHeight - lensHeight));
+
+      lens.style.transform = `translate3d(${left}px, ${top}px, 0) scale(${visible ? 1 : 0})`;
+      lens.style.opacity = visible ? '1' : '0';
+    };
+
     const loop = () => {
       if (initialized.current) {
         dotPos.current.x += (mousePos.current.x - dotPos.current.x) * 0.28;
@@ -41,10 +58,10 @@ export function CustomCursorLayer() {
         pillPos.current.y += (mousePos.current.y - pillPos.current.y) * 0.16;
 
         if (dotRef.current) {
-          dotRef.current.style.transform = `translate3d(${dotPos.current.x}px, ${dotPos.current.y}px, 0)`;
+          dotRef.current.style.transform = `translate3d(${dotPos.current.x}px, ${dotPos.current.y}px, 0) translate(-50%, -50%)`;
         }
         if (pillRef.current) {
-          pillRef.current.style.transform = `translate3d(${pillPos.current.x + 14}px, ${pillPos.current.y + 18}px, 0)`;
+          pillRef.current.style.transform = `translate3d(${pillPos.current.x + 8}px, ${pillPos.current.y + 16}px, 0)`;
         }
         if (seeCircleRef.current) {
           seeCircleRef.current.style.transform = `translate3d(${dotPos.current.x}px, ${dotPos.current.y}px, 0) translate(-50%, -50%)`;
@@ -73,6 +90,10 @@ export function CustomCursorLayer() {
       const target = e.target;
       const seeCard = target && target.closest ? target.closest('[data-cursor-see]') : null;
       const colorHost = target && target.closest ? target.closest('[data-cursor-color]') : null;
+      const textTarget = target && target.closest
+        ? target.closest('h1,h2,h3,h4,h5,h6,p,a,button,label,li,span,strong,em,small,blockquote,figcaption,td,th,dt,dd')
+        : null;
+      const heroLensTarget = target && target.closest ? target.closest('[data-cursor-lens]') : null;
       const seeCircle = seeCircleRef.current;
       const dot = dotRef.current;
       const pill = pillRef.current;
@@ -88,6 +109,8 @@ export function CustomCursorLayer() {
       if (accent) {
         accent.classList.toggle('is-on', colorKey === 'blue');
       }
+
+      positionTextLens(e.clientX, e.clientY, Boolean(textTarget && !heroLensTarget));
 
       if (seeCard && seeCircle && dot && pill) {
         isHoveringSee.current = true;
@@ -108,6 +131,7 @@ export function CustomCursorLayer() {
       if (containerRef.current) {
         containerRef.current.style.display = 'none';
       }
+      positionTextLens(mousePos.current.x, mousePos.current.y, false);
       initialized.current = false;
     };
 
@@ -123,6 +147,27 @@ export function CustomCursorLayer() {
   }, []);
 
   return (
+    <>
+    <div
+      ref={textLensRef}
+      aria-hidden="true"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '410px',
+        height: '430px',
+        backgroundColor: '#FFFFFF',
+        mixBlendMode: 'difference',
+        pointerEvents: 'none',
+        zIndex: 90,
+        opacity: 0,
+        transform: 'translate3d(0px, 0px, 0) scale(0)',
+        transformOrigin: '123px 129px',
+        transition: 'transform 300ms cubic-bezier(0.16, 1, 0.3, 1), opacity 100ms linear',
+        willChange: 'transform, opacity',
+      }}
+    />
     <div
       ref={containerRef}
       aria-hidden="true"
@@ -176,34 +221,21 @@ export function CustomCursorLayer() {
         </span>
       </div>
 
-      {/* Custom arrow pointer with a white outline for contrast over the grid and hero art. */}
+      {/* Circular cursor marker with a light rim so it stays readable over inverted text. */}
       <div
         ref={dotRef}
         style={{
           position: 'absolute',
           top: 0,
           left: 0,
-          width: '20px',
-          height: '24px',
+          width: '14px',
+          height: '14px',
+          borderRadius: '50%',
+          backgroundColor: '#111111',
+          border: '1.5px solid #FFFFFF',
           willChange: 'transform',
         }}
-      >
-        <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
-          <path
-            d="M1.25 1.25V21.25L6.5 16L10.25 23L14.1 20.9L10.45 13.8H19L1.25 1.25Z"
-            fill="#111111"
-            stroke="#FFFFFF"
-            strokeWidth="2.25"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M1.25 1.25V21.25L6.5 16L10.25 23L14.1 20.9L10.45 13.8H19L1.25 1.25Z"
-            stroke="#111111"
-            strokeWidth="0.75"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </div>
+      />
 
       {/* Trailing Elastic "YOU" Pill */}
       <div
@@ -230,5 +262,6 @@ export function CustomCursorLayer() {
         YOU
       </div>
     </div>
+    </>
   );
 }
