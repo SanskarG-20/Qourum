@@ -8,7 +8,7 @@ const CURSOR_COLOR_STATES = {
   orange: { bg: '#EA580C', text: '#FFFFFF' },
   green: { bg: '#10B981', text: '#111111' },
 };
-const DEFAULT_PILL = { bg: '#111111', text: '#FFFFFF' };
+const DEFAULT_PILL = { bg: '#FFFFFF', text: '#111111' };
 
 export function CustomCursorLayer() {
   const containerRef = useRef(null);
@@ -41,7 +41,7 @@ export function CustomCursorLayer() {
         pillPos.current.y += (mousePos.current.y - pillPos.current.y) * 0.16;
 
         if (dotRef.current) {
-          dotRef.current.style.transform = `translate3d(${dotPos.current.x}px, ${dotPos.current.y}px, 0)`;
+          dotRef.current.style.transform = `translate3d(${dotPos.current.x}px, ${dotPos.current.y}px, 0) translate(-50%, -50%)`;
         }
         if (pillRef.current) {
           pillRef.current.style.transform = `translate3d(${pillPos.current.x + 14}px, ${pillPos.current.y + 18}px, 0)`;
@@ -135,6 +135,7 @@ export function CustomCursorLayer() {
         display: 'none',
         pointerEvents: 'none',
         zIndex: 9999,
+        mixBlendMode: 'difference',
       }}
     >
       {/* Expanded "See" Circle for Case Study Cards */}
@@ -148,8 +149,8 @@ export function CustomCursorLayer() {
           width: '76px',
           height: '76px',
           borderRadius: '50%',
-          backgroundColor: '#111111',
-          color: '#FFFFFF',
+          backgroundColor: '#FFFFFF',
+          color: '#111111',
           alignItems: 'center',
           justifyContent: 'center',
           fontFamily: 'var(--font-sans)',
@@ -176,34 +177,20 @@ export function CustomCursorLayer() {
         </span>
       </div>
 
-      {/* Custom arrow pointer with a white outline for contrast over the grid and hero art. */}
+      {/* Circular difference-blend pointer: invert only the pixels directly beneath the marker. */}
       <div
         ref={dotRef}
         style={{
           position: 'absolute',
           top: 0,
           left: 0,
-          width: '20px',
-          height: '24px',
+          width: '16px',
+          height: '16px',
+          borderRadius: '50%',
+          backgroundColor: '#FFFFFF',
           willChange: 'transform',
         }}
-      >
-        <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
-          <path
-            d="M1.25 1.25V21.25L6.5 16L10.25 23L14.1 20.9L10.45 13.8H19L1.25 1.25Z"
-            fill="#111111"
-            stroke="#FFFFFF"
-            strokeWidth="2.25"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M1.25 1.25V21.25L6.5 16L10.25 23L14.1 20.9L10.45 13.8H19L1.25 1.25Z"
-            stroke="#111111"
-            strokeWidth="0.75"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </div>
+      />
 
       {/* Trailing Elastic "YOU" Pill */}
       <div
@@ -212,8 +199,8 @@ export function CustomCursorLayer() {
           position: 'absolute',
           top: 0,
           left: 0,
-          backgroundColor: '#111111',
-          color: '#FFFFFF',
+          backgroundColor: '#FFFFFF',
+          color: '#111111',
           padding: '3px 10px',
           borderRadius: '9999px',
           fontFamily: 'var(--font-mono)',
