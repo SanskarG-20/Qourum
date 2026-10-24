@@ -108,14 +108,14 @@ export function IntroSplashBubble({ onComplete }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: isExiting ? 'rgba(255, 255, 255, 0)' : 'rgba(255, 255, 255, 0.72)',
-        backdropFilter: isExiting ? 'blur(0px)' : 'blur(4px)',
-        WebkitBackdropFilter: isExiting ? 'blur(0px)' : 'blur(4px)',
-        opacity: isExiting ? 0 : entered ? 1 : 0,
+        backgroundColor: 'var(--color-bg-canvas, #FFFFFF)',
+        backgroundImage: `linear-gradient(to right, var(--color-grid-line, #F0F0F0) 1px, transparent 1px), linear-gradient(to bottom, var(--color-grid-line, #F0F0F0) 1px, transparent 1px)`,
+        backgroundSize: 'var(--grid-cell-size, 125px) var(--grid-cell-size, 125px)',
+        backgroundPosition: '0 calc(var(--top-chrome-height, 111px) - var(--navbar-height, 62px))',
+        opacity: isExiting ? 0 : 1,
         pointerEvents: isExiting ? 'none' : 'auto',
         cursor: 'pointer',
-        transition:
-          'opacity 400ms cubic-bezier(0.16, 1, 0.3, 1), background-color 400ms cubic-bezier(0.16, 1, 0.3, 1), backdrop-filter 400ms cubic-bezier(0.16, 1, 0.3, 1)',
+        transition: 'opacity 400ms cubic-bezier(0.16, 1, 0.3, 1)',
       }}
     >
       {/* Speech Bubble - EXACT match to provided reference */}
