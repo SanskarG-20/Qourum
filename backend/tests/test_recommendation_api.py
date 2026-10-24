@@ -6,11 +6,11 @@ from datetime import time
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 
 from backend.app.main import app
 from backend.app.database import create_database_engine, make_session_factory
-from backend.app.models import Availability, ClubMember
+from backend.app.models import Availability, ClubMember, EmbeddingCache
 from backend.app.seed import DEMO_PASSWORDS, seed_database
 
 
@@ -51,6 +51,10 @@ def test_recommendation_endpoint_role_validation_and_response(tmp_path):
                 headers=headers,
             )
             assert valid.status_code == 200
+            cache_engine = create_database_engine(database)
+            with make_session_factory(cache_engine)() as session:
+                assert session.scalar(select(func.count()).select_from(EmbeddingCache)) > 0, "embedding cache must persist across requests"
+            cache_engine.dispose()
             body = valid.json()
             assert body["strategy"] == "average"
             assert body["candidate_count"] > 0

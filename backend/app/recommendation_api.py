@@ -40,7 +40,7 @@ def club_recommendations(
     member_count = db.scalar(select(func.count(ClubMember.member_id)).where(ClubMember.club_id == club_id)) or 0
     if payload.quorum is not None and payload.quorum > member_count:
         raise HTTPException(status_code=422, detail="Quorum cannot exceed the club membership size.")
-    return recommend_for_club(
+    result = recommend_for_club(
         db,
         club_id,
         strategy=payload.strategy,
@@ -51,3 +51,6 @@ def club_recommendations(
         diversity=payload.diversity,
         anchor_date=payload.start_date,
     )
+    # Scoring only reads club data; the one write is the embedding cache, which must persist across requests.
+    db.commit()
+    return result
