@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session as OrmSession
 
 from .dependencies import AuthContext, ClubAccess, get_db, require_club_member, require_club_organizer, require_csrf
-from .models import Event, EventType, RSVP
+from .models import Event, EventType, RSVP, utc_now
 
 router = APIRouter(prefix="/api/clubs", tags=["event-workflow"])
 
@@ -28,7 +28,7 @@ class CreateEventInput(BaseModel):
     def require_local_naive_future_time(cls, value: datetime) -> datetime:
         if value.tzinfo is not None:
             raise ValueError("Event start time must be a local timezone-free timestamp.")
-        if value <= datetime.utcnow():
+        if value <= utc_now():
             raise ValueError("An accepted recommendation must start in the future.")
         return value
 
@@ -83,7 +83,7 @@ def update_rsvp(
     event = db.get(Event, event_id)
     if event is None or event.club_id != club_id:
         raise HTTPException(status_code=404, detail="Event not found in this club.")
-    if event.start_time <= datetime.utcnow() or event.status in {"completed", "cancelled"}:
+    if event.start_time <= utc_now() or event.status in {"completed", "cancelled"}:
         raise HTTPException(status_code=409, detail="RSVPs are closed for this event.")
     row = db.scalar(select(RSVP).where(RSVP.event_id == event_id, RSVP.member_id == access.user.id))
     if row is None:

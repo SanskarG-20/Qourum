@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 from backend.app.database import create_database_engine, make_session_factory
 from backend.app.main import app
-from backend.app.models import Club, ClubMember, Event, EventType, FairnessLedger, RSVP
+from backend.app.models import Club, ClubMember, Event, EventType, FairnessLedger, RSVP, utc_now
 from backend.app.seed import DEMO_PASSWORDS, seed_database
 from backend.app.recommendations import load_attendance_rows_before, load_fairness_records_before
 
@@ -27,13 +27,13 @@ def test_feedback_updates_attendance_and_fairness_and_rejects_future_events(tmp_
     engine = create_database_engine(database)
     with make_session_factory(engine)() as db:
         club_id = db.scalar(select(Club.id).where(Club.name.like("ACM%")))
-        event = db.scalar(select(Event).where(Event.club_id == club_id, Event.start_time < datetime.utcnow()).order_by(Event.start_time.desc()))
+        event = db.scalar(select(Event).where(Event.club_id == club_id, Event.start_time < utc_now()).order_by(Event.start_time.desc()))
         member_ids = list(db.scalars(select(ClubMember.member_id).where(ClubMember.club_id == club_id).order_by(ClubMember.member_id)))
         assert event and len(member_ids) > 1
         member_id, future_member_id = member_ids[:2]
         event_id = event.id
         type_id = event.event_type_id
-        future_event = Event(id=str(uuid4()), club_id=club_id, event_type_id=type_id, title="Future feedback test", start_time=datetime.utcnow() + timedelta(days=3), duration_minutes=60, venue="Feedback Test Room", status="scheduled")
+        future_event = Event(id=str(uuid4()), club_id=club_id, event_type_id=type_id, title="Future feedback test", start_time=utc_now() + timedelta(days=3), duration_minutes=60, venue="Feedback Test Room", status="scheduled")
         db.add(future_event)
         future_rsvp = RSVP(id=str(uuid4()), event_id=future_event.id, member_id=future_member_id, status="yes", attended=True, rating=5)
         db.add(future_rsvp)
@@ -70,7 +70,7 @@ def test_feedback_updates_attendance_and_fairness_and_rejects_future_events(tmp_
             assert ledger and ledger.satisfaction == 1.0
             future_ledger = db.scalar(select(FairnessLedger).where(FairnessLedger.club_id == club_id, FairnessLedger.member_id == future_member_id))
             assert future_ledger is not None
-            future_ledger.updated_at = datetime.utcnow() + timedelta(days=3)
+            future_ledger.updated_at = utc_now() + timedelta(days=3)
             db.commit()
             cutoff = datetime.combine(date(2026, 1, 1), time.min)
             attendance_rows = load_attendance_rows_before(db, club_id, [member_id], cutoff)

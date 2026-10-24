@@ -7,6 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.app import main
+from backend.app.models import utc_now
 from backend.app.seed import seed_database
 from backend.recsys.individual import AttendanceObservation, TimeObservation, score_members
 
@@ -67,7 +68,7 @@ def test_injection_and_xss_strings_remain_data_and_requests_are_validated(tmp_pa
         assert invalid_path.status_code in {403, 404}
 
         event_type = client.get(f"/api/clubs/{club_id}/onboarding").json()["event_types"][0]["id"]
-        start = (datetime.utcnow() + timedelta(days=3)).replace(minute=0, second=0, microsecond=0).isoformat()
+        start = (utc_now() + timedelta(days=3)).replace(minute=0, second=0, microsecond=0).isoformat()
         invalid_event = client.post(
             f"/api/clubs/{club_id}/events",
             json={"event_type_id": "' OR 1=1 --", "start_time": start, "venue": "Hall"},

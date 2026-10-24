@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
 from functools import lru_cache
 import hashlib
 import secrets
@@ -14,7 +13,7 @@ from sqlalchemy import Engine
 from sqlalchemy.orm import Session as OrmSession
 
 from .database import create_database_engine, database_path, make_session_factory
-from .models import ClubMember, Session as SessionRecord, User
+from .models import ClubMember, Session as SessionRecord, User, utc_now
 
 SESSION_COOKIE = "quorum_session"
 CSRF_COOKIE = "quorum_csrf"
@@ -59,7 +58,7 @@ def _session_by_cookie(raw_token: str | None, db: OrmSession) -> SessionRecord |
     record = db.get(SessionRecord, identifier_hash)
     if record is None:
         return None
-    if record.expires_at <= datetime.utcnow():
+    if record.expires_at <= utc_now():
         db.delete(record)
         db.commit()
         return None

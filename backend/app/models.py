@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 
 from sqlalchemy import (
     Boolean,
@@ -21,6 +21,11 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+
+def utc_now() -> datetime:
+    """Return the current UTC time as the naive datetime the database stores."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class Base(DeclarativeBase):
@@ -110,7 +115,7 @@ class EmbeddingCache(Base):
     model_revision: Mapped[str] = mapped_column(String(64), primary_key=True)
     vector: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     dimension: Mapped[int] = mapped_column(Integer, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utc_now)
 
 
 class RSVP(Base):

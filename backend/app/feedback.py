@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session as OrmSession
 
 from .dependencies import AuthContext, ClubAccess, get_db, require_club_organizer, require_csrf
-from .models import ClubMember, Event, FairnessLedger, RSVP
+from .models import ClubMember, Event, FairnessLedger, RSVP, utc_now
 
 router = APIRouter(prefix="/api/clubs", tags=["feedback"])
 
@@ -51,7 +51,7 @@ def record_event_feedback(db: OrmSession, club_id: str, event_id: str, payload: 
     event = db.get(Event, event_id)
     if event is None or event.club_id != club_id:
         raise HTTPException(status_code=404, detail="Event not found in this club.")
-    current_time = now or datetime.utcnow()
+    current_time = now or utc_now()
     if event.start_time > current_time:
         raise HTTPException(status_code=409, detail="Attendance cannot be recorded before the event starts.")
     if event.status == "cancelled":

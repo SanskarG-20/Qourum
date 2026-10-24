@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 import secrets
 import hashlib
 
@@ -20,7 +20,7 @@ from .dependencies import (
     get_db,
     require_csrf,
 )
-from .models import Session as SessionRecord, User
+from .models import Session as SessionRecord, User, utc_now
 from .security import PASSWORD_HASHER, verify_password
 from .throttle import (
     active_lockout_until,
@@ -144,7 +144,7 @@ def login(
     email = credentials.email
     client_host = request.client.host if request.client is not None else "unknown"
     identifiers = login_identifiers(email, client_host)
-    now = datetime.utcnow()
+    now = utc_now()
     purge_expired_attempts(db, now)
     locked_until = active_lockout_until(db, identifiers, now)
     if locked_until is not None:
