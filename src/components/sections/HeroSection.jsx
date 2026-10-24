@@ -293,7 +293,6 @@ export function HeroSection({
 
         {/* 3. Main Interactive Hero Stage with Difference-Blend Inversion Lens (frame_011, frame_015) */}
         <div
-          data-cursor-lens
           onPointerEnter={handleStagePointerEnter}
           onPointerMove={handleStagePointerMove}
           onPointerLeave={handleStagePointerLeave}
