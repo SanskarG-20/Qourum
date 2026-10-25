@@ -119,4 +119,4 @@ data/               Local SQLite database (generated, git-ignored)
 
 ## License
 
-No license file is published yet; the repository owner has not chosen one, so no license is granted to reuse this code. The vendored embedding model (`backend/models/all-MiniLM-L6-v2`) keeps its own upstream Apache-2.0 license regardless; see [`backend/models/README.md`](backend/models/README.md).
+MIT, under collective "Quorum contributors" attribution (see [`LICENSE`](LICENSE)) rather than naming any individual, since this was added as a reasonable default rather than a decision by one named person. If the maintainer wants a different license, or no license, replacing this file is a one-line change. The vendored embedding model (`backend/models/all-MiniLM-L6-v2`) keeps its own upstream Apache-2.0 license regardless; see [`backend/models/README.md`](backend/models/README.md).
