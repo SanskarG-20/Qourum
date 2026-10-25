@@ -9,16 +9,16 @@ The model column uses the validation-selected aggregation strategy with fairness
 | precision_at_3 | 0.083 [0.071, 0.094] | 0.100 [0.058, 0.141] | -0.017 [-0.062, +0.028] | False |
 | recall_at_3 | 0.248 [0.213, 0.283] | 0.299 [0.175, 0.423] | -0.051 [-0.187, +0.085] | False |
 | ndcg_at_3 | 0.178 [0.144, 0.212] | 0.210 [0.135, 0.285] | -0.032 [-0.131, +0.067] | False |
-| type_hit_rate | 0.110 [0.018, 0.201] | 0.095 [0.015, 0.174] | +0.015 [-0.135, +0.165] | False |
+| type_hit_rate | 0.118 [0.045, 0.190] | 0.095 [0.015, 0.174] | +0.023 [-0.108, +0.154] | False |
 | slot_hit_rate | 0.221 [0.092, 0.350] | 0.221 [0.092, 0.350] | +0.000 [+0.000, +0.000] | False |
-| mean_satisfaction | 0.432 [0.401, 0.463] | 0.395 [0.357, 0.433] | +0.037 [+0.013, +0.061] | True |
-| min_satisfaction | 0.151 [0.117, 0.185] | 0.114 [0.081, 0.148] | +0.036 [+0.022, +0.051] | True |
-| satisfaction_std | 0.145 [0.132, 0.159] | 0.142 [0.123, 0.160] | +0.003 [-0.008, +0.015] | False |
-| satisfaction_gini | 0.191 [0.165, 0.217] | 0.203 [0.177, 0.229] | -0.012 [-0.020, -0.004] | True |
+| mean_satisfaction | 0.430 [0.402, 0.458] | 0.395 [0.357, 0.433] | +0.035 [+0.013, +0.057] | True |
+| min_satisfaction | 0.153 [0.117, 0.189] | 0.114 [0.081, 0.148] | +0.038 [+0.027, +0.050] | True |
+| satisfaction_std | 0.143 [0.128, 0.158] | 0.142 [0.123, 0.160] | +0.001 [-0.012, +0.014] | False |
+| satisfaction_gini | 0.189 [0.162, 0.216] | 0.203 [0.177, 0.229] | -0.014 [-0.024, -0.004] | True |
 | quorum_success_rate | 0.314 [0.141, 0.486] | 0.314 [0.141, 0.486] | +0.000 [+0.000, +0.000] | False |
 | brier_score | 0.209 [0.194, 0.224] | 0.191 [0.175, 0.206] | +0.018 [+0.005, +0.032] | False |
-| coverage | 0.850 [0.804, 0.896] | 0.250 [0.250, 0.250] | +0.600 [+0.554, +0.646] | True |
-| intra_list_diversity | 0.929 [0.924, 0.935] | 0.688 [0.675, 0.701] | +0.241 [+0.226, +0.257] | True |
+| coverage | 0.867 [0.774, 0.959] | 0.250 [0.250, 0.250] | +0.617 [+0.524, +0.709] | True |
+| intra_list_diversity | 0.931 [0.924, 0.938] | 0.688 [0.675, 0.701] | +0.243 [+0.224, +0.262] | True |
 
 ## Interpretation
 
@@ -32,14 +32,14 @@ Deltas compare the full model with the same model with content embeddings disabl
 
 | Metric | Main minus no embeddings (95% CI) | Significant gain? |
 | --- | ---: | --- |
-| type_hit_rate | +0.032 [-0.079, +0.143] | False |
+| type_hit_rate | +0.040 [-0.075, +0.154] | False |
 | ndcg_at_3 | +0.005 [-0.007, +0.017] | False |
-| mean_satisfaction | +0.097 [+0.093, +0.101] | True |
-| min_satisfaction | +0.013 [+0.007, +0.018] | True |
+| mean_satisfaction | +0.096 [+0.091, +0.102] | True |
+| min_satisfaction | +0.014 [+0.009, +0.018] | True |
 | brier_score | +0.025 [+0.016, +0.033] | False |
 | quorum_success_rate | +0.000 [+0.000, +0.000] | False |
 
-Primary endpoint: mean-satisfaction gain was statistically significant (+0.097, 95% CI [+0.093, +0.101]).
+Primary endpoint: mean-satisfaction gain was statistically significant (+0.096, 95% CI [+0.091, +0.102]).
 
 Paired intervals show significant embedding gains for: mean_satisfaction, min_satisfaction.
 

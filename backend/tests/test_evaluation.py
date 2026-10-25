@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from backend.evaluation.runner import paired_comparison_table, paired_embedding_ablation, temporal_split
+from backend.evaluation.runner import STRATEGIES, paired_comparison_table, paired_embedding_ablation, select_tuned_strategy, temporal_split
 
 
 def test_temporal_split_is_ordered_and_70_15_15_by_time():
@@ -32,6 +32,19 @@ def test_paired_comparison_only_marks_ci_separated_from_zero_as_a_win():
     comparison = paired_comparison_table(per_seed, "club_popularity").set_index("metric")
     assert bool(comparison.loc["mean_satisfaction", "beats_baseline"])
     assert not bool(comparison.loc["brier_score", "beats_baseline"])
+
+
+def test_tuned_strategy_selection_uses_type_hit_rate_not_self_predicted_satisfaction():
+    # "average" only predicts the actual outcome (type_hit_rate) half as often as
+    # "least_misery", but reports a higher self-predicted mean_satisfaction. Selecting
+    # by type_hit_rate must pick least_misery; selecting by mean_satisfaction (the old,
+    # circular criterion) would have picked average instead, so this exercises the fix.
+    validation_result = {f"strategy_{strategy}": {"type_hit_rate": 0.1, "mean_satisfaction": 0.9} for strategy in STRATEGIES}
+    validation_result["strategy_average"] = {"type_hit_rate": 0.2, "mean_satisfaction": 0.95}
+    validation_result["strategy_least_misery"] = {"type_hit_rate": 0.4, "mean_satisfaction": 0.5}
+    assert select_tuned_strategy(validation_result) == "least_misery"
+    old_criterion = max(STRATEGIES, key=lambda item: (validation_result[f"strategy_{item}"]["mean_satisfaction"], item))
+    assert old_criterion == "average"
 
 
 def test_embedding_ablation_reports_paired_confidence_interval_and_significance():

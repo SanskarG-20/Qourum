@@ -364,6 +364,17 @@ def evaluate_window(
     return output
 
 
+def select_tuned_strategy(validation_result: dict[str, dict[str, float]]) -> str:
+    """Pick the aggregation strategy with the highest validation type_hit_rate.
+
+    type_hit_rate compares a prediction with the type actually chosen, like
+    best_baseline's selection below it. mean_satisfaction is the model's own
+    predicted score for whatever it picks, not an observed outcome, so maximizing
+    it is circular and does not select for an accurate strategy.
+    """
+    return max(STRATEGIES, key=lambda item: (validation_result[f"strategy_{item}"]["type_hit_rate"], item))
+
+
 def _evaluate_seed(seed: int) -> tuple[dict[str, dict[str, float]], dict[str, dict[str, float]]]:
     generator = SyntheticDatasetGenerator(GenerationConfig(seed=seed))
     generator.generate_all()
@@ -376,7 +387,7 @@ def _evaluate_seed(seed: int) -> tuple[dict[str, dict[str, float]], dict[str, di
     embedding_session = OrmSession(cache_engine)
     validation_methods = ["random", "club_popularity", "most_recent", "same_week_last_year", *(f"strategy_{strategy}" for strategy in STRATEGIES)]
     validation_result = evaluate_window(train, validation, tables, seed=seed, strategy="average", methods=validation_methods, embedding_session=embedding_session)
-    tuned_strategy = max(STRATEGIES, key=lambda item: (validation_result[f"strategy_{item}"]["mean_satisfaction"], item))
+    tuned_strategy = select_tuned_strategy(validation_result)
     best_baseline = max(("random", "club_popularity", "most_recent", "same_week_last_year"), key=lambda item: (validation_result[item]["type_hit_rate"], item))
     test_methods = [
         "random", "club_popularity", "most_recent", "same_week_last_year",

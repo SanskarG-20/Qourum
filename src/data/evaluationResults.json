@@ -488,9 +488,9 @@
           "high": 0.212
         },
         "type_hit_rate": {
-          "mean": 0.11,
-          "low": 0.018,
-          "high": 0.201
+          "mean": 0.118,
+          "low": 0.045,
+          "high": 0.19
         },
         "brier_score": {
           "mean": 0.209,
@@ -498,19 +498,19 @@
           "high": 0.224
         },
         "mean_satisfaction": {
-          "mean": 0.432,
-          "low": 0.401,
-          "high": 0.463
+          "mean": 0.43,
+          "low": 0.402,
+          "high": 0.458
         },
         "min_satisfaction": {
-          "mean": 0.151,
+          "mean": 0.153,
           "low": 0.117,
-          "high": 0.185
+          "high": 0.189
         },
         "satisfaction_gini": {
-          "mean": 0.191,
-          "low": 0.165,
-          "high": 0.217
+          "mean": 0.189,
+          "low": 0.162,
+          "high": 0.216
         }
       }
     }
@@ -532,9 +532,9 @@
     },
     "type_hit_rate": {
       "baseline": "club_popularity",
-      "delta": 0.015,
-      "low": -0.135,
-      "high": 0.165,
+      "delta": 0.023,
+      "low": -0.108,
+      "high": 0.154,
       "better": false
     },
     "brier_score": {
@@ -546,22 +546,22 @@
     },
     "mean_satisfaction": {
       "baseline": "club_popularity",
-      "delta": 0.037,
+      "delta": 0.035,
       "low": 0.013,
-      "high": 0.061,
+      "high": 0.057,
       "better": true
     },
     "min_satisfaction": {
       "baseline": "club_popularity",
-      "delta": 0.036,
-      "low": 0.022,
-      "high": 0.051,
+      "delta": 0.038,
+      "low": 0.027,
+      "high": 0.05,
       "better": true
     },
     "satisfaction_gini": {
       "baseline": "club_popularity",
-      "delta": -0.012,
-      "low": -0.02,
+      "delta": -0.014,
+      "low": -0.024,
       "high": -0.004,
       "better": true
     }
