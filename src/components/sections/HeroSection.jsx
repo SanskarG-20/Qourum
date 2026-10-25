@@ -444,6 +444,7 @@ export function HeroSection({
             </span>
             <span className="cta-label">LAUNCH DEMO LAB</span>
           </button>
+          <a href="/app" className="hero-club-link">Enter the full club app <span aria-hidden="true">↗</span></a>
         </div>
 
         {/* 7. Bottom Dark Floating Parameter / Title HUD Pill (frame_005 - frame_009) */}

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './member-onboarding.css';
 import { OrganizerWorkflow } from './OrganizerWorkflow.jsx';
+import { ClubLogin } from './ClubLogin.jsx';
 import { api as request, apiWrite } from '../../utils/apiClient.js';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -103,8 +104,8 @@ export function QuorumMemberApp() {
   }
 
   return <main className="quorum-app">
-    <header className="quorum-app__header"><a href="/" className="quorum-app__brand">QUORUM<span> / MEMBER SETUP</span></a>{user && <button type="button" className="quorum-app__quiet" onClick={logout}>Log out</button>}</header>
-    {!user ? <section className="quorum-app__card quorum-app__login"><p className="quorum-app__eyebrow">LOCAL CLUB PLANNING</p><h1>Sign in</h1><p>Use the demo member credentials listed in the README.</p><form onSubmit={login} className="quorum-app__stack"><label>Email<input type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required /></label><label>Password<input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label><button className="quorum-app__button" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button></form></section> : <section className="quorum-app__content">
+    <header className="quorum-app__header"><a href="/" className="quorum-app__brand">QUORUM<span> / {user ? 'MEMBER SETUP' : 'CLUB LOGIN'}</span></a>{user && <button type="button" className="quorum-app__quiet" onClick={logout}>Log out</button>}</header>
+    {!user ? <ClubLogin email={email} password={password} onEmailChange={setEmail} onPasswordChange={setPassword} onSubmit={login} busy={busy} error={error} /> : <section className="quorum-app__content">
       <p className="quorum-app__eyebrow">{clubName || 'YOUR CLUB'}</p><h1>Set your planning preferences</h1><p className="quorum-app__intro">Your ratings and free time help the club find a date and event everyone can attend.</p>
       {notice && <p role="status" className="quorum-app__notice">{notice}</p>}{error && <p role="alert" className="quorum-app__error">{error}</p>}
       <form onSubmit={save} className="quorum-app__stack">

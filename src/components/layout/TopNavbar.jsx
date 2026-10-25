@@ -111,7 +111,8 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
                   className={`nav-tab-link ${isActive ? 'is-active' : ''}`}
                   onClick={(e) => {
                     e.preventDefault();
-                    onSelectSection(item.id);
+                    if (item.id === 'playground') onOpenSurveyModal();
+                    else onSelectSection(item.id);
                   }}
                   style={{
                     height: '100%',
@@ -141,7 +142,7 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
           </nav>
         </div>
 
-        {/* Right Utility Cluster (SC / SD circular pills + Avatar + Survey Form CTA) */}
+        {/* Right Utility Cluster (SC / SD circular pills + Avatar + Club App CTA) */}
         <div
           style={{
             display: 'flex',
@@ -237,9 +238,9 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
             />
           </button>
 
-          <button
-            type="button"
-            onClick={onOpenSurveyModal}
+          <a
+            href="/app"
+            aria-label="Open Quorum club login"
             style={{
               height: '42px',
               minWidth: '138px',
@@ -257,6 +258,7 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
               justifyContent: 'center',
               gap: '8px',
               cursor: 'pointer',
+              textDecoration: 'none',
               transition: 'background-color 160ms ease, color 160ms ease',
             }}
             onMouseEnter={(e) => {
@@ -268,9 +270,9 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
               e.currentTarget.style.color = '#111111';
             }}
           >
-            <span aria-hidden="true">♥</span>
-            <span>SURVEY FORM</span>
-          </button>
+            <span aria-hidden="true">↗</span>
+            <span>CLUB LOGIN</span>
+          </a>
         </div>
 
         {/* Floating Cyan Tooltip — drops directly beneath the hovered control (top: 64px) */}
@@ -356,7 +358,8 @@ export function TopNavbar({ activeSection, onSelectSection, organizerAvatar, onO
               key={item.id}
               type="button"
               onClick={() => {
-                onSelectSection(item.id);
+                if (item.id === 'playground') onOpenSurveyModal();
+                else onSelectSection(item.id);
                 setMobileMenuOpen(false);
               }}
               style={{
