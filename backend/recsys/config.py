@@ -7,22 +7,23 @@ TIME_CONFIDENCE_PRIOR = 8.0
 TIME_LAPLACE_ALPHA = 1.0
 # backend/evaluation/runner.py's validation-only weight search (see "Component
 # weight tuning" in results/evaluation/REPORT.md) found that dropping
-# CONTENT_BASE_WEIGHT to 0 significantly improves Brier score (calibration) in
-# every one of 5 seeds, monotonically as the weight fell from 0.2 to 0.05 to 0.
-# It is deliberately NOT applied here: the same change also significantly
-# increases satisfaction_gini (+0.085 [+0.062, +0.107], member outcomes become
-# more unequal), which runs directly against this project's own explicit
-# fairness goals (fairness_weights(), the least_misery/fairness_aware
-# strategies). Trading fairness for calibration is a product decision, not a
-# pure optimization, so these defaults stay as the deliberately-chosen,
-# evaluated baseline rather than the Brier-optimal point. A smaller reduction
-# (e.g. content=0.05, also tested and close to content=0 on validation Brier)
-# is a plausible middle ground but was not validated in isolation on the test
-# split and would need its own run before adopting.
+# CONTENT_BASE_WEIGHT all the way to 0 significantly improves Brier score
+# (calibration) but also significantly worsens satisfaction_gini (members
+# become less equally served), conflicting with this project's own fairness
+# machinery (fairness_weights(), least_misery/fairness_aware strategies). That
+# full drop was deliberately NOT adopted for that reason.
+#
+# CONTENT_BASE_WEIGHT = 0.05 (down from an untuned 0.20) was then checked in
+# isolation on the held-out test split, independently of the validation
+# search, holding the other three weights fixed: it captures most of the
+# Brier gain (0.209 -> 0.189 vs 0.20's full-zero 0.185) for roughly a third of
+# the fairness cost (satisfaction_gini 0.191 -> 0.224 vs full-zero's 0.283),
+# with no measurable loss on type_hit_rate or precision_at_3. That is why this
+# one weight, and only this one, differs from an untuned guess.
 EXPLICIT_BASE_WEIGHT = 0.50
 IMPLICIT_BASE_WEIGHT = 0.35
 TIME_BASE_WEIGHT = 0.15
-CONTENT_BASE_WEIGHT = 0.20
+CONTENT_BASE_WEIGHT = 0.05
 CONTENT_CONFIDENCE_PRIOR = 3.0
 CONTENT_HALF_LIFE_DAYS = 240.0
 COLD_START_BASE_WEIGHT = 1.0

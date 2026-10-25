@@ -437,9 +437,13 @@ def _evaluate_seed(seed: int) -> tuple[dict[str, dict[str, float]], dict[str, di
     cache_engine = create_engine("sqlite+pysqlite:///:memory:")
     EmbeddingCache.__table__.create(cache_engine)
     embedding_session = OrmSession(cache_engine)
-    tuned_weights, weight_search = select_tuned_weights(train, validation, tables, seed=seed, embedding_session=embedding_session)
+    # Diagnostic only: what an automatic, Brier-only validation search would pick.
+    # main_model below uses the actual deployed config.py defaults (base_weights
+    # omitted), not this search's pick -- see CONTENT_BASE_WEIGHT's comment in
+    # backend/recsys/config.py for why those deliberately differ from this search.
+    searched_weights, weight_search = select_tuned_weights(train, validation, tables, seed=seed, embedding_session=embedding_session)
     validation_methods = ["random", "club_popularity", "most_recent", "same_week_last_year", *(f"strategy_{strategy}" for strategy in STRATEGIES)]
-    validation_result = evaluate_window(train, validation, tables, seed=seed, strategy="average", methods=validation_methods, embedding_session=embedding_session, base_weights=tuned_weights)
+    validation_result = evaluate_window(train, validation, tables, seed=seed, strategy="average", methods=validation_methods, embedding_session=embedding_session)
     tuned_strategy = select_tuned_strategy(validation_result)
     best_baseline = max(("random", "club_popularity", "most_recent", "same_week_last_year"), key=lambda item: (validation_result[item]["type_hit_rate"], item))
     test_methods = [
@@ -447,18 +451,18 @@ def _evaluate_seed(seed: int) -> tuple[dict[str, dict[str, float]], dict[str, di
         *(f"strategy_{strategy}" for strategy in STRATEGIES), "main_model",
     ]
     test_fit = pd.concat([train, validation]).sort_values(["start_time", "id"], kind="stable")
-    test_result = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=test_methods, embedding_session=embedding_session, base_weights=tuned_weights)
-    test_result["ablation_no_recency"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], recency_decay=False, embedding_session=embedding_session, base_weights=tuned_weights)["main_model"]
-    test_result["ablation_no_time_affinity"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], time_affinity=False, embedding_session=embedding_session, base_weights=tuned_weights)["main_model"]
-    test_result["ablation_no_fairness"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], allow_fairness=False, embedding_session=embedding_session, base_weights=tuned_weights)["main_model"]
-    test_result["ablation_no_diversity"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], allow_diversity=False, embedding_session=embedding_session, base_weights=tuned_weights)["main_model"]
-    test_result["ablation_no_embeddings"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], content_enabled=False, embedding_session=embedding_session, base_weights=tuned_weights)["main_model"]
-    test_result["ablation_default_weights"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], embedding_session=embedding_session, base_weights=_DEFAULT_WEIGHTS)["main_model"]
+    test_result = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=test_methods, embedding_session=embedding_session)
+    test_result["ablation_no_recency"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], recency_decay=False, embedding_session=embedding_session)["main_model"]
+    test_result["ablation_no_time_affinity"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], time_affinity=False, embedding_session=embedding_session)["main_model"]
+    test_result["ablation_no_fairness"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], allow_fairness=False, embedding_session=embedding_session)["main_model"]
+    test_result["ablation_no_diversity"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], allow_diversity=False, embedding_session=embedding_session)["main_model"]
+    test_result["ablation_no_embeddings"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], content_enabled=False, embedding_session=embedding_session)["main_model"]
+    test_result["ablation_searched_weights"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], embedding_session=embedding_session, base_weights=searched_weights)["main_model"]
     embedding_session.close()
     cache_engine.dispose()
     return test_result, {
         "tuned_strategy": {"index": float(STRATEGIES.index(tuned_strategy))},
-        "tuned_weights": tuned_weights,
+        "searched_weights": searched_weights,
         "weight_search": weight_search,
         "validation_baselines": {name: validation_result[name]["type_hit_rate"] for name in ("random", "club_popularity", "most_recent", "same_week_last_year")},
         "validation_best_baseline": best_baseline,
@@ -482,7 +486,7 @@ def run_evaluation(seeds: list[int], output_dir: str | Path) -> tuple[pd.DataFra
         selected.append({"seed": seed, "tuned_strategy": tuned, "validation_best_baseline": selection["validation_best_baseline"], **selection["validation_baselines"]})
         evaluations.append((seed, tuned, result))
         for candidate in selection["weight_search"]:
-            is_selected = candidate["weights"] == selection["tuned_weights"]
+            is_selected = candidate["weights"] == selection["searched_weights"]
             weight_rows.append({"seed": seed, "is_selected": is_selected, "validation_brier_score": candidate["brier_score"], "validation_type_hit_rate": candidate["type_hit_rate"], **candidate["weights"]})
     weight_search_table = pd.DataFrame(weight_rows)
     weight_search_table.to_csv(root / "weight_search.csv", index=False)
@@ -508,7 +512,7 @@ def run_evaluation(seeds: list[int], output_dir: str | Path) -> tuple[pd.DataFra
     paired.to_csv(root / "paired_comparison.csv", index=False)
     embedding_ablation = paired_embedding_ablation(per_seed)
     embedding_ablation.to_csv(root / "embedding_ablation.csv", index=False)
-    weight_ablation = paired_ablation(per_seed, "ablation_default_weights")
+    weight_ablation = paired_ablation(per_seed, "ablation_searched_weights")
     weight_ablation.to_csv(root / "weight_tuning_ablation.csv", index=False)
     summary_lookup = summary.set_index(["method", "metric"])
     report_metrics = ["precision_at_3", "recall_at_3", "ndcg_at_3", "type_hit_rate", "slot_hit_rate", "mean_satisfaction", "min_satisfaction", "satisfaction_std", "satisfaction_gini", "quorum_success_rate", "brier_score", "coverage", "intra_list_diversity"]
@@ -568,11 +572,10 @@ def run_evaluation(seeds: list[int], output_dir: str | Path) -> tuple[pd.DataFra
         "",
         "## Component weight tuning",
         "",
-        "Each seed picks base weights (explicit/implicit/time/content) from a fixed list of candidates by minimizing Brier score on that seed's validation split (~20 events), tie-broken by type_hit_rate; see `weight_search.csv` for every candidate tried. `ablation_default_weights` re-runs the test split with the pre-tuning defaults "
-        f"(explicit={_DEFAULT_WEIGHTS['explicit']}, implicit={_DEFAULT_WEIGHTS['implicit']}, time={_DEFAULT_WEIGHTS['time']}, content={_DEFAULT_WEIGHTS['content']}) "
-        "instead, everything else unchanged, so the comparison below isolates the weight change alone.",
+        f"`main_model` above uses the deployed defaults in `backend/recsys/config.py` (explicit={_DEFAULT_WEIGHTS['explicit']}, implicit={_DEFAULT_WEIGHTS['implicit']}, time={_DEFAULT_WEIGHTS['time']}, content={_DEFAULT_WEIGHTS['content']}). "
+        "As a diagnostic only, each seed also searches a fixed list of weight candidates, minimizing Brier score on that seed's validation split (~20 events) and tie-breaking by type_hit_rate; see `weight_search.csv` for every candidate tried. `ablation_searched_weights` re-runs the test split with that search's pick instead of the deployed defaults, everything else unchanged, isolating the weight difference alone. The search's pick is **not** applied to `main_model` or deployed anywhere; see CONTENT_BASE_WEIGHT's comment in config.py for why.",
         "",
-        "| Seed | Tuned weights (explicit/implicit/time/content) |",
+        "| Seed | Search's pick (explicit/implicit/time/content) |",
         "| --- | --- |",
     ])
     for row in weight_search_table[weight_search_table.is_selected].sort_values("seed").itertuples():
@@ -580,9 +583,9 @@ def run_evaluation(seeds: list[int], output_dir: str | Path) -> tuple[pd.DataFra
     weight_report_metrics = [*reported_ablation_metrics, "satisfaction_std", "satisfaction_gini"]
     report_lines.extend([
         "",
-        "Paired test-set delta, tuned weights minus the pre-tuning defaults (favorable direction depends on the metric: lower is better for brier_score, satisfaction_std, and satisfaction_gini; higher is better for the rest):",
+        "Paired test-set delta, deployed defaults minus the search's pick (favorable direction depends on the metric: lower is better for brier_score, satisfaction_std, and satisfaction_gini; higher is better for the rest). A favorable delta here means the deployed defaults beat the search's pick; an unfavorable one means the search's pick would do better on that metric alone:",
         "",
-        "| Metric | Tuned minus default (95% CI) | Significant gain? |",
+        "| Metric | Deployed minus searched (95% CI) | Deployed favorable? |",
         "| --- | ---: | --- |",
     ])
     for metric in weight_report_metrics:
@@ -592,11 +595,11 @@ def run_evaluation(seeds: list[int], output_dir: str | Path) -> tuple[pd.DataFra
     weight_significant_gains = weight_ablation[in_report & weight_ablation.favorable_significant].metric.tolist()
     weight_significant_losses = weight_ablation[in_report & weight_ablation.unfavorable_significant].metric.tolist()
     if weight_significant_gains:
-        report_lines.extend(["", f"Paired intervals show significant gains from weight tuning for: {', '.join(weight_significant_gains)}."])
+        report_lines.extend(["", f"Paired intervals show the deployed defaults significantly beat the search's pick for: {', '.join(weight_significant_gains)}."])
     else:
-        report_lines.extend(["", "No metric showed a statistically significant gain from weight tuning over the pre-tuning defaults under the paired 95% intervals."])
+        report_lines.extend(["", "No metric showed the deployed defaults significantly beating the search's pick under the paired 95% intervals."])
     if weight_significant_losses:
-        report_lines.extend(["", f"Paired intervals show a significant **cost** from weight tuning for: {', '.join(weight_significant_losses)}. Adopting these weights in production is a tradeoff, not a clean improvement."])
+        report_lines.extend(["", f"Paired intervals show the search's pick would significantly beat the deployed defaults for: {', '.join(weight_significant_losses)}. That is the calibration/fairness tradeoff CONTENT_BASE_WEIGHT's comment in config.py explains; it is a deliberate choice, not an oversight."])
 
     report_lines.extend([
         "",
