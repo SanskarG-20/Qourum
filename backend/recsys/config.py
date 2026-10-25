@@ -5,6 +5,20 @@ EXPLICIT_CONFIDENCE_PRIOR = 3.0
 IMPLICIT_CONFIDENCE_PRIOR = 4.0
 TIME_CONFIDENCE_PRIOR = 8.0
 TIME_LAPLACE_ALPHA = 1.0
+# backend/evaluation/runner.py's validation-only weight search (see "Component
+# weight tuning" in results/evaluation/REPORT.md) found that dropping
+# CONTENT_BASE_WEIGHT to 0 significantly improves Brier score (calibration) in
+# every one of 5 seeds, monotonically as the weight fell from 0.2 to 0.05 to 0.
+# It is deliberately NOT applied here: the same change also significantly
+# increases satisfaction_gini (+0.085 [+0.062, +0.107], member outcomes become
+# more unequal), which runs directly against this project's own explicit
+# fairness goals (fairness_weights(), the least_misery/fairness_aware
+# strategies). Trading fairness for calibration is a product decision, not a
+# pure optimization, so these defaults stay as the deliberately-chosen,
+# evaluated baseline rather than the Brier-optimal point. A smaller reduction
+# (e.g. content=0.05, also tested and close to content=0 on validation Brier)
+# is a plausible middle ground but was not validated in isolation on the test
+# split and would need its own run before adopting.
 EXPLICIT_BASE_WEIGHT = 0.50
 IMPLICIT_BASE_WEIGHT = 0.35
 TIME_BASE_WEIGHT = 0.15
