@@ -4,6 +4,7 @@
 - Revision: `1110a243fdf4706b3f48f1d95db1a4f5529b4d41`
 - License: Apache-2.0
 - Runtime: CPU, 384-dimensional sentence embeddings; application loads this directory with `local_files_only=True`.
+- Storage: committed directly in git (`model.safetensors` is ~87 MiB), not Git LFS. Converting an already-public repo to LFS rewrites every commit hash and breaks existing clones/forks/PRs, so that migration needs the repository owner's explicit sign-off rather than being done unilaterally. If storage becomes a problem, migrate with `git lfs migrate import --include="*.safetensors"` and coordinate the force-push with everyone holding a clone.
 - Provenance: model and tokenizer files are vendored so inference does not download files or contact a model host.
 
 SHA-256 checksums:
