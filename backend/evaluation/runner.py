@@ -90,6 +90,9 @@ def paired_comparison_table(per_seed: pd.DataFrame, best_baseline: str) -> pd.Da
     return pd.DataFrame(rows)
 
 
+_LOWER_IS_BETTER_METRICS = {"brier_score", "satisfaction_std", "satisfaction_gini"}
+
+
 def paired_ablation(per_seed: pd.DataFrame, ablation_method: str) -> pd.DataFrame:
     """Return paired main-minus-ablation deltas and two-sided 95% t intervals."""
     metrics = [column for column in per_seed.columns if column not in {"seed", "method", "tuned_strategy", "best_baseline"}]
@@ -101,13 +104,16 @@ def paired_ablation(per_seed: pd.DataFrame, ablation_method: str) -> pd.DataFram
         margin = float(t.ppf(0.975, len(difference) - 1) * sem(difference)) if len(difference) > 1 else 0.0
         ci_low = float(difference.mean() - margin)
         ci_high = float(difference.mean() + margin)
-        favorable = metric != "brier_score"
+        # satisfaction_std and satisfaction_gini are lower-is-better, same as brier_score
+        # (see low_better in paired_comparison_table); every other metric is higher-is-better.
+        favorable = metric not in _LOWER_IS_BETTER_METRICS
         rows.append({
             "metric": metric,
             "mean_paired_delta": float(difference.mean()),
             "ci95_low": ci_low,
             "ci95_high": ci_high,
             "favorable_significant": bool(ci_low > 0 if favorable else ci_high < 0),
+            "unfavorable_significant": bool(ci_high < 0 if favorable else ci_low > 0),
             "seeds": len(difference),
         })
     return pd.DataFrame(rows)
@@ -543,8 +549,7 @@ def run_evaluation(seeds: list[int], output_dir: str | Path) -> tuple[pd.DataFra
     reported_ablation_metrics = ["type_hit_rate", "ndcg_at_3", "mean_satisfaction", "min_satisfaction", "brier_score", "quorum_success_rate"]
     for metric in reported_ablation_metrics:
         row = embedding_ablation[embedding_ablation.metric == metric].iloc[0]
-        significant = bool(row["ci95_low"] > 0 if metric != "brier_score" else row["ci95_high"] < 0)
-        report_lines.append(f"| {metric} | {row['mean_paired_delta']:+.3f} [{row['ci95_low']:+.3f}, {row['ci95_high']:+.3f}] | {significant} |")
+        report_lines.append(f"| {metric} | {row['mean_paired_delta']:+.3f} [{row['ci95_low']:+.3f}, {row['ci95_high']:+.3f}] | {bool(row['favorable_significant'])} |")
     primary = embedding_ablation[embedding_ablation.metric == "mean_satisfaction"].iloc[0]
     if primary["ci95_low"] > 0:
         report_lines.extend(["", f"Primary endpoint: mean-satisfaction gain was statistically significant ({primary['mean_paired_delta']:+.3f}, 95% CI [{primary['ci95_low']:+.3f}, {primary['ci95_high']:+.3f}])."])
@@ -553,10 +558,7 @@ def run_evaluation(seeds: list[int], output_dir: str | Path) -> tuple[pd.DataFra
     else:
         report_lines.extend(["", f"Primary endpoint: the mean-satisfaction embedding delta was not statistically significant (inconclusive; {primary['mean_paired_delta']:+.3f}, 95% CI [{primary['ci95_low']:+.3f}, {primary['ci95_high']:+.3f}])."])
     reported_ablation = embedding_ablation[embedding_ablation.metric.isin(reported_ablation_metrics)]
-    significant_gains = reported_ablation[
-        ((reported_ablation.metric != "brier_score") & (reported_ablation.ci95_low > 0))
-        | ((reported_ablation.metric == "brier_score") & (reported_ablation.ci95_high < 0))
-    ].metric.tolist()
+    significant_gains = reported_ablation[reported_ablation.favorable_significant].metric.tolist()
     if significant_gains:
         report_lines.extend(["", f"Paired intervals show significant embedding gains for: {', '.join(significant_gains)}."])
     else:
@@ -575,25 +577,26 @@ def run_evaluation(seeds: list[int], output_dir: str | Path) -> tuple[pd.DataFra
     ])
     for row in weight_search_table[weight_search_table.is_selected].sort_values("seed").itertuples():
         report_lines.append(f"| {row.seed} | {row.explicit:.2f} / {row.implicit:.2f} / {row.time:.2f} / {row.content:.2f} |")
+    weight_report_metrics = [*reported_ablation_metrics, "satisfaction_std", "satisfaction_gini"]
     report_lines.extend([
         "",
-        "Paired test-set delta, tuned weights minus the pre-tuning defaults (positive favorable except Brier score):",
+        "Paired test-set delta, tuned weights minus the pre-tuning defaults (favorable direction depends on the metric: lower is better for brier_score, satisfaction_std, and satisfaction_gini; higher is better for the rest):",
         "",
         "| Metric | Tuned minus default (95% CI) | Significant gain? |",
         "| --- | ---: | --- |",
     ])
-    for metric in reported_ablation_metrics:
+    for metric in weight_report_metrics:
         row = weight_ablation[weight_ablation.metric == metric].iloc[0]
-        significant = bool(row["ci95_low"] > 0 if metric != "brier_score" else row["ci95_high"] < 0)
-        report_lines.append(f"| {metric} | {row['mean_paired_delta']:+.3f} [{row['ci95_low']:+.3f}, {row['ci95_high']:+.3f}] | {significant} |")
-    weight_significant_gains = weight_ablation[
-        ((weight_ablation.metric != "brier_score") & (weight_ablation.metric.isin(reported_ablation_metrics)) & (weight_ablation.ci95_low > 0))
-        | ((weight_ablation.metric == "brier_score") & (weight_ablation.ci95_high < 0))
-    ].metric.tolist()
+        report_lines.append(f"| {metric} | {row['mean_paired_delta']:+.3f} [{row['ci95_low']:+.3f}, {row['ci95_high']:+.3f}] | {bool(row['favorable_significant'])} |")
+    in_report = weight_ablation.metric.isin(weight_report_metrics)
+    weight_significant_gains = weight_ablation[in_report & weight_ablation.favorable_significant].metric.tolist()
+    weight_significant_losses = weight_ablation[in_report & weight_ablation.unfavorable_significant].metric.tolist()
     if weight_significant_gains:
         report_lines.extend(["", f"Paired intervals show significant gains from weight tuning for: {', '.join(weight_significant_gains)}."])
     else:
         report_lines.extend(["", "No metric showed a statistically significant gain from weight tuning over the pre-tuning defaults under the paired 95% intervals."])
+    if weight_significant_losses:
+        report_lines.extend(["", f"Paired intervals show a significant **cost** from weight tuning for: {', '.join(weight_significant_losses)}. Adopting these weights in production is a tradeoff, not a clean improvement."])
 
     report_lines.extend([
         "",

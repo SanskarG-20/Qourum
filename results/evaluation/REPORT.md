@@ -55,7 +55,7 @@ Each seed picks base weights (explicit/implicit/time/content) from a fixed list 
 | 45 | 0.60 / 0.40 / 0.10 / 0.00 |
 | 46 | 0.50 / 0.35 / 0.15 / 0.00 |
 
-Paired test-set delta, tuned weights minus the pre-tuning defaults (positive favorable except Brier score):
+Paired test-set delta, tuned weights minus the pre-tuning defaults (favorable direction depends on the metric: lower is better for brier_score, satisfaction_std, and satisfaction_gini; higher is better for the rest):
 
 | Metric | Tuned minus default (95% CI) | Significant gain? |
 | --- | ---: | --- |
@@ -65,7 +65,11 @@ Paired test-set delta, tuned weights minus the pre-tuning defaults (positive fav
 | min_satisfaction | -0.042 [-0.064, -0.021] | False |
 | brier_score | -0.025 [-0.034, -0.015] | True |
 | quorum_success_rate | +0.000 [+0.000, +0.000] | False |
+| satisfaction_std | +0.014 [-0.001, +0.028] | False |
+| satisfaction_gini | +0.085 [+0.062, +0.107] | False |
 
 Paired intervals show significant gains from weight tuning for: brier_score.
+
+Paired intervals show a significant **cost** from weight tuning for: mean_satisfaction, min_satisfaction, satisfaction_gini. Adopting these weights in production is a tradeoff, not a clean improvement.
 
 These results use synthetic data only. Any gain is weak evidence and does not establish performance on real clubs.

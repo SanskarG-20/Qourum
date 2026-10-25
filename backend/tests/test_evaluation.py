@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from backend.evaluation.runner import STRATEGIES, paired_comparison_table, paired_embedding_ablation, select_tuned_strategy, temporal_split
+from backend.evaluation.runner import STRATEGIES, paired_ablation, paired_comparison_table, paired_embedding_ablation, select_tuned_strategy, temporal_split
 
 
 def test_temporal_split_is_ordered_and_70_15_15_by_time():
@@ -45,6 +45,26 @@ def test_tuned_strategy_selection_uses_type_hit_rate_not_self_predicted_satisfac
     assert select_tuned_strategy(validation_result) == "least_misery"
     old_criterion = max(STRATEGIES, key=lambda item: (validation_result[f"strategy_{item}"]["mean_satisfaction"], item))
     assert old_criterion == "average"
+
+
+def test_paired_ablation_treats_gini_and_std_as_lower_is_better():
+    # main_model's satisfaction_gini is higher (worse, more unequal) than the ablation's
+    # in every seed. A naive "positive delta = favorable" rule (the bug this guards
+    # against) would mislabel that as a favorable, significant gain; gini and std are
+    # lower-is-better, so this must be flagged as a significant *cost*, not a gain.
+    per_seed = pd.DataFrame([
+        {"seed": seed, "method": "main_model", "satisfaction_gini": 0.30, "precision_at_3": 0.30}
+        for seed in range(5)
+    ] + [
+        {"seed": seed, "method": "ablation_default_weights", "satisfaction_gini": 0.20, "precision_at_3": 0.25}
+        for seed in range(5)
+    ])
+    result = paired_ablation(per_seed, "ablation_default_weights").set_index("metric")
+    assert result.loc["satisfaction_gini", "mean_paired_delta"] > 0
+    assert not bool(result.loc["satisfaction_gini", "favorable_significant"])
+    assert bool(result.loc["satisfaction_gini", "unfavorable_significant"])
+    assert bool(result.loc["precision_at_3", "favorable_significant"])
+    assert not bool(result.loc["precision_at_3", "unfavorable_significant"])
 
 
 def test_embedding_ablation_reports_paired_confidence_interval_and_significance():
