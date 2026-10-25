@@ -67,6 +67,7 @@ def score_members(
     time_affinity_enabled: bool = True,
     content_evidence: Mapping[str, ContentSignal] | None = None,
     content_enabled: bool = True,
+    base_weights: Mapping[str, float] | None = None,
 ) -> list[MemberScore]:
     """Score members in [0,1] from explicit, recency-weighted, and time evidence.
 
@@ -78,7 +79,16 @@ def score_members(
     supplied club-popularity fallback and marks the result as cold start. Content
     similarity is mapped to [0,1], weighted by n/(n+content_prior), and included
     only when a member has at least one prior attended-event description.
+
+    `base_weights` overrides one or more of config's EXPLICIT/IMPLICIT/TIME/
+    CONTENT_BASE_WEIGHT by key ("explicit", "implicit", "time", "content") for
+    this call only; omitted keys keep the config default. Used by the
+    evaluation harness to search for better weights against validation data
+    without changing the production defaults.
     """
+    weights = base_weights or {}
+    if any(key not in {"explicit", "implicit", "time", "content"} for key in weights) or any(value < 0.0 or not np.isfinite(value) for value in weights.values()):
+        raise ValueError("base_weights keys must be explicit/implicit/time/content with finite, non-negative values.")
     if not 0 <= day_of_week <= 6 or not 0 <= hour <= 23:
         raise ValueError("Candidate day and hour must be within calendar bounds.")
     if not 0.0 <= popularity_fallback <= 1.0:
@@ -141,10 +151,10 @@ def score_members(
             confidence_content[index] = signal.observation_count / (signal.observation_count + config.CONTENT_CONFIDENCE_PRIOR)
 
     components = (
-        ("explicit", explicit, confidence_explicit, config.EXPLICIT_BASE_WEIGHT),
-        ("implicit", implicit, confidence_implicit, config.IMPLICIT_BASE_WEIGHT),
-        ("time", time_affinity, confidence_time, config.TIME_BASE_WEIGHT),
-        ("content", content, confidence_content, config.CONTENT_BASE_WEIGHT),
+        ("explicit", explicit, confidence_explicit, weights.get("explicit", config.EXPLICIT_BASE_WEIGHT)),
+        ("implicit", implicit, confidence_implicit, weights.get("implicit", config.IMPLICIT_BASE_WEIGHT)),
+        ("time", time_affinity, confidence_time, weights.get("time", config.TIME_BASE_WEIGHT)),
+        ("content", content, confidence_content, weights.get("content", config.CONTENT_BASE_WEIGHT)),
     )
     result: list[MemberScore] = []
     for index in range(count):

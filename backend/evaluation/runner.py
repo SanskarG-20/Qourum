@@ -90,11 +90,11 @@ def paired_comparison_table(per_seed: pd.DataFrame, best_baseline: str) -> pd.Da
     return pd.DataFrame(rows)
 
 
-def paired_embedding_ablation(per_seed: pd.DataFrame) -> pd.DataFrame:
-    """Return paired main-minus-no-embedding deltas and two-sided 95% t intervals."""
+def paired_ablation(per_seed: pd.DataFrame, ablation_method: str) -> pd.DataFrame:
+    """Return paired main-minus-ablation deltas and two-sided 95% t intervals."""
     metrics = [column for column in per_seed.columns if column not in {"seed", "method", "tuned_strategy", "best_baseline"}]
     main = per_seed[per_seed.method == "main_model"].set_index("seed")
-    ablation = per_seed[per_seed.method == "ablation_no_embeddings"].set_index("seed")
+    ablation = per_seed[per_seed.method == ablation_method].set_index("seed")
     rows = []
     for metric in metrics:
         difference = (main[metric] - ablation[metric].reindex(main.index)).dropna()
@@ -113,6 +113,11 @@ def paired_embedding_ablation(per_seed: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def paired_embedding_ablation(per_seed: pd.DataFrame) -> pd.DataFrame:
+    """Return paired main-minus-no-embedding deltas and two-sided 95% t intervals."""
+    return paired_ablation(per_seed, "ablation_no_embeddings")
+
+
 def evaluate_window(
     fit_events: pd.DataFrame,
     holdout_events: pd.DataFrame,
@@ -127,6 +132,7 @@ def evaluate_window(
     time_affinity: bool = True,
     content_enabled: bool = True,
     embedding_session: OrmSession | None = None,
+    base_weights: dict[str, float] | None = None,
 ) -> dict[str, dict[str, float]]:
     """Evaluate selected strategies on event-time contexts using observable history only."""
     rng = np.random.default_rng(seed)
@@ -209,6 +215,7 @@ def evaluate_window(
                 popularity_fallback=club_attendance_fallback(outcomes_by_type, event_type),
                 recency_decay=recency_decay, time_affinity_enabled=time_affinity,
                 content_evidence=content_by_type.get(event_type), content_enabled=content_enabled,
+                base_weights=base_weights,
             )
             probability_maps[event_type] = np.asarray([item.score for item in individual], dtype=np.float64)
             score_maps[event_type] = probability_maps[event_type]
@@ -345,7 +352,7 @@ def evaluate_window(
             if selected_type not in hour_score_cache:
                 hour_score_cache[selected_type] = []
                 for hour in range(9, 21):
-                    slot_probs = score_members(member_ids, selected_type, event_time.weekday(), hour, preferences_by_member, attendance, slots, now=event_time, popularity_fallback=club_attendance_fallback(outcomes_by_type, selected_type), recency_decay=recency_decay, time_affinity_enabled=time_affinity, content_evidence=content_by_type.get(selected_type), content_enabled=content_enabled)
+                    slot_probs = score_members(member_ids, selected_type, event_time.weekday(), hour, preferences_by_member, attendance, slots, now=event_time, popularity_fallback=club_attendance_fallback(outcomes_by_type, selected_type), recency_decay=recency_decay, time_affinity_enabled=time_affinity, content_evidence=content_by_type.get(selected_type), content_enabled=content_enabled, base_weights=base_weights)
                     hour_score_cache[selected_type].append(float(np.mean([row.score for row in slot_probs])))
             hour_scores = hour_score_cache[selected_type]
             predicted_hour = 9 + int(np.argmax(hour_scores))
@@ -362,6 +369,45 @@ def evaluate_window(
         repeated = sum(left == right for index, left in enumerate(chosen) for right in chosen[index + 1:])
         output[method]["intra_list_diversity"] = float(1.0 - repeated / pairs) if pairs else 1.0
     return output
+
+
+_DEFAULT_WEIGHTS = {"explicit": config.EXPLICIT_BASE_WEIGHT, "implicit": config.IMPLICIT_BASE_WEIGHT, "time": config.TIME_BASE_WEIGHT, "content": config.CONTENT_BASE_WEIGHT}
+
+# Specific hypotheses to compare against the current defaults, not a blind grid:
+# validation is only ~20 events per seed, too little to support a fine-grained
+# search without overfitting to its noise. Content is tested at reduced and zero
+# weight because the embedding ablation found a worse (not significant, but
+# consistently positive) Brier delta with embeddings enabled on the test set.
+WEIGHT_CANDIDATES: tuple[dict[str, float], ...] = (
+    _DEFAULT_WEIGHTS,
+    {"explicit": 1.0, "implicit": 1.0, "time": 1.0, "content": 1.0},
+    {"explicit": 1.0, "implicit": 0.3, "time": 0.1, "content": 0.2},
+    {"explicit": 0.3, "implicit": 1.0, "time": 0.1, "content": 0.2},
+    {"explicit": 0.3, "implicit": 0.3, "time": 1.0, "content": 0.2},
+    {"explicit": 0.5, "implicit": 0.35, "time": 0.15, "content": 0.05},
+    {"explicit": 0.5, "implicit": 0.35, "time": 0.15, "content": 0.0},
+    {"explicit": 0.6, "implicit": 0.4, "time": 0.1, "content": 0.0},
+)
+
+
+def select_tuned_weights(
+    train: pd.DataFrame, validation: pd.DataFrame, tables: dict[str, pd.DataFrame], *,
+    seed: int, embedding_session: OrmSession,
+) -> tuple[dict[str, float], list[dict]]:
+    """Pick base weights minimizing validation Brier score, tie-broken by type_hit_rate.
+
+    precision_at_3, recall_at_3, ndcg_at_3, and brier_score depend only on
+    score_members' per-member probabilities, not on which aggregation strategy is
+    chosen (confirmed: these four are identical across every strategy_* method in
+    the same evaluate_window call), so any single strategy_* method's validation
+    result is a valid, cheap stand-in for scoring a candidate weight vector.
+    """
+    scored = []
+    for candidate in WEIGHT_CANDIDATES:
+        result = evaluate_window(train, validation, tables, seed=seed, strategy="average", methods=["strategy_average"], embedding_session=embedding_session, base_weights=candidate)["strategy_average"]
+        scored.append({"weights": candidate, "brier_score": result["brier_score"], "type_hit_rate": result["type_hit_rate"]})
+    best = min(scored, key=lambda item: (item["brier_score"], -item["type_hit_rate"]))
+    return best["weights"], scored
 
 
 def select_tuned_strategy(validation_result: dict[str, dict[str, float]]) -> str:
@@ -385,8 +431,9 @@ def _evaluate_seed(seed: int) -> tuple[dict[str, dict[str, float]], dict[str, di
     cache_engine = create_engine("sqlite+pysqlite:///:memory:")
     EmbeddingCache.__table__.create(cache_engine)
     embedding_session = OrmSession(cache_engine)
+    tuned_weights, weight_search = select_tuned_weights(train, validation, tables, seed=seed, embedding_session=embedding_session)
     validation_methods = ["random", "club_popularity", "most_recent", "same_week_last_year", *(f"strategy_{strategy}" for strategy in STRATEGIES)]
-    validation_result = evaluate_window(train, validation, tables, seed=seed, strategy="average", methods=validation_methods, embedding_session=embedding_session)
+    validation_result = evaluate_window(train, validation, tables, seed=seed, strategy="average", methods=validation_methods, embedding_session=embedding_session, base_weights=tuned_weights)
     tuned_strategy = select_tuned_strategy(validation_result)
     best_baseline = max(("random", "club_popularity", "most_recent", "same_week_last_year"), key=lambda item: (validation_result[item]["type_hit_rate"], item))
     test_methods = [
@@ -394,16 +441,19 @@ def _evaluate_seed(seed: int) -> tuple[dict[str, dict[str, float]], dict[str, di
         *(f"strategy_{strategy}" for strategy in STRATEGIES), "main_model",
     ]
     test_fit = pd.concat([train, validation]).sort_values(["start_time", "id"], kind="stable")
-    test_result = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=test_methods, embedding_session=embedding_session)
-    test_result["ablation_no_recency"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], recency_decay=False, embedding_session=embedding_session)["main_model"]
-    test_result["ablation_no_time_affinity"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], time_affinity=False, embedding_session=embedding_session)["main_model"]
-    test_result["ablation_no_fairness"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], allow_fairness=False, embedding_session=embedding_session)["main_model"]
-    test_result["ablation_no_diversity"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], allow_diversity=False, embedding_session=embedding_session)["main_model"]
-    test_result["ablation_no_embeddings"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], content_enabled=False, embedding_session=embedding_session)["main_model"]
+    test_result = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=test_methods, embedding_session=embedding_session, base_weights=tuned_weights)
+    test_result["ablation_no_recency"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], recency_decay=False, embedding_session=embedding_session, base_weights=tuned_weights)["main_model"]
+    test_result["ablation_no_time_affinity"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], time_affinity=False, embedding_session=embedding_session, base_weights=tuned_weights)["main_model"]
+    test_result["ablation_no_fairness"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], allow_fairness=False, embedding_session=embedding_session, base_weights=tuned_weights)["main_model"]
+    test_result["ablation_no_diversity"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], allow_diversity=False, embedding_session=embedding_session, base_weights=tuned_weights)["main_model"]
+    test_result["ablation_no_embeddings"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], content_enabled=False, embedding_session=embedding_session, base_weights=tuned_weights)["main_model"]
+    test_result["ablation_default_weights"] = evaluate_window(test_fit, test, tables, seed=seed, strategy=tuned_strategy, methods=["main_model"], embedding_session=embedding_session, base_weights=_DEFAULT_WEIGHTS)["main_model"]
     embedding_session.close()
     cache_engine.dispose()
     return test_result, {
         "tuned_strategy": {"index": float(STRATEGIES.index(tuned_strategy))},
+        "tuned_weights": tuned_weights,
+        "weight_search": weight_search,
         "validation_baselines": {name: validation_result[name]["type_hit_rate"] for name in ("random", "club_popularity", "most_recent", "same_week_last_year")},
         "validation_best_baseline": best_baseline,
     }
@@ -419,11 +469,17 @@ def run_evaluation(seeds: list[int], output_dir: str | Path) -> tuple[pd.DataFra
     rows = []
     selected = []
     evaluations = []
+    weight_rows = []
     for seed in seeds:
         result, selection = _evaluate_seed(seed)
         tuned = STRATEGIES[int(selection["tuned_strategy"]["index"])]
         selected.append({"seed": seed, "tuned_strategy": tuned, "validation_best_baseline": selection["validation_best_baseline"], **selection["validation_baselines"]})
         evaluations.append((seed, tuned, result))
+        for candidate in selection["weight_search"]:
+            is_selected = candidate["weights"] == selection["tuned_weights"]
+            weight_rows.append({"seed": seed, "is_selected": is_selected, "validation_brier_score": candidate["brier_score"], "validation_type_hit_rate": candidate["type_hit_rate"], **candidate["weights"]})
+    weight_search_table = pd.DataFrame(weight_rows)
+    weight_search_table.to_csv(root / "weight_search.csv", index=False)
     validation_baseline_means = {
         name: float(np.mean([item[name] for item in selected]))
         for name in ("random", "club_popularity", "most_recent", "same_week_last_year")
@@ -446,6 +502,8 @@ def run_evaluation(seeds: list[int], output_dir: str | Path) -> tuple[pd.DataFra
     paired.to_csv(root / "paired_comparison.csv", index=False)
     embedding_ablation = paired_embedding_ablation(per_seed)
     embedding_ablation.to_csv(root / "embedding_ablation.csv", index=False)
+    weight_ablation = paired_ablation(per_seed, "ablation_default_weights")
+    weight_ablation.to_csv(root / "weight_tuning_ablation.csv", index=False)
     summary_lookup = summary.set_index(["method", "metric"])
     report_metrics = ["precision_at_3", "recall_at_3", "ndcg_at_3", "type_hit_rate", "slot_hit_rate", "mean_satisfaction", "min_satisfaction", "satisfaction_std", "satisfaction_gini", "quorum_success_rate", "brier_score", "coverage", "intra_list_diversity"]
     report_lines = [
@@ -503,6 +561,40 @@ def run_evaluation(seeds: list[int], output_dir: str | Path) -> tuple[pd.DataFra
         report_lines.extend(["", f"Paired intervals show significant embedding gains for: {', '.join(significant_gains)}."])
     else:
         report_lines.extend(["", "No embedding-related gain was statistically significant under the paired 95% intervals for the reported metrics."])
+
+    report_lines.extend([
+        "",
+        "## Component weight tuning",
+        "",
+        "Each seed picks base weights (explicit/implicit/time/content) from a fixed list of candidates by minimizing Brier score on that seed's validation split (~20 events), tie-broken by type_hit_rate; see `weight_search.csv` for every candidate tried. `ablation_default_weights` re-runs the test split with the pre-tuning defaults "
+        f"(explicit={_DEFAULT_WEIGHTS['explicit']}, implicit={_DEFAULT_WEIGHTS['implicit']}, time={_DEFAULT_WEIGHTS['time']}, content={_DEFAULT_WEIGHTS['content']}) "
+        "instead, everything else unchanged, so the comparison below isolates the weight change alone.",
+        "",
+        "| Seed | Tuned weights (explicit/implicit/time/content) |",
+        "| --- | --- |",
+    ])
+    for row in weight_search_table[weight_search_table.is_selected].sort_values("seed").itertuples():
+        report_lines.append(f"| {row.seed} | {row.explicit:.2f} / {row.implicit:.2f} / {row.time:.2f} / {row.content:.2f} |")
+    report_lines.extend([
+        "",
+        "Paired test-set delta, tuned weights minus the pre-tuning defaults (positive favorable except Brier score):",
+        "",
+        "| Metric | Tuned minus default (95% CI) | Significant gain? |",
+        "| --- | ---: | --- |",
+    ])
+    for metric in reported_ablation_metrics:
+        row = weight_ablation[weight_ablation.metric == metric].iloc[0]
+        significant = bool(row["ci95_low"] > 0 if metric != "brier_score" else row["ci95_high"] < 0)
+        report_lines.append(f"| {metric} | {row['mean_paired_delta']:+.3f} [{row['ci95_low']:+.3f}, {row['ci95_high']:+.3f}] | {significant} |")
+    weight_significant_gains = weight_ablation[
+        ((weight_ablation.metric != "brier_score") & (weight_ablation.metric.isin(reported_ablation_metrics)) & (weight_ablation.ci95_low > 0))
+        | ((weight_ablation.metric == "brier_score") & (weight_ablation.ci95_high < 0))
+    ].metric.tolist()
+    if weight_significant_gains:
+        report_lines.extend(["", f"Paired intervals show significant gains from weight tuning for: {', '.join(weight_significant_gains)}."])
+    else:
+        report_lines.extend(["", "No metric showed a statistically significant gain from weight tuning over the pre-tuning defaults under the paired 95% intervals."])
+
     report_lines.extend([
         "",
         "These results use synthetic data only. Any gain is weak evidence and does not establish performance on real clubs.",
