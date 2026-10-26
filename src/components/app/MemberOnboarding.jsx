@@ -23,7 +23,7 @@ function MemberEventRsvps({ clubId }) {
   const upcoming = events.filter((event) => event.status === 'scheduled' && new Date(event.start_time) > new Date());
   return <section className="quorum-app__card quorum-app__member-events"><h2>Upcoming club events</h2>
     {error && <p role="alert" className="quorum-app__error">{error}</p>}{notice && <p role="status" className="quorum-app__notice">{notice}</p>}
-    {upcoming.length === 0 ? <p>No upcoming events have been scheduled.</p> : <ul className="quorum-app__event-list">{upcoming.map((event) => <li key={event.id}><div><strong>{event.title}</strong><span>{new Date(event.start_time).toLocaleString()} · {event.venue}</span></div><div className="quorum-app__rsvp-actions">{['yes', 'maybe', 'no'].map((status) => <button type="button" className={event.my_rsvp === status ? 'is-selected' : ''} key={status} onClick={() => respond(event.id, status)}>{status}</button>)}</div></li>)}</ul>}
+    {upcoming.length === 0 ? <p>No upcoming events have been scheduled.</p> : <ul className="quorum-app__event-list">{upcoming.map((event) => <li key={event.id}><div><strong>{event.title}</strong><span>{new Date(event.start_time).toLocaleString()} · {event.venue}{event.estimated_fee_inr != null ? ` · ${event.estimated_fee_inr === 0 ? 'Free' : `Estimated ₹${event.estimated_fee_inr} per person`} (demo estimate)` : ''}</span></div><div className="quorum-app__rsvp-actions">{['yes', 'maybe', 'no'].map((status) => <button type="button" className={event.my_rsvp === status ? 'is-selected' : ''} key={status} onClick={() => respond(event.id, status)}>{status}</button>)}</div></li>)}</ul>}
   </section>;
 }
 

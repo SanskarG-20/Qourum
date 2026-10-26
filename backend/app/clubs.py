@@ -144,6 +144,9 @@ def club_events(
             "start_time": event.start_time.isoformat(),
             "duration_minutes": event.duration_minutes,
             "venue": event.venue,
+            "event_format_id": event.event_format_id,
+            "delivery_mode": event.delivery_mode,
+            "estimated_fee_inr": event.estimated_fee_inr,
             "status": event.status,
             "my_rsvp": my_rsvps.get(event.id),
         }

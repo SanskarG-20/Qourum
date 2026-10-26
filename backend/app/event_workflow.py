@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session as OrmSession
 
 from .dependencies import AuthContext, ClubAccess, get_db, require_club_member, require_club_organizer, require_csrf
 from .models import Event, EventType, RSVP, utc_now
+from .event_catalog import FORMAT_BY_ID, is_online_venue
 
 router = APIRouter(prefix="/api/clubs", tags=["event-workflow"])
 
@@ -22,6 +23,8 @@ class CreateEventInput(BaseModel):
     event_type_id: str = Field(min_length=1, max_length=36)
     start_time: datetime
     venue: str = Field(min_length=1, max_length=200)
+    event_format_id: str | None = Field(default=None, max_length=64)
+    delivery_mode: Literal["in_person", "online"] = "in_person"
 
     @field_validator("start_time")
     @classmethod
@@ -60,14 +63,31 @@ def accept_recommendation(
     event_type = db.get(EventType, payload.event_type_id)
     if event_type is None:
         raise HTTPException(status_code=422, detail="Unknown event type.")
-    end_time = payload.start_time + timedelta(minutes=event_type.default_duration_minutes)
+    event_format = FORMAT_BY_ID.get(payload.event_format_id) if payload.event_format_id else None
+    if payload.event_format_id and (event_format is None or event_format.base_type_name != event_type.name):
+        raise HTTPException(status_code=422, detail="Event format does not match its event type.")
+    if event_format and payload.delivery_mode not in event_format.modes:
+        raise HTTPException(status_code=422, detail="This event format does not support the selected delivery mode.")
+    if payload.delivery_mode == "online" and not is_online_venue(payload.venue):
+        raise HTTPException(status_code=422, detail="Online events need a virtual venue.")
+    if payload.delivery_mode == "in_person" and is_online_venue(payload.venue):
+        raise HTTPException(status_code=422, detail="In-person events need a physical venue.")
+    duration_minutes = (event_format.duration_minutes if event_format else None) or event_type.default_duration_minutes
+    end_time = payload.start_time + timedelta(minutes=duration_minutes)
     existing = db.scalars(select(Event).where(Event.club_id == club_id, Event.status.in_(["proposed", "scheduled"]))).all()
     if any(row.start_time < end_time and payload.start_time < row.start_time + timedelta(minutes=row.duration_minutes) for row in existing):
         raise HTTPException(status_code=409, detail="The selected time conflicts with an existing event.")
-    event = Event(id=str(uuid4()), club_id=club_id, event_type_id=event_type.id, title=event_type.name, description=event_type.description, start_time=payload.start_time, duration_minutes=event_type.default_duration_minutes, venue=payload.venue, status="scheduled")
+    event = Event(id=str(uuid4()), club_id=club_id, event_type_id=event_type.id,
+                  title=event_format.name if event_format else event_type.name,
+                  description=event_type.description, start_time=payload.start_time,
+                  duration_minutes=duration_minutes, venue=payload.venue,
+                  event_format_id=event_format.id if event_format else None,
+                  delivery_mode=payload.delivery_mode,
+                  estimated_fee_inr=event_format.estimated_fee_inr if event_format else None,
+                  status="scheduled")
     db.add(event)
     db.commit()
-    return {"id": event.id, "event_type_id": event.event_type_id, "title": event.title, "description": event.description, "start_time": event.start_time.isoformat(), "duration_minutes": event.duration_minutes, "venue": event.venue, "status": event.status}
+    return {"id": event.id, "event_type_id": event.event_type_id, "title": event.title, "description": event.description, "start_time": event.start_time.isoformat(), "duration_minutes": event.duration_minutes, "venue": event.venue, "event_format_id": event.event_format_id, "delivery_mode": event.delivery_mode, "estimated_fee_inr": event.estimated_fee_inr, "status": event.status}
 
 
 @router.post("/{club_id}/events/{event_id}/rsvp")

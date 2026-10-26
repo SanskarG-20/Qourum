@@ -87,6 +87,8 @@ class Event(Base):
     __table_args__ = (
         CheckConstraint("duration_minutes > 0", name="ck_events_duration_positive"),
         CheckConstraint("status IN ('proposed', 'scheduled', 'completed', 'cancelled')", name="ck_events_status"),
+        CheckConstraint("delivery_mode IS NULL OR delivery_mode IN ('in_person', 'online')", name="ck_events_delivery_mode"),
+        CheckConstraint("estimated_fee_inr IS NULL OR estimated_fee_inr >= 0", name="ck_events_fee_nonnegative"),
         Index("ix_events_club_start", "club_id", "start_time"),
         Index("ix_events_type_start", "event_type_id", "start_time"),
     )
@@ -99,6 +101,9 @@ class Event(Base):
     start_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     venue: Mapped[str] = mapped_column(String(200), nullable=False)
+    event_format_id: Mapped[str | None] = mapped_column(String(64))
+    delivery_mode: Mapped[str | None] = mapped_column(String(20))
+    estimated_fee_inr: Mapped[int | None] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(String(16), nullable=False)
 
 

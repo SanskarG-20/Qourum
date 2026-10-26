@@ -12,12 +12,15 @@ from . import config
 
 @dataclass(frozen=True, order=True)
 class Candidate:
-    """An event type, local start timestamp, duration, and proposed venue."""
+    """An event type, local start, duration, venue, and planning format."""
 
     event_type_id: str
     start: datetime
     duration_minutes: int
     venue: str
+    format_id: str = ""
+    delivery_mode: str = "in_person"
+    estimated_fee_inr: int = 0
 
     @property
     def end(self) -> datetime:

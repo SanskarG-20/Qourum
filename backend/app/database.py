@@ -49,6 +49,12 @@ def initialize_schema(engine: Engine) -> None:
         columns = {row[1] for row in connection.execute(text("PRAGMA table_info(events)"))}
         if "description" not in columns:
             connection.execute(text("ALTER TABLE events ADD COLUMN description TEXT NOT NULL DEFAULT ''"))
+        if "event_format_id" not in columns:
+            connection.execute(text("ALTER TABLE events ADD COLUMN event_format_id VARCHAR(64)"))
+        if "delivery_mode" not in columns:
+            connection.execute(text("ALTER TABLE events ADD COLUMN delivery_mode VARCHAR(20)"))
+        if "estimated_fee_inr" not in columns:
+            connection.execute(text("ALTER TABLE events ADD COLUMN estimated_fee_inr INTEGER"))
         connection.execute(text(
             "UPDATE events SET description = COALESCE((SELECT description FROM event_types "
             "WHERE event_types.id = events.event_type_id), '') WHERE description = ''"
