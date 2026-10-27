@@ -18,13 +18,20 @@ from .models import AcademicCalendar, Availability, ClubMember, Event, EventType
 if (__package__ or "").partition(".")[0] == "app":
     from planning import config as planning_config
     from planning.models import AvailabilityWindow, PlanFormat, PlanMember, PlanObservation
+    from planning.pareto import pareto_front_ids
+    from planning.plan_cache import PlanResultCache, settings_hash
     from planning.pipeline import build_plan
 else:
     from backend.planning import config as planning_config
     from backend.planning.models import AvailabilityWindow, PlanFormat, PlanMember, PlanObservation
+    from backend.planning.pareto import pareto_front_ids
+    from backend.planning.plan_cache import PlanResultCache, settings_hash
     from backend.planning.pipeline import build_plan
 
 router = APIRouter(prefix="/api/clubs", tags=["planning"])
+_plan_result_cache = PlanResultCache(planning_config.PLAN_RESULT_CACHE_MAX_ENTRIES)
+
+
 class PlanRequest(BaseModel):
     """Validated settings for a single planning pipeline request."""
 
@@ -46,6 +53,13 @@ class PlanRequest(BaseModel):
     exclude_lab_heavy_days: bool = False
     prefer_short_formats: bool = False
     exploration: bool = False
+
+
+class PlanSweepRequest(PlanRequest):
+    """Settings shared across a capped deterministic combination sweep."""
+
+    max_plans: int = Field(default=planning_config.PLAN_SWEEP_MAX_PLANS, ge=1,
+                           le=planning_config.PLAN_SWEEP_MAX_PLANS)
 
 
 @router.get("/{club_id}/plan-presets")
@@ -223,15 +237,7 @@ def _plan_inputs(db: OrmSession, club_id: str, start_date: date):
     return members, formats, observations, explicit_preferences, calendar_flags
 
 
-@router.post("/{club_id}/plan")
-def club_plan(
-    club_id: str,
-    payload: PlanRequest,
-    _organizer: ClubAccess = Depends(require_club_organizer),
-    _csrf: AuthContext = Depends(require_csrf),
-    db: OrmSession = Depends(get_db),
-) -> dict[str, object]:
-    """Return ranked plan candidates and all candidates rejected by hard filters."""
+def _plan_context(db: OrmSession, club_id: str, payload: PlanRequest):
     # Beginning tomorrow ensures every generated card can still be scheduled
     # if the organizer requests a plan later in the day.
     start_date = payload.start_date or date.today() + timedelta(days=1)
@@ -243,33 +249,150 @@ def club_plan(
                 calendar_flags.setdefault(candidate_day, []).append("lab_heavy_day")
     if payload.min_people_available > len(members):
         raise HTTPException(status_code=422, detail="Minimum available people cannot exceed club membership.")
-    return build_plan(
-        members=members,
-        formats=formats,
-        observations=observations,
-        explicit_preferences=preferences,
-        calendar_flags=calendar_flags,
-        start_date=start_date,
-        horizon_days=payload.horizon_days,
-        min_people_available=payload.min_people_available,
-        strategy=payload.strategy,
-        fairness=payload.fairness,
-        baseline=payload.baseline,
-        top_k=payload.top_k,
-        diversity=payload.diversity,
-        seed=payload.seed,
-        selected_format_ids=payload.selected_format_ids,
-        fee_policy=payload.fee_policy,
-        fee_cap_inr=payload.fee_cap_inr,
-        delivery_mode=payload.delivery_mode,
-        skill_level_filter=payload.skill_level_filter,
-        exclude_lab_heavy_days=payload.exclude_lab_heavy_days,
-        prefer_short_formats=payload.prefer_short_formats,
-        exploration=payload.exploration,
-        existing_events=[
-            (event.start_time, event.start_time + timedelta(minutes=event.duration_minutes))
-            for event in db.scalars(select(Event).where(
-                Event.club_id == club_id, Event.status.in_(["proposed", "scheduled"])
-            ))
-        ],
+    existing_events = [
+        (event.start_time, event.start_time + timedelta(minutes=event.duration_minutes))
+        for event in db.scalars(select(Event).where(
+            Event.club_id == club_id, Event.status.in_(["proposed", "scheduled"])
+        ))
+    ]
+    return start_date, members, formats, observations, preferences, calendar_flags, existing_events
+
+
+def _build_cached_plan(*, club_id, payload: PlanRequest, context):
+    start_date, members, formats, observations, preferences, calendar_flags, existing_events = context
+    request_settings = payload.model_dump()
+    request_settings.pop("max_plans", None)
+    request_settings["start_date"] = start_date.isoformat()
+    cache_key = settings_hash(
+        club_id=club_id, settings=request_settings, members=members, formats=formats,
+        observations=observations, explicit_preferences=preferences,
+        calendar_flags=calendar_flags, existing_events=existing_events,
     )
+
+    def build():
+        return build_plan(
+            members=members,
+            formats=formats,
+            observations=observations,
+            explicit_preferences=preferences,
+            calendar_flags=calendar_flags,
+            start_date=start_date,
+            horizon_days=payload.horizon_days,
+            min_people_available=payload.min_people_available,
+            strategy=payload.strategy,
+            fairness=payload.fairness,
+            baseline=payload.baseline,
+            top_k=payload.top_k,
+            diversity=payload.diversity,
+            seed=payload.seed,
+            selected_format_ids=payload.selected_format_ids,
+            fee_policy=payload.fee_policy,
+            fee_cap_inr=payload.fee_cap_inr,
+            delivery_mode=payload.delivery_mode,
+            skill_level_filter=payload.skill_level_filter,
+            exclude_lab_heavy_days=payload.exclude_lab_heavy_days,
+            prefer_short_formats=payload.prefer_short_formats,
+            exploration=payload.exploration,
+            existing_events=existing_events,
+        )
+
+    result, cache_hit = _plan_result_cache.get_or_build(cache_key, build)
+    result["settings_hash"] = cache_key
+    result["plan_cache_hit"] = cache_hit
+    return result
+
+
+@router.post("/{club_id}/plan")
+def club_plan(
+    club_id: str,
+    payload: PlanRequest,
+    _organizer: ClubAccess = Depends(require_club_organizer),
+    _csrf: AuthContext = Depends(require_csrf),
+    db: OrmSession = Depends(get_db),
+) -> dict[str, object]:
+    """Return ranked plan candidates and all candidates rejected by hard filters."""
+    context = _plan_context(db, club_id, payload)
+    return _build_cached_plan(club_id=club_id, payload=payload, context=context)
+
+
+@router.post("/{club_id}/plan-sweep")
+def club_plan_sweep(
+    club_id: str,
+    payload: PlanSweepRequest,
+    _organizer: ClubAccess = Depends(require_club_organizer),
+    _csrf: AuthContext = Depends(require_csrf),
+    db: OrmSession = Depends(get_db),
+) -> dict[str, object]:
+    """Sweep a pairwise-covered, capped set of settings and return Pareto chart points."""
+    context = _plan_context(db, club_id, payload)
+    start_date, members, formats, _observations, _preferences, _calendar, _events = context
+    member_fee_limits = [member.max_fee_inr for member in members if member.max_fee_inr is not None]
+    median_fee = int(round(median(member_fee_limits))) if member_fee_limits else None
+    fee_options = [("No cap", None)]
+    if median_fee is not None:
+        fee_options.append((f"Median member limit (₹{median_fee})", median_fee))
+    fee_options.append(("Free only", 0))
+    distinct_fee_options = []
+    seen_fee_values = set()
+    for label, fee_value in fee_options:
+        if fee_value not in seen_fee_values:
+            distinct_fee_options.append((label, fee_value))
+            seen_fee_values.add(fee_value)
+
+    points = []
+    seen_combinations = set()
+    cache_hits = 0
+    request_base = payload.model_dump()
+    request_base.pop("max_plans", None)
+    request_base["start_date"] = start_date
+    for strategy_index, fairness, diversity, fee_index in planning_config.PLAN_SWEEP_DESIGN[:payload.max_plans]:
+        fee_label, fee_cap = distinct_fee_options[fee_index % len(distinct_fee_options)]
+        strategy = planning_config.PLAN_SWEEP_STRATEGIES[strategy_index]
+        combination = (strategy, fairness, diversity, fee_cap)
+        if combination in seen_combinations:
+            continue
+        seen_combinations.add(combination)
+        settings = {
+            **request_base,
+            "strategy": strategy,
+            "fairness": fairness,
+            "diversity": diversity,
+            "fee_cap_inr": fee_cap,
+        }
+        plan_payload = PlanRequest(**settings)
+        result = _build_cached_plan(club_id=club_id, payload=plan_payload, context=context)
+        cache_hits += int(result["plan_cache_hit"])
+        if not result["recommendations"]:
+            continue
+        top = result["recommendations"][0]
+        points.append({
+            "id": result["settings_hash"],
+            "settings_hash": result["settings_hash"],
+            "settings": {**settings, "start_date": start_date.isoformat()},
+            "strategy": strategy,
+            "fairness": fairness,
+            "diversity": diversity,
+            "fee_cap_inr": fee_cap,
+            "fee_cap_label": fee_label,
+            "expected_turnout": float(top["expected_attendance"]),
+            "least_happy_satisfaction": float(top["group_summary"]["minimum"]),
+            "dot_size_value": int(top["fee_inr"]),
+            "top_format_id": top["format_id"],
+            "top_format_name": next((item.name for item in formats if item.format_id == top["format_id"]), top["format_id"]),
+            "top_start": top["start"],
+            "plan_cache_hit": bool(result["plan_cache_hit"]),
+        })
+
+    front_ids = set(pareto_front_ids(points))
+    for point in points:
+        point["is_pareto_front"] = point["id"] in front_ids
+    return {
+        "plans_generated": len(seen_combinations),
+        "plans_with_results": len(points),
+        "plan_limit": payload.max_plans,
+        "cache_hits": cache_hits,
+        "dot_size_label": "Estimated fee per person (₹)",
+        "objectives": {"x": "Expected turnout", "y": "Least-happy member satisfaction"},
+        "pareto_front_ids": [point["id"] for point in points if point["is_pareto_front"]],
+        "points": points,
+    }

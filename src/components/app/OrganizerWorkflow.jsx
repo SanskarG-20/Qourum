@@ -4,6 +4,7 @@ import { api, apiWrite } from '../../utils/apiClient.js';
 import { EventRequirements } from './EventRequirements.jsx';
 import { PlanResultCard } from './PlanResultCard.jsx';
 import { PlanDiagnostics } from './PlanDiagnostics.jsx';
+import { ParetoPlanChart } from './ParetoPlanChart.jsx';
 
 export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
   const [strategy, setStrategy] = useState('average');
@@ -24,6 +25,8 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
   const [preferShortFormats, setPreferShortFormats] = useState(false);
   const [exploration, setExploration] = useState(false);
   const [planResult, setPlanResult] = useState(null);
+  const [planSweepResult, setPlanSweepResult] = useState(null);
+  const [selectedSweepPointId, setSelectedSweepPointId] = useState('');
   const [events, setEvents] = useState([]);
   const [members, setMembers] = useState([]);
   const [selectedFeedbackEvent, setSelectedFeedbackEvent] = useState('');
@@ -32,6 +35,7 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [planningBusy, setPlanningBusy] = useState(false);
+  const [sweepBusy, setSweepBusy] = useState(false);
 
   const memberNames = useMemo(() => Object.fromEntries(members.map((member) => [member.id, member.name])), [members]);
   const pastVenues = useMemo(() => Object.fromEntries(['in_person', 'online'].map((mode) => [
@@ -60,9 +64,7 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
     }).catch((reason) => setError(reason.message));
   }, [clubId]);
 
-  const runPlan = async (event, overrides = null) => {
-    event?.preventDefault();
-    const settings = {
+  const currentPlanSettings = (overrides = null) => ({
       strategy, fairness, diversity, top_k: Number(topN),
       min_people_available: quorum ? Number(quorum) : defaultQuorum,
       horizon_days: Number(horizon), selected_format_ids: selectedFormatIds,
@@ -70,7 +72,11 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
       delivery_mode: deliveryMode, skill_level_filter: skillLevelFilter,
       exclude_lab_heavy_days: excludeLabHeavyDays, prefer_short_formats: preferShortFormats,
       exploration, ...(overrides || {}),
-    };
+  });
+
+  const runPlan = async (event, overrides = null) => {
+    event?.preventDefault();
+    const settings = currentPlanSettings(overrides);
     setBusy(true); setPlanningBusy(true); setPlanResult(null); setError(''); setNotice('');
     try {
       const result = await apiWrite(`/api/clubs/${clubId}/plan`, {
@@ -81,6 +87,40 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
       else setNotice(`Found ${result.recommendations.length} event ideas that fit your choices.`);
     } catch (reason) { setError(reason.message); }
     finally { setBusy(false); setPlanningBusy(false); }
+  };
+
+  const runPlanSweep = async () => {
+    setSweepBusy(true); setPlanSweepResult(null); setSelectedSweepPointId(''); setError('');
+    try {
+      const result = await apiWrite(`/api/clubs/${clubId}/plan-sweep`, {
+        body: { ...currentPlanSettings(), max_plans: 12 },
+      });
+      setPlanSweepResult(result);
+      window.setTimeout(() => document.getElementById('plan-sweep-chart')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+    } catch (reason) { setError(reason.message); }
+    finally { setSweepBusy(false); }
+  };
+
+  const loadSweepPoint = async (point) => {
+    const settings = point.settings;
+    setSelectedSweepPointId(point.id);
+    setActiveRecipe('');
+    setStrategy(settings.strategy);
+    setFairness(settings.fairness);
+    setDiversity(settings.diversity);
+    setTopN(String(settings.top_k));
+    setQuorum(String(settings.min_people_available));
+    setHorizon(String(settings.horizon_days));
+    setSelectedFormatIds(settings.selected_format_ids);
+    setFeePolicy(settings.fee_policy);
+    setMaxFee(settings.fee_cap_inr == null ? '' : String(settings.fee_cap_inr));
+    setDeliveryMode(settings.delivery_mode);
+    setSkillLevelFilter(settings.skill_level_filter);
+    setExcludeLabHeavyDays(settings.exclude_lab_heavy_days);
+    setPreferShortFormats(settings.prefer_short_formats);
+    setExploration(settings.exploration);
+    await runPlan(null, settings);
+    window.setTimeout(() => document.getElementById('ranked-plan-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
   };
 
   const applyRecipe = async (recipe) => {
@@ -192,13 +232,22 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
         <button className="quorum-app__button" disabled={busy}>{planningBusy ? 'Finding ideas…' : 'Find event ideas'}</button>
       </form>
 
-      <section className="quorum-app__recommendations" aria-labelledby="plan-results-heading" aria-live="polite">
+      <div className="quorum-app__sweep-action">
+        <button type="button" className="quorum-app__button" disabled={busy || sweepBusy} onClick={runPlanSweep}>
+          {sweepBusy ? 'Comparing plan options…' : 'Compare plan options'}
+        </button>
+        <small>Compare up to 12 combinations of strategy, fairness, variety, and fee limit.</small>
+      </div>
+
+      <section className="quorum-app__recommendations" id="ranked-plan-results" aria-labelledby="plan-results-heading" aria-live="polite">
         <h2 id="plan-results-heading">Event ideas</h2>
         {planningBusy && <div className="quorum-app__plan-state" role="status"><span className="quorum-app__spinner" aria-hidden="true" />Looking at member availability and event ideas…</div>}
         {!planningBusy && planResult === null && <div className="quorum-app__plan-state"><h3>Ready to find a time?</h3><p>Choose what matters to your club, then select “Find event ideas” to see formats and times that fit.</p></div>}
         {!planningBusy && planResult && planResult.recommendations.length === 0 && <div className="quorum-app__plan-state"><h3>No matching event ideas</h3><p>Try changing the event requirements or giving the club more time options.</p></div>}
         {!planningBusy && planResult?.recommendations.map((item) => <PlanResultCard key={`${item.format_id}-${item.start}-${item.mode}`} item={item}
           format={formats.find((format) => format.id === item.format_id)} memberNames={memberNames} venues={pastVenues[item.mode] || []} busy={busy} onAccept={accept} />)}
+        {!planningBusy && planSweepResult && <ParetoPlanChart sweep={planSweepResult} memberCount={members.length}
+          selectedPointId={selectedSweepPointId} onSelect={loadSweepPoint} />}
         {!planningBusy && planResult && <PlanDiagnostics planResult={planResult} members={members} formats={formats} />}
       </section>
 

@@ -2,6 +2,7 @@
 
 from datetime import date, time
 import os
+from time import perf_counter
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -82,6 +83,41 @@ def test_plan_endpoint_returns_results_rejections_and_requires_organizer(seeded_
                 assert "why_line_inputs" in item
                 assert all("satisfaction" in value for value in item["per_member_satisfaction"].values())
 
+            sweep_started = perf_counter()
+            sweep_response = client.post(f"/api/clubs/{club_id}/plan-sweep", json={
+                "start_date": date(2027, 2, 1).isoformat(),
+                "horizon_days": 21, "min_people_available": 2, "top_k": 2, "max_plans": 12,
+            }, headers=headers)
+            sweep_elapsed = perf_counter() - sweep_started
+            assert sweep_response.status_code == 200, sweep_response.text
+            sweep = sweep_response.json()
+            assert sweep["plans_generated"] <= 12
+            assert sweep["plans_with_results"] > 0
+            assert sweep_elapsed < 5.0, f"12-plan 21-day sweep took {sweep_elapsed:.2f}s"
+            assert sweep["dot_size_label"] == "Estimated fee per person (₹)"
+            assert sweep["pareto_front_ids"]
+            assert {point["strategy"] for point in sweep["points"]} == {"average", "least_misery"}
+            assert {point["fairness"] for point in sweep["points"]} == {False, True}
+            assert {point["diversity"] for point in sweep["points"]} == {False, True}
+            assert {point["fee_cap_inr"] for point in sweep["points"]} == {None, 0, 100000}
+            selected_point = sweep["points"][0]
+            selected_plan = client.post(f"/api/clubs/{club_id}/plan", json=selected_point["settings"],
+                                        headers=headers)
+            assert selected_plan.status_code == 200, selected_plan.text
+            selected = selected_plan.json()
+            selected_top = selected["recommendations"][0]
+            assert selected["settings_hash"] == selected_point["settings_hash"]
+            assert selected["plan_cache_hit"] is True
+            assert selected_top["expected_attendance"] == selected_point["expected_turnout"]
+            assert selected_top["group_summary"]["minimum"] == selected_point["least_happy_satisfaction"]
+            assert selected_top["fee_inr"] == selected_point["dot_size_value"]
+            assert selected_top["format_id"] == selected_point["top_format_id"]
+            repeated_plan = client.post(f"/api/clubs/{club_id}/plan", json=selected_point["settings"],
+                                        headers=headers).json()
+            assert repeated_plan["recommendations"] == selected["recommendations"]
+            excessive_sweep = client.post(f"/api/clubs/{club_id}/plan-sweep", json={"max_plans": 13}, headers=headers)
+            assert excessive_sweep.status_code == 422
+
             invalid = client.post(f"/api/clubs/{club_id}/plan", json={"baseline": "unknown"}, headers=headers)
             assert invalid.status_code == 422
             too_many = client.post(f"/api/clubs/{club_id}/plan", json={"min_people_available": 1000}, headers=headers)
@@ -96,6 +132,9 @@ def test_plan_endpoint_returns_results_rejections_and_requires_organizer(seeded_
             assert forbidden.status_code == 403
             hidden_presets = client.get(f"/api/clubs/{member_club}/plan-presets")
             assert hidden_presets.status_code == 403
+            forbidden_sweep = client.post(f"/api/clubs/{member_club}/plan-sweep", json={},
+                                          headers={"X-CSRF-Token": member_csrf})
+            assert forbidden_sweep.status_code == 403
     finally:
         if previous_path is None:
             os.environ.pop("QUORUM_DB_PATH", None)

@@ -29,6 +29,19 @@ SHORT_FORMAT_TARGET_MINUTES = 120
 SHORT_FORMAT_SCORE_WEIGHT = 0.08
 FEE_FEATURE_SCALE_INR = 1000.0
 RATING_SCALE_MAX = 5.0
+PLAN_RESULT_CACHE_MAX_ENTRIES = 24
+PLAN_SWEEP_MAX_PLANS = 12
+PLAN_SWEEP_STRATEGIES = ("average", "least_misery")
+# Pairwise-covered sample across strategy, fairness, diversity, and fee cap.
+# Fee-cap indexes select no-cap, median-member-fee, and free-only values.
+PLAN_SWEEP_DESIGN = (
+    (0, False, False, 0), (1, False, False, 1),
+    (0, True, False, 1), (1, True, False, 2),
+    (0, False, True, 2), (1, False, True, 0),
+    (0, True, True, 0), (1, True, True, 1),
+    (0, False, False, 2), (1, False, False, 0),
+    (0, True, True, 2), (1, True, True, 0),
+)
 LAB_HEAVY_WEEKDAYS = (1, 3)  # Tuesday and Thursday, matching the synthetic calendar.
 REJECTION_REASON_LABELS = {
     "min_people_available": "Not enough members free",

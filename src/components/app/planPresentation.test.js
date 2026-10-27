@@ -96,6 +96,8 @@ test('organizer results use the plan endpoint and retain loading and empty state
   assert.match(source, /planningBusy &&/);
   assert.match(source, /Ready to find a time/);
   assert.match(source, /No matching event ideas/);
+  assert.match(source, /onSelect=\{loadSweepPoint\}/);
+  assert.match(source, /await runPlan\(null, settings\)/);
 });
 
 test('diagnostics render grouped rejection details and a filtered availability heatmap', async () => {
@@ -140,6 +142,41 @@ test('diagnostics render grouped rejection details and a filtered availability h
     const componentSource = await readFile(new URL('./PlanDiagnostics.jsx', import.meta.url), 'utf8');
     assert.match(componentSource, /group\.examples\.map/);
     assert.match(componentSource, /blocked_members/);
+  } finally {
+    await vite.close();
+  }
+});
+
+test('Pareto chart labels its fee-sized dots and highlights the provided front', async () => {
+  const vite = await createServer({
+    configFile: './vite.config.js',
+    appType: 'custom',
+    logLevel: 'silent',
+    server: { middlewareMode: true },
+  });
+  try {
+    const { ParetoPlanChart } = await vite.ssrLoadModule('/src/components/app/ParetoPlanChart.jsx');
+    const sweep = {
+      plans_generated: 3, plans_with_results: 3,
+      dot_size_label: 'Estimated fee per person (₹)', pareto_front_ids: ['a', 'c'],
+      points: [
+        { id: 'a', expected_turnout: 8, least_happy_satisfaction: .8, dot_size_value: 0, is_pareto_front: true, strategy: 'average', fairness: false, diversity: false, fee_cap_label: 'No cap', top_format_name: 'Workshop' },
+        { id: 'b', expected_turnout: 6, least_happy_satisfaction: .5, dot_size_value: 200, is_pareto_front: false, strategy: 'least_misery', fairness: true, diversity: true, fee_cap_label: 'Free only', top_format_name: 'Hackathon' },
+        { id: 'c', expected_turnout: 12, least_happy_satisfaction: .65, dot_size_value: 100, is_pareto_front: true, strategy: 'average', fairness: true, diversity: false, fee_cap_label: 'Median member limit', top_format_name: 'Contest' },
+      ],
+    };
+    const markup = renderToStaticMarkup(React.createElement(ParetoPlanChart, {
+      sweep, memberCount: 14, selectedPointId: 'a', onSelect: () => {},
+    }));
+    assert.match(markup, /Expected turnout \(members\)/);
+    assert.match(markup, /Least-happy member satisfaction/);
+    assert.match(markup, /Dot size: Estimated fee per person/);
+    assert.equal((markup.match(/role="button"/g) || []).length, 3);
+    assert.equal((markup.match(/quorum-app__chart-point is-front/g) || []).length, 2);
+    assert.match(markup, /Pareto front/);
+    const source = await readFile(new URL('./ParetoPlanChart.jsx', import.meta.url), 'utf8');
+    assert.match(source, /onClick=\{\(\) => onSelect\(point\)\}/);
+    assert.match(source, /event\.key === 'Enter'/);
   } finally {
     await vite.close();
   }
