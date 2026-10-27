@@ -96,6 +96,66 @@ def test_event_description_schema_upgrade_is_idempotent(tmp_path):
     engine.dispose()
 
 
+def test_schema_upgrade_makes_legacy_event_venue_optional(tmp_path):
+    engine = create_database_engine(tmp_path / "venue-upgrade.db")
+    Base.metadata.create_all(engine)
+    factory = make_session_factory(engine)
+    with factory.begin() as session:
+        session.add_all([
+            Club(id="venue-club", name="Venue club"),
+            EventType(id="venue-type", name="Venue type", category="Other", description="", default_duration_minutes=60),
+        ])
+        session.flush()
+        session.add(Event(id="venue-old", club_id="venue-club", event_type_id="venue-type", title="Old event",
+                          start_time=datetime(2026, 1, 1), duration_minutes=60, venue="Room", status="completed"))
+    with engine.begin() as connection:
+        connection.exec_driver_sql("ALTER TABLE events DROP COLUMN planning_snapshot")
+    raw = engine.raw_connection()
+    try:
+        raw.execute("PRAGMA foreign_keys=OFF")
+        raw.execute("BEGIN IMMEDIATE")
+        raw.execute("""
+            CREATE TABLE events_legacy (
+                id VARCHAR(36) NOT NULL PRIMARY KEY,
+                club_id VARCHAR(36) NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+                event_type_id VARCHAR(36) NOT NULL REFERENCES event_types(id) ON DELETE RESTRICT,
+                title VARCHAR(200) NOT NULL, description TEXT NOT NULL DEFAULT '', start_time DATETIME NOT NULL,
+                duration_minutes INTEGER NOT NULL CHECK(duration_minutes > 0), venue VARCHAR(200) NOT NULL,
+                event_format_id VARCHAR(64),
+                delivery_mode VARCHAR(20) CHECK(delivery_mode IS NULL OR delivery_mode IN ('in_person', 'online')),
+                estimated_fee_inr INTEGER CHECK(estimated_fee_inr IS NULL OR estimated_fee_inr >= 0),
+                status VARCHAR(16) NOT NULL CHECK(status IN ('proposed', 'scheduled', 'completed', 'cancelled'))
+            )
+        """)
+        raw.execute("""
+            INSERT INTO events_legacy
+            (id, club_id, event_type_id, title, description, start_time, duration_minutes, venue,
+             event_format_id, delivery_mode, estimated_fee_inr, status)
+            SELECT id, club_id, event_type_id, title, description, start_time, duration_minutes, venue,
+                   event_format_id, delivery_mode, estimated_fee_inr, status FROM events
+        """)
+        raw.execute("DROP TABLE events")
+        raw.execute("ALTER TABLE events_legacy RENAME TO events")
+        raw.execute("CREATE INDEX ix_events_club_start ON events(club_id, start_time)")
+        raw.execute("CREATE INDEX ix_events_type_start ON events(event_type_id, start_time)")
+        raw.commit()
+        raw.execute("PRAGMA foreign_keys=ON")
+    finally:
+        raw.close()
+
+    initialize_schema(engine)
+    initialize_schema(engine)
+    with engine.connect() as connection:
+        venue_info = next(row for row in connection.execute(text("PRAGMA table_info(events)")) if row[1] == "venue")
+        assert venue_info[3] == 0
+        assert connection.execute(text("PRAGMA foreign_key_check")).all() == []
+    with factory.begin() as session:
+        assert session.get(Event, "venue-old").venue == "Room"
+        session.add(Event(id="venue-new", club_id="venue-club", event_type_id="venue-type", title="No venue",
+                          start_time=datetime(2026, 1, 2), duration_minutes=60, venue=None, status="scheduled"))
+    engine.dispose()
+
+
 def test_seed_rebuild_is_deterministic_and_repositories_bind_values(tmp_path):
     db = tmp_path / "seed.db"
     counts = seed_database(seed=42, db_path=db)

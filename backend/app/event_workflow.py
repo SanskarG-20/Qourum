@@ -5,7 +5,7 @@ from typing import Literal
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session as OrmSession
 
@@ -16,15 +16,52 @@ from .event_catalog import FORMAT_BY_ID, is_online_venue
 router = APIRouter(prefix="/api/clubs", tags=["event-workflow"])
 
 
+class PlanningSettingsInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    strategy: Literal["average", "least_misery", "fairness_aware"]
+    fairness: bool
+    diversity: bool
+    fee_cap_inr: int | None = Field(default=None, ge=0, le=100000)
+    horizon_days: int = Field(ge=1, le=30)
+
+
+class PlanningSnapshotInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    expected_attendance: float = Field(ge=0)
+    expected_attendance_interval_95: tuple[float, float]
+    available_member_count: int = Field(ge=1, le=200)
+    confidence: Literal["low", "medium", "high"]
+    settings: PlanningSettingsInput
+
+    @field_validator("expected_attendance_interval_95")
+    @classmethod
+    def validate_interval(cls, value: tuple[float, float]) -> tuple[float, float]:
+        if value[0] < 0 or value[1] < value[0]:
+            raise ValueError("Attendance interval must be non-negative and ordered.")
+        return value
+
+    @model_validator(mode="after")
+    def attendance_fits_available_group(self) -> "PlanningSnapshotInput":
+        low, high = self.expected_attendance_interval_95
+        if high > self.available_member_count or self.expected_attendance > self.available_member_count:
+            raise ValueError("Attendance prediction cannot exceed available members.")
+        if not low <= self.expected_attendance <= high:
+            raise ValueError("Expected attendance must fall inside its prediction interval.")
+        return self
+
+
 class CreateEventInput(BaseModel):
     """A selected recommendation accepted by a club organizer."""
 
     model_config = ConfigDict(extra="forbid")
     event_type_id: str = Field(min_length=1, max_length=36)
     start_time: datetime
-    venue: str = Field(min_length=1, max_length=200)
+    venue: str | None = Field(default=None, max_length=200)
     event_format_id: str | None = Field(default=None, max_length=64)
     delivery_mode: Literal["in_person", "online"] = "in_person"
+    time_block: Literal["morning", "midday", "afternoon", "evening", "late_evening"] | None = None
+    fee_inr: int | None = Field(default=None, ge=0, le=100000)
+    planning_snapshot: PlanningSnapshotInput | None = None
 
     @field_validator("start_time")
     @classmethod
@@ -37,11 +74,9 @@ class CreateEventInput(BaseModel):
 
     @field_validator("venue")
     @classmethod
-    def trim_venue(cls, value: str) -> str:
-        value = value.strip()
-        if not value:
-            raise ValueError("Venue cannot be empty.")
-        return value
+    def trim_venue(cls, value: str | None) -> str | None:
+        value = value.strip() if value is not None else None
+        return value or None
 
 
 class RSVPInput(BaseModel):
@@ -68,9 +103,18 @@ def accept_recommendation(
         raise HTTPException(status_code=422, detail="Event format does not match its event type.")
     if event_format and payload.delivery_mode not in event_format.modes:
         raise HTTPException(status_code=422, detail="This event format does not support the selected delivery mode.")
-    if payload.delivery_mode == "online" and not is_online_venue(payload.venue):
+    if event_format and payload.fee_inr is not None and payload.fee_inr != event_format.estimated_fee_inr:
+        raise HTTPException(status_code=422, detail="The fee no longer matches this event format.")
+    if event_format and payload.time_block is not None:
+        if (__package__ or "").partition(".")[0] == "app":
+            from planning.config import TIME_BLOCK_STARTS
+        else:
+            from backend.planning.config import TIME_BLOCK_STARTS
+        if payload.start_time.time() != TIME_BLOCK_STARTS[payload.time_block]:
+            raise HTTPException(status_code=422, detail="The time does not match the selected time block.")
+    if payload.delivery_mode == "online" and payload.venue and not is_online_venue(payload.venue):
         raise HTTPException(status_code=422, detail="Online events need a virtual venue.")
-    if payload.delivery_mode == "in_person" and is_online_venue(payload.venue):
+    if payload.delivery_mode == "in_person" and payload.venue and is_online_venue(payload.venue):
         raise HTTPException(status_code=422, detail="In-person events need a physical venue.")
     duration_minutes = (event_format.duration_minutes if event_format else None) or event_type.default_duration_minutes
     end_time = payload.start_time + timedelta(minutes=duration_minutes)
@@ -83,11 +127,12 @@ def accept_recommendation(
                   duration_minutes=duration_minutes, venue=payload.venue,
                   event_format_id=event_format.id if event_format else None,
                   delivery_mode=payload.delivery_mode,
-                  estimated_fee_inr=event_format.estimated_fee_inr if event_format else None,
+                  estimated_fee_inr=event_format.estimated_fee_inr if event_format else payload.fee_inr,
+                  planning_snapshot=payload.planning_snapshot.model_dump(mode="json") if payload.planning_snapshot else None,
                   status="scheduled")
     db.add(event)
     db.commit()
-    return {"id": event.id, "event_type_id": event.event_type_id, "title": event.title, "description": event.description, "start_time": event.start_time.isoformat(), "duration_minutes": event.duration_minutes, "venue": event.venue, "event_format_id": event.event_format_id, "delivery_mode": event.delivery_mode, "estimated_fee_inr": event.estimated_fee_inr, "status": event.status}
+    return {"id": event.id, "event_type_id": event.event_type_id, "title": event.title, "description": event.description, "start_time": event.start_time.isoformat(), "duration_minutes": event.duration_minutes, "venue": event.venue, "event_format_id": event.event_format_id, "delivery_mode": event.delivery_mode, "estimated_fee_inr": event.estimated_fee_inr, "planning_snapshot": event.planning_snapshot, "status": event.status}
 
 
 @router.post("/{club_id}/events/{event_id}/rsvp")

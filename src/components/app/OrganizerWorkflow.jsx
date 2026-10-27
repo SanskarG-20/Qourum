@@ -2,20 +2,20 @@ import React, { useEffect, useMemo, useState } from 'react';
 import './member-onboarding.css';
 import { api, apiWrite } from '../../utils/apiClient.js';
 import { EventRequirements } from './EventRequirements.jsx';
+import { PlanResultCard } from './PlanResultCard.jsx';
 
 export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
   const [strategy, setStrategy] = useState('average');
   const [topN, setTopN] = useState(10);
   const [quorum, setQuorum] = useState('');
   const [horizon, setHorizon] = useState(21);
-  const [fairness, setFairness] = useState(true);
   const [diversity, setDiversity] = useState(true);
   const [formats, setFormats] = useState([]);
   const [selectedFormatIds, setSelectedFormatIds] = useState([]);
   const [feePolicy, setFeePolicy] = useState('any');
   const [maxFee, setMaxFee] = useState('');
   const [deliveryMode, setDeliveryMode] = useState('any');
-  const [recommendations, setRecommendations] = useState([]);
+  const [planResult, setPlanResult] = useState(null);
   const [events, setEvents] = useState([]);
   const [members, setMembers] = useState([]);
   const [selectedFeedbackEvent, setSelectedFeedbackEvent] = useState('');
@@ -23,46 +23,86 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
-  const membersById = useMemo(() => Object.fromEntries(members.map((member) => [member.id, member])), [members]);
+  const [planningBusy, setPlanningBusy] = useState(false);
+
+  const memberNames = useMemo(() => Object.fromEntries(members.map((member) => [member.id, member.name])), [members]);
+  const pastVenues = useMemo(() => Object.fromEntries(['in_person', 'online'].map((mode) => [
+    mode,
+    [...new Set(events.filter((event) => event.delivery_mode === mode && event.venue).map((event) => event.venue))].sort(),
+  ])), [events]);
   const pastEvents = events.filter((event) => new Date(event.start_time) < new Date() && event.status !== 'cancelled');
   const defaultQuorum = Math.max(5, Math.ceil(.3 * members.length)) || 5;
   const strategyOptions = [
-    ['average', 'Balance everyone’s preferences', 'Give each member’s predicted interest equal weight.'],
-    ['least_misery', 'Look after the least interested', 'Favor ideas that the least interested members are more likely to enjoy.'],
-    ['most_pleasure', 'Prioritize the biggest fans', 'Give more weight to members predicted to be especially interested.'],
-    ['multiplicative', 'Find broad agreement', 'Favor ideas that many members are predicted to enjoy.'],
-    ['borda', 'Use everyone’s ranking', 'Combine each member’s ranking of the possible ideas.'],
-    ['approval', 'Count likely yes votes', 'Favor ideas that more members are predicted to approve.'],
-    ['average_without_misery', 'Balance support, setting aside very low scores', 'Average members’ scores after leaving out very low predicted interest.'],
+    ['average', 'Balance member interest', 'Give available members equal weight.'],
+    ['least_misery', 'Raise the lowest interest', 'Choose ideas with a stronger score for the least interested member.'],
+    ['fairness_aware', 'Help less satisfied members', 'Give extra weight to members who have been less satisfied recently.'],
   ];
 
   const loadEvents = async () => setEvents(await api(`/api/clubs/${clubId}/events`));
   useEffect(() => {
-    Promise.all([api(`/api/clubs/${clubId}/events`), api(`/api/clubs/${clubId}/members`), api(`/api/clubs/${clubId}/event-formats`)]).then(([loadedEvents, loadedMembers, catalog]) => {
-      setEvents(loadedEvents); setMembers(loadedMembers); setFormats(catalog.formats);
+    Promise.all([
+      api(`/api/clubs/${clubId}/events`),
+      api(`/api/clubs/${clubId}/members`),
+      api(`/api/clubs/${clubId}/event-formats`),
+    ]).then(([loadedEvents, loadedMembers, catalog]) => {
+      setEvents(loadedEvents);
+      setMembers(loadedMembers);
+      setFormats(catalog.formats);
     }).catch((reason) => setError(reason.message));
   }, [clubId]);
 
-  const runRecommendations = async (event) => {
-    event?.preventDefault(); setBusy(true); setError(''); setNotice('');
+  const runPlan = async (event) => {
+    event.preventDefault();
+    setBusy(true); setPlanningBusy(true); setPlanResult(null); setError(''); setNotice('');
     try {
-      const result = await apiWrite(`/api/clubs/${clubId}/recommendations`, {
-        body: { strategy, top_n: Number(topN), quorum: quorum ? Number(quorum) : null, horizon_days: Number(horizon), fairness, diversity,
-          format_ids: selectedFormatIds, fee_policy: feePolicy, max_fee_inr: maxFee === '' ? null : Number(maxFee), delivery_mode: deliveryMode },
+      const result = await apiWrite(`/api/clubs/${clubId}/plan`, {
+        body: {
+          strategy,
+          fairness: strategy === 'fairness_aware',
+          top_k: Number(topN),
+          min_people_available: quorum ? Number(quorum) : defaultQuorum,
+          horizon_days: Number(horizon),
+          diversity,
+          selected_format_ids: selectedFormatIds,
+          fee_policy: feePolicy,
+          fee_cap_inr: maxFee === '' ? null : Number(maxFee),
+          delivery_mode: deliveryMode,
+        },
       });
-      setRecommendations(result.recommendations);
-      if (!result.recommendations.length) setNotice(result.message || 'No candidates met the selected constraints.');
-      else setNotice(`Found ${result.feasible_count} event plans that fit your choices.`);
+      setPlanResult(result);
+      if (!result.recommendations.length) setNotice('No event ideas fit these choices. Try a lower minimum, a higher fee limit, or a longer search window.');
+      else setNotice(`Found ${result.recommendations.length} event ideas that fit your choices.`);
     } catch (reason) { setError(reason.message); }
-    finally { setBusy(false); }
+    finally { setBusy(false); setPlanningBusy(false); }
   };
 
-  const accept = async (recommendation) => {
+  const accept = async (recommendation, venue) => {
     setBusy(true); setError(''); setNotice('');
     try {
+      const settings = planResult.settings;
       const created = await apiWrite(`/api/clubs/${clubId}/events`, {
-        body: { event_type_id: recommendation.event_type_id, start_time: recommendation.start, venue: recommendation.venue,
-          event_format_id: recommendation.event_format_id || null, delivery_mode: recommendation.delivery_mode || 'in_person' },
+        body: {
+          event_type_id: recommendation.event_type_id,
+          start_time: recommendation.start,
+          venue,
+          event_format_id: recommendation.format_id,
+          time_block: recommendation.time_block,
+          delivery_mode: recommendation.mode,
+          fee_inr: recommendation.fee_inr,
+          planning_snapshot: {
+            expected_attendance: recommendation.expected_attendance,
+            expected_attendance_interval_95: recommendation.expected_attendance_interval_95,
+            available_member_count: recommendation.available_member_ids.length,
+            confidence: recommendation.confidence,
+            settings: {
+              strategy: settings.effective_strategy || settings.strategy,
+              fairness: Boolean(settings.fairness),
+              diversity: Boolean(settings.diversity),
+              fee_cap_inr: settings.fee_cap_inr,
+              horizon_days: settings.horizon_days,
+            },
+          },
+        },
       });
       setNotice(`Scheduled ${created.title} for ${new Date(created.start_time).toLocaleString()}.`);
       await loadEvents();
@@ -101,35 +141,34 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
     <section className="quorum-app__content">
       <p className="quorum-app__eyebrow">{clubName}</p><h1>Plan the next club event</h1><p className="quorum-app__intro">Choose how to balance members’ preferences, set a few practical limits, then find event ideas the club can attend.</p>
       {error && <p role="alert" className="quorum-app__error">{error}</p>}{notice && <p role="status" className="quorum-app__notice">{notice}</p>}
-      <form className="quorum-app__card quorum-app__controls" onSubmit={runRecommendations}>
+      <form className="quorum-app__card quorum-app__controls" onSubmit={runPlan}>
         <EventRequirements formats={formats} selectedIds={selectedFormatIds} onSelectedIdsChange={setSelectedFormatIds}
           feePolicy={feePolicy} onFeePolicyChange={setFeePolicy} maxFee={maxFee} onMaxFeeChange={setMaxFee}
           deliveryMode={deliveryMode} onDeliveryModeChange={setDeliveryMode} />
-        <label className="quorum-app__control quorum-app__control--strategy"><span>How should we choose ideas?</span><select value={strategy} onChange={(e) => setStrategy(e.target.value)}>{strategyOptions.map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select><small>{strategyOptions.find(([value]) => value === strategy)?.[2]}</small></label>
-        <label className="quorum-app__control"><span>How many ideas should we show?</span><input type="number" min="1" max="50" value={topN} onChange={(e) => setTopN(e.target.value)} /><small>Show up to this many suggestions.</small></label>
-        <label className="quorum-app__control"><span>Minimum people needed</span><input type="number" min="1" max={members.length || 60} placeholder={`Club default: ${defaultQuorum}`} value={quorum} onChange={(e) => setQuorum(e.target.value)} /><small>Leave blank to use the club default ({defaultQuorum} people).</small></label>
-        <label className="quorum-app__control"><span>How far ahead should we look?</span><input type="number" min="1" max="90" value={horizon} onChange={(e) => setHorizon(e.target.value)} /><small>Number of days from today.</small></label>
+        <label className="quorum-app__control quorum-app__control--strategy"><span>How should we balance member preferences?</span><select value={strategy} onChange={(event) => setStrategy(event.target.value)}>{strategyOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><small>{strategyOptions.find(([value]) => value === strategy)?.[2]}</small></label>
+        <label className="quorum-app__control"><span>How many ideas should we show?</span><input type="number" min="1" max="50" value={topN} onChange={(event) => setTopN(event.target.value)} /><small>Show up to this many suggestions.</small></label>
+        <label className="quorum-app__control"><span>Minimum people needed</span><input type="number" min="1" max={members.length || 60} placeholder={`Club default: ${defaultQuorum}`} value={quorum} onChange={(event) => setQuorum(event.target.value)} /><small>Leave blank to use the club default ({defaultQuorum} people).</small></label>
+        <label className="quorum-app__control"><span>How far ahead should we look?</span><input type="number" min="1" max="30" value={horizon} onChange={(event) => setHorizon(event.target.value)} /><small>Number of days from today.</small></label>
         <fieldset className="quorum-app__control-options"><legend>Fine-tune suggestions</legend>
-          <label className="quorum-app__check"><input type="checkbox" checked={fairness} onChange={(e) => setFairness(e.target.checked)} /><span>Give a boost to members who have been less satisfied</span></label>
-          <label className="quorum-app__check"><input type="checkbox" checked={diversity} onChange={(e) => setDiversity(e.target.checked)} /><span>Include a mix of event types</span></label>
+          <label className="quorum-app__check"><input type="checkbox" checked={diversity} onChange={(event) => setDiversity(event.target.checked)} /><span>Include a mix of event types</span></label>
         </fieldset>
-        <button className="quorum-app__button" disabled={busy}>{busy ? 'Finding ideas…' : 'Find event ideas'}</button>
+        <button className="quorum-app__button" disabled={busy}>{planningBusy ? 'Finding ideas…' : 'Find event ideas'}</button>
       </form>
 
-      <div className="quorum-app__recommendations"><h2>Ranked recommendations</h2>{recommendations.map((item) => <article className="quorum-app__card quorum-app__recommendation" key={`${item.event_format_id}-${item.start}-${item.venue}`}>
-        <div className="quorum-app__rec-head"><div><p className="quorum-app__eyebrow">RANK {item.rank} · {item.venue}</p><h3>{item.event_type}</h3><p>{new Date(item.start).toLocaleString()} · {item.duration_minutes} minutes</p></div><button className="quorum-app__button" type="button" disabled={busy} onClick={() => accept(item)}>Accept and schedule</button></div>
-        <p className="quorum-app__plan-details">{item.delivery_mode === 'online' ? 'Online' : 'In person'} · {item.estimated_fee_inr === 0 ? 'Free' : `Estimated ₹${item.estimated_fee_inr} per person`} <small>(synthetic demo estimate)</small></p>
-        <p className="quorum-app__recommendation-stats">Group mean {item.group_mean.toFixed(3)} · minimum {item.group_min.toFixed(3)} · spread {item.group_std.toFixed(3)} · expected attendance {item.expected_attendance.toFixed(2)} / quorum {item.quorum_required}</p>
-        <p className="quorum-app__explanation">{item.explanation}</p>
-        <details><summary>Per-member satisfaction ({Object.keys(item.evidence.per_member_satisfaction).length})</summary><ul className="quorum-app__member-scores">{Object.entries(item.evidence.per_member_satisfaction).map(([id, score]) => <li key={id}>{membersById[id]?.name || id}<strong>{score.toFixed(3)}</strong></li>)}</ul></details>
-        {item.why_not.length > 0 && <details><summary>Why not these alternatives?</summary><ul className="quorum-app__counterfactuals">{item.why_not.map((alternative, index) => <li key={index}>{alternative.text}</li>)}</ul></details>}
-      </article>)}</div>
+      <section className="quorum-app__recommendations" aria-labelledby="plan-results-heading" aria-live="polite">
+        <h2 id="plan-results-heading">Event ideas</h2>
+        {planningBusy && <div className="quorum-app__plan-state" role="status"><span className="quorum-app__spinner" aria-hidden="true" />Looking at member availability and event ideas…</div>}
+        {!planningBusy && planResult === null && <div className="quorum-app__plan-state"><h3>Ready to find a time?</h3><p>Choose what matters to your club, then select “Find event ideas” to see formats and times that fit.</p></div>}
+        {!planningBusy && planResult && planResult.recommendations.length === 0 && <div className="quorum-app__plan-state"><h3>No matching event ideas</h3><p>Try changing the event requirements or giving the club more time options.</p></div>}
+        {!planningBusy && planResult?.recommendations.map((item) => <PlanResultCard key={`${item.format_id}-${item.start}-${item.mode}`} item={item}
+          format={formats.find((format) => format.id === item.format_id)} memberNames={memberNames} venues={pastVenues[item.mode] || []} busy={busy} onAccept={accept} />)}
+      </section>
 
-      <section className="quorum-app__card"><h2>Scheduled events</h2>{events.filter((event) => event.status === 'scheduled').length === 0 ? <p>No scheduled events yet.</p> : <ul className="quorum-app__event-list">{events.filter((event) => event.status === 'scheduled').map((event) => <li key={event.id}><strong>{event.title}</strong><span>{new Date(event.start_time).toLocaleString()} · {event.venue}{event.estimated_fee_inr != null ? ` · ${event.estimated_fee_inr === 0 ? 'Free' : `Estimated ₹${event.estimated_fee_inr} per person`}` : ''}</span>{new Date(event.start_time) > new Date() && <button type="button" className="quorum-app__quiet" disabled={busy} onClick={() => cancel(event)}>Cancel event</button>}</li>)}</ul>}</section>
+      <section className="quorum-app__card"><h2>Scheduled events</h2>{events.filter((event) => event.status === 'scheduled').length === 0 ? <p>No scheduled events yet.</p> : <ul className="quorum-app__event-list">{events.filter((event) => event.status === 'scheduled').map((event) => <li key={event.id}><div><strong>{event.title}</strong><span>{new Date(event.start_time).toLocaleString()}{event.venue ? ` · ${event.venue}` : ''}{event.delivery_mode ? ` · ${event.delivery_mode === 'online' ? 'Online' : 'In person'}` : ''}{event.estimated_fee_inr != null ? ` · ${event.estimated_fee_inr === 0 ? 'Free' : `Estimated ₹${event.estimated_fee_inr} per person`}` : ''}</span>{event.planning_snapshot && <span title="Saved when this event was scheduled">Predicted turnout: {Math.round(event.planning_snapshot.expected_attendance)} ± {Math.round(Math.max(event.planning_snapshot.expected_attendance - event.planning_snapshot.expected_attendance_interval_95[0], event.planning_snapshot.expected_attendance_interval_95[1] - event.planning_snapshot.expected_attendance))} of {event.planning_snapshot.available_member_count}</span>}</div>{new Date(event.start_time) > new Date() && <button type="button" className="quorum-app__quiet" disabled={busy} onClick={() => cancel(event)}>Cancel event</button>}</li>)}</ul>}</section>
 
       <section className="quorum-app__card"><h2>Record attendance and feedback</h2><p>Select a past event, mark every club member present or absent, and rate attendees.</p><form onSubmit={saveAttendance} className="quorum-app__stack">
-        <label>Past event<select value={selectedFeedbackEvent} onChange={(e) => { setSelectedFeedbackEvent(e.target.value); setAttendance({}); }} required><option value="">Choose an event</option>{pastEvents.map((event) => <option key={event.id} value={event.id}>{event.title} · {new Date(event.start_time).toLocaleString()}</option>)}</select></label>
-        {selectedFeedbackEvent && <div className="quorum-app__roster">{members.map((member) => <div className="quorum-app__roster-row" key={member.id}><label className="quorum-app__check"><input type="checkbox" checked={Boolean(attendance[member.id]?.attended)} onChange={(e) => toggleAttendance(member.id, e.target.checked)} /> {member.name}</label>{attendance[member.id]?.attended && <select aria-label={`Rating for ${member.name}`} value={attendance[member.id]?.rating || '5'} onChange={(e) => setAttendance((current) => ({ ...current, [member.id]: { ...current[member.id], rating: e.target.value } }))}>{[1,2,3,4,5].map((rating) => <option key={rating} value={rating}>{rating}/5</option>)}</select>}</div>)}</div>}
+        <label>Past event<select value={selectedFeedbackEvent} onChange={(event) => { setSelectedFeedbackEvent(event.target.value); setAttendance({}); }} required><option value="">Choose an event</option>{pastEvents.map((event) => <option key={event.id} value={event.id}>{event.title} · {new Date(event.start_time).toLocaleString()}</option>)}</select></label>
+        {selectedFeedbackEvent && <div className="quorum-app__roster">{members.map((member) => <div className="quorum-app__roster-row" key={member.id}><label className="quorum-app__check"><input type="checkbox" checked={Boolean(attendance[member.id]?.attended)} onChange={(event) => toggleAttendance(member.id, event.target.checked)} /> {member.name}</label>{attendance[member.id]?.attended && <select aria-label={`Rating for ${member.name}`} value={attendance[member.id]?.rating || '5'} onChange={(event) => setAttendance((current) => ({ ...current, [member.id]: { ...current[member.id], rating: event.target.value } }))}>{[1,2,3,4,5].map((rating) => <option key={rating} value={rating}>{rating}/5</option>)}</select>}</div>)}</div>}
         <button className="quorum-app__button" disabled={busy || !selectedFeedbackEvent}>Save event feedback</button>
       </form></section>
     </section>

@@ -73,6 +73,36 @@
 .quorum-app__check input { width: 1rem; height: 1rem; accent-color: var(--color-cyan-primary); }
 .quorum-app__recommendations { display: grid; gap: .9rem; margin: 2rem 0; }
 .quorum-app__recommendations > h2 { margin-bottom: 0; }
+.quorum-app__plan-card { display: grid; gap: 1rem; box-shadow: var(--shadow-card); }
+.quorum-app__plan-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.quorum-app__plan-card h3 { margin: .3rem 0; font-size: 1.35rem; }
+.quorum-app__plan-date { margin: .25rem 0 0; }
+.quorum-app__confidence { flex: 0 0 auto; padding: .35rem .6rem; border: 1px solid var(--color-gold-primary); border-radius: 999px; background: var(--color-gold-tint); color: var(--color-text-primary); font-size: .75rem; font-weight: 700; }
+.quorum-app__plan-facts { display: flex; flex-wrap: wrap; gap: .5rem; }
+.quorum-app__plan-facts > span { padding: .5rem .7rem; border-radius: 5px; background: var(--color-bg-card-muted); color: var(--color-text-secondary); font-size: .86rem; }
+.quorum-app__plan-facts strong { color: var(--color-text-primary); }
+.quorum-app__plan-why { margin: 0; padding: .8rem; border-left: 3px solid var(--color-cyan-primary); background: var(--color-cyan-tint); line-height: 1.5; }
+.quorum-app__satisfaction h4 { margin: 0 0 .65rem; font-size: .92rem; }
+.quorum-app__satisfaction-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem 1.2rem; max-height: 340px; overflow: auto; margin: 0; padding: 0; list-style: none; }
+.quorum-app__satisfaction-list li { display: grid; grid-template-columns: minmax(5rem, 1fr) minmax(3.5rem, 1.3fr) 3.1rem; align-items: center; gap: .55rem; min-height: 1.55rem; }
+.quorum-app__satisfaction-list li.is-lowest { padding: .15rem .35rem; border-left: 3px solid var(--color-magenta-primary); background: var(--color-bg-card-muted); }
+.quorum-app__member-label { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; overflow-wrap: anywhere; font-size: .78rem; }
+.quorum-app__lowest-label { padding: .1rem .25rem; border: 1px solid currentColor; border-radius: 3px; font-size: .63rem; text-transform: uppercase; letter-spacing: .03em; }
+.quorum-app__meter { display: block; height: .55rem; overflow: hidden; border: 1px solid var(--color-border-ruler); border-radius: 99px; background: #fff; }
+.quorum-app__meter > span { display: block; height: 100%; min-width: 0; background: var(--color-cyan-primary); }
+.quorum-app__satisfaction-list li.is-lowest .quorum-app__meter > span { background: var(--color-magenta-primary); }
+.quorum-app__member-percent { text-align: right; font: 600 .75rem var(--font-mono); font-variant-numeric: tabular-nums; }
+.quorum-app__unscored { grid-column: 2 / 4; color: var(--color-text-muted); font-size: .73rem; }
+.quorum-app__plan-accept { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; padding-top: .8rem; border-top: 1px solid var(--color-border-subtle); }
+.quorum-app__venue-picker { display: grid; gap: .7rem; min-width: min(100%, 21rem); }
+.quorum-app__venue-picker summary { cursor: pointer; font-size: .82rem; font-weight: 600; }
+.quorum-app__venue-picker label { display: grid; gap: .3rem; font-size: .76rem; }
+.quorum-app__plan-state { display: grid; justify-items: start; gap: .5rem; padding: 1.4rem; border: 1px dashed var(--color-border-ruler); border-radius: 10px; background: #fff; }
+.quorum-app__plan-state h3,.quorum-app__plan-state p { margin: 0; }
+.quorum-app__plan-state p { max-width: 42rem; }
+.quorum-app__spinner { width: 1.3rem; height: 1.3rem; border: 2px solid var(--color-border-ruler); border-top-color: var(--color-cyan-primary); border-radius: 50%; animation: quorum-spin .8s linear infinite; }
+@keyframes quorum-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .quorum-app__spinner { animation-duration: 1.8s; } }
 .quorum-app__recommendation h3 { margin: .4rem 0; font-size: 1.35rem; }
 .quorum-app__rec-head { display: flex; gap: 1rem; align-items: center; justify-content: space-between; }
 .quorum-app__rec-head p { margin: .2rem 0; }
@@ -94,5 +124,6 @@
 .quorum-app__rsvp-actions button { border: 1px solid var(--color-border-ruler); border-radius: 5px; padding: .4rem .55rem; background: white; cursor: pointer; text-transform: capitalize; }
 .quorum-app__rsvp-actions button.is-selected { border-color: var(--color-text-primary); background: var(--color-cyan-tint); }
 @media (max-width: 680px) { .quorum-app__rec-head,.quorum-app__event-list li { align-items: flex-start; flex-direction: column; } }
+@media (max-width: 680px) { .quorum-app__satisfaction-list { grid-template-columns: 1fr; } .quorum-app__plan-accept { align-items: stretch; flex-direction: column; } .quorum-app__plan-accept > .quorum-app__button { align-self: flex-start; } }
 @media (max-width: 680px) { .quorum-app__controls { grid-template-columns: 1fr; } .quorum-app__control--strategy,.quorum-app__control-options { grid-column: auto; } }
 @media (max-width: 680px) { .quorum-app__requirements-fields { grid-template-columns: 1fr; } .quorum-app__requirements { grid-column: auto; } }

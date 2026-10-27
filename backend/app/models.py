@@ -14,6 +14,7 @@ from sqlalchemy import (
     Float,
     Index,
     Integer,
+    JSON,
     LargeBinary,
     String,
     Text,
@@ -100,10 +101,11 @@ class Event(Base):
     description: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
     start_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
-    venue: Mapped[str] = mapped_column(String(200), nullable=False)
+    venue: Mapped[str | None] = mapped_column(String(200))
     event_format_id: Mapped[str | None] = mapped_column(String(64))
     delivery_mode: Mapped[str | None] = mapped_column(String(20))
     estimated_fee_inr: Mapped[int | None] = mapped_column(Integer)
+    planning_snapshot: Mapped[dict | None] = mapped_column(JSON)
     status: Mapped[str] = mapped_column(String(16), nullable=False)
 
 

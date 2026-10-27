@@ -147,6 +147,7 @@ def club_events(
             "event_format_id": event.event_format_id,
             "delivery_mode": event.delivery_mode,
             "estimated_fee_inr": event.estimated_fee_inr,
+            "planning_snapshot": event.planning_snapshot,
             "status": event.status,
             "my_rsvp": my_rsvps.get(event.id),
         }

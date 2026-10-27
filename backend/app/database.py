@@ -55,6 +55,8 @@ def initialize_schema(engine: Engine) -> None:
             connection.execute(text("ALTER TABLE events ADD COLUMN delivery_mode VARCHAR(20)"))
         if "estimated_fee_inr" not in columns:
             connection.execute(text("ALTER TABLE events ADD COLUMN estimated_fee_inr INTEGER"))
+        if "planning_snapshot" not in columns:
+            connection.execute(text("ALTER TABLE events ADD COLUMN planning_snapshot JSON"))
         settings_columns = {row[1] for row in connection.execute(text("PRAGMA table_info(member_settings)"))}
         if "max_fee_inr" not in settings_columns:
             connection.execute(text("ALTER TABLE member_settings ADD COLUMN max_fee_inr INTEGER CHECK(max_fee_inr IS NULL OR max_fee_inr >= 0)"))
@@ -64,6 +66,52 @@ def initialize_schema(engine: Engine) -> None:
             "UPDATE events SET description = COALESCE((SELECT description FROM event_types "
             "WHERE event_types.id = events.event_type_id), '') WHERE description = ''"
         ))
+    # SQLite cannot drop NOT NULL directly. Rebuild the table while keeping
+    # dependent RSVP foreign keys pointed at the stable `events` table name.
+    with engine.connect() as connection:
+        venue_info = next((row for row in connection.execute(text("PRAGMA table_info(events)")) if row[1] == "venue"), None)
+    if venue_info is not None and venue_info[3]:
+        raw = engine.raw_connection()
+        try:
+            raw.execute("PRAGMA foreign_keys=OFF")
+            raw.execute("BEGIN IMMEDIATE")
+            raw.execute("""
+                CREATE TABLE events_optional_venue (
+                    id VARCHAR(36) NOT NULL PRIMARY KEY,
+                    club_id VARCHAR(36) NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+                    event_type_id VARCHAR(36) NOT NULL REFERENCES event_types(id) ON DELETE RESTRICT,
+                    title VARCHAR(200) NOT NULL,
+                    description TEXT NOT NULL DEFAULT '',
+                    start_time DATETIME NOT NULL,
+                    duration_minutes INTEGER NOT NULL CHECK(duration_minutes > 0),
+                    venue VARCHAR(200),
+                    event_format_id VARCHAR(64),
+                    delivery_mode VARCHAR(20) CHECK(delivery_mode IS NULL OR delivery_mode IN ('in_person', 'online')),
+                    estimated_fee_inr INTEGER CHECK(estimated_fee_inr IS NULL OR estimated_fee_inr >= 0),
+                    planning_snapshot JSON,
+                    status VARCHAR(16) NOT NULL CHECK(status IN ('proposed', 'scheduled', 'completed', 'cancelled'))
+                )
+            """)
+            raw.execute("""
+                INSERT INTO events_optional_venue
+                (id, club_id, event_type_id, title, description, start_time, duration_minutes,
+                 venue, event_format_id, delivery_mode, estimated_fee_inr, planning_snapshot, status)
+                SELECT id, club_id, event_type_id, title, description, start_time, duration_minutes,
+                       NULLIF(venue, ''), event_format_id, delivery_mode, estimated_fee_inr, planning_snapshot, status
+                FROM events
+            """)
+            raw.execute("DROP TABLE events")
+            raw.execute("ALTER TABLE events_optional_venue RENAME TO events")
+            raw.execute("CREATE INDEX ix_events_club_start ON events(club_id, start_time)")
+            raw.execute("CREATE INDEX ix_events_type_start ON events(event_type_id, start_time)")
+            raw.commit()
+            raw.execute("PRAGMA foreign_keys=ON")
+        except Exception:
+            raw.rollback()
+            raw.execute("PRAGMA foreign_keys=ON")
+            raise
+        finally:
+            raw.close()
 
 
 def make_session_factory(engine: Engine) -> sessionmaker[OrmSession]:

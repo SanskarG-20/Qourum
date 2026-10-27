@@ -99,6 +99,11 @@ def assess_candidate(
     schedule_cache: dict | None = None,
     eligibility_cache: dict | None = None,
     include_member_details: bool = True,
+    selected_format_ids: Sequence[str] | None = None,
+    fee_policy: str = "any",
+    fee_cap_inr: int | None = None,
+    delivery_mode: str = "any",
+    existing_events: Sequence[tuple[datetime, datetime]] = (),
 ) -> CandidateAssessment:
     """Apply global dates, per-member fee/mode/availability, and capacity filters."""
     if not members:
@@ -107,6 +112,18 @@ def assess_candidate(
         raise ValueError("min_people_available must be between one and club size")
 
     reasons: list[str] = []
+    if any(start < candidate.end and candidate.start < end for start, end in existing_events):
+        reasons.append("existing_event_conflict")
+    if selected_format_ids and candidate.format_id not in selected_format_ids:
+        reasons.append("format_not_selected")
+    if fee_policy == "free" and candidate.fee_inr != 0:
+        reasons.append("paid_format_excluded")
+    if fee_policy == "paid" and candidate.fee_inr <= 0:
+        reasons.append("free_format_excluded")
+    if fee_cap_inr is not None and candidate.fee_inr > fee_cap_inr:
+        reasons.append("fee_above_club_cap")
+    if delivery_mode != "any" and candidate.mode != delivery_mode:
+        reasons.append("delivery_mode_excluded")
     flags = set(calendar_flags.get(candidate.event_date, ()))
     if "exam_week" in flags:
         reasons.append("exam_week")

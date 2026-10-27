@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from math import sqrt
 from typing import Mapping, Sequence
 
@@ -76,14 +76,21 @@ def build_plan(
     horizon_days: int = config.DEFAULT_HORIZON_DAYS,
     min_people_available: int = config.DEFAULT_MIN_PEOPLE_AVAILABLE,
     strategy: str = "average",
+    fairness: bool = False,
     baseline: str = "model",
     top_k: int = config.DEFAULT_TOP_K,
     diversity: bool = True,
     seed: int = config.DEFAULT_SEED,
+    selected_format_ids: Sequence[str] | None = None,
+    fee_policy: str = "any",
+    fee_cap_inr: int | None = None,
+    delivery_mode: str = "any",
+    existing_events: Sequence[tuple[datetime, datetime]] = (),
 ) -> dict[str, object]:
     """Build a ranked plan with complete candidate rejection and member evidence."""
     if strategy not in STRATEGIES:
         raise ValueError(f"Unknown aggregation strategy: {strategy}")
+    effective_strategy = "fairness_aware" if fairness else strategy
     if baseline not in BASELINES:
         raise ValueError(f"Unknown baseline: {baseline}")
     if not 1 <= top_k <= 50:
@@ -101,7 +108,10 @@ def build_plan(
     assessments = [
         assess_candidate(candidate, members, calendar_flags or {}, min_people_available=min_people_available,
                          availability_index=availability_index, schedule_cache=schedule_cache,
-                         eligibility_cache=eligibility_cache, include_member_details=False)
+                         eligibility_cache=eligibility_cache, include_member_details=False,
+                         selected_format_ids=selected_format_ids, fee_policy=fee_policy,
+                         fee_cap_inr=fee_cap_inr, delivery_mode=delivery_mode,
+                         existing_events=existing_events)
         for candidate in candidates
     ]
     rejected = []
@@ -130,6 +140,9 @@ def build_plan(
                 "start_date": start_date.isoformat(), "horizon_days": horizon_days,
                 "min_people_available": min_people_available, "strategy": strategy,
                 "baseline": baseline, "top_k": top_k, "diversity": diversity, "seed": seed,
+                "selected_format_ids": list(selected_format_ids or []), "fee_policy": fee_policy,
+                "fee_cap_inr": fee_cap_inr, "delivery_mode": delivery_mode,
+                "fairness": fairness, "effective_strategy": effective_strategy,
             },
             "candidate_count": len(candidates), "feasible_count": 0,
             "recommendations": [], "rejected_candidates": rejected,
@@ -166,9 +179,9 @@ def build_plan(
     group_means = np.nanmean(masked_values, axis=1)
     group_minima = np.nanmin(masked_values, axis=1)
     group_stds = np.nanstd(masked_values, axis=1)
-    if strategy == "average":
+    if effective_strategy == "average":
         group_scores = group_means
-    elif strategy == "least_misery":
+    elif effective_strategy == "least_misery":
         group_scores = group_minima
     else:
         weights = np.asarray([1 + dissatisfaction[member_id] for member_id in member_ids], dtype=np.float64)
@@ -220,7 +233,7 @@ def build_plan(
             record["confidence"] = "low" if low_fraction >= 0.5 else "medium" if "medium" in statuses else "high"
         else:
             record["confidence"] = "low"
-        record["why_line_inputs"]["strategy"] = strategy
+        record["why_line_inputs"]["strategy"] = effective_strategy
         record["why_line_inputs"]["baseline"] = baseline
         record["why_line_inputs"]["confidence"] = record["confidence"]
         results.append(record)
@@ -229,6 +242,9 @@ def build_plan(
             "start_date": start_date.isoformat(), "horizon_days": horizon_days,
             "min_people_available": min_people_available, "strategy": strategy,
             "baseline": baseline, "top_k": top_k, "diversity": diversity, "seed": seed,
+            "selected_format_ids": list(selected_format_ids or []), "fee_policy": fee_policy,
+            "fee_cap_inr": fee_cap_inr, "delivery_mode": delivery_mode,
+            "fairness": fairness, "effective_strategy": effective_strategy,
         },
         "candidate_count": len(candidates),
         "feasible_count": len(accepted_assessments),

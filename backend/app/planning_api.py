@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -34,7 +34,12 @@ class PlanRequest(BaseModel):
     baseline: Literal["model", "random", "popularity", "repeat_last"] = "model"
     top_k: int = Field(default=planning_config.DEFAULT_TOP_K, ge=1, le=50)
     diversity: bool = True
+    fairness: bool = False
     seed: int = Field(default=planning_config.DEFAULT_SEED, ge=0, le=2**32 - 1)
+    selected_format_ids: list[str] = Field(default_factory=list, max_length=16)
+    fee_policy: Literal["any", "free", "paid"] = "any"
+    fee_cap_inr: int | None = Field(default=None, ge=0, le=100000)
+    delivery_mode: Literal["any", "in_person", "online"] = "any"
 
 
 def _time_block(value: time) -> str:
@@ -192,7 +197,9 @@ def club_plan(
     db: OrmSession = Depends(get_db),
 ) -> dict[str, object]:
     """Return ranked plan candidates and all candidates rejected by hard filters."""
-    start_date = payload.start_date or date.today()
+    # Beginning tomorrow ensures every generated card can still be scheduled
+    # if the organizer requests a plan later in the day.
+    start_date = payload.start_date or date.today() + timedelta(days=1)
     members, formats, observations, preferences, calendar_flags = _plan_inputs(db, club_id, start_date)
     if payload.min_people_available > len(members):
         raise HTTPException(status_code=422, detail="Minimum available people cannot exceed club membership.")
@@ -206,8 +213,19 @@ def club_plan(
         horizon_days=payload.horizon_days,
         min_people_available=payload.min_people_available,
         strategy=payload.strategy,
+        fairness=payload.fairness,
         baseline=payload.baseline,
         top_k=payload.top_k,
         diversity=payload.diversity,
         seed=payload.seed,
+        selected_format_ids=payload.selected_format_ids,
+        fee_policy=payload.fee_policy,
+        fee_cap_inr=payload.fee_cap_inr,
+        delivery_mode=payload.delivery_mode,
+        existing_events=[
+            (event.start_time, event.start_time + timedelta(minutes=event.duration_minutes))
+            for event in db.scalars(select(Event).where(
+                Event.club_id == club_id, Event.status.in_(["proposed", "scheduled"])
+            ))
+        ],
     )
