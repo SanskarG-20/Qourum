@@ -14,6 +14,7 @@ from .seed import seed_database
 from .auth import router as auth_router
 from .clubs import router as clubs_router
 from .recommendation_api import router as recommendations_router
+from .planning_api import router as planning_router
 from .feedback import router as feedback_router
 from .event_workflow import router as event_workflow_router
 
@@ -40,6 +41,7 @@ app = FastAPI(title="Quorum", docs_url=None, redoc_url=None, lifespan=lifespan)
 app.include_router(auth_router)
 app.include_router(clubs_router)
 app.include_router(recommendations_router)
+app.include_router(planning_router)
 app.include_router(feedback_router)
 app.include_router(event_workflow_router)
 app.mount(

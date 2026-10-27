@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime
+from hashlib import sha256
 import os
 from pathlib import Path
 import uuid
@@ -24,6 +25,7 @@ from .models import (
     ClubMember,
     Event,
     EventType,
+    MemberSettings,
     Preference,
     RSVP,
     User,
@@ -58,6 +60,15 @@ def _calendar_id(name: str, start_date: str) -> str:
 def _optional(value: object) -> object | None:
     """Normalize pandas missing scalars to Python None for nullable columns."""
     return None if pd.isna(value) else value
+
+
+def _member_planning_profile(member_id: str) -> tuple[int, str]:
+    """Assign repeatable observable demo fee/mode preferences without latent traits."""
+    digest = sha256(f"quorum-planning-profile:{member_id}".encode("utf-8")).digest()
+    maximum_fee = (0, 100, 250, 500, 1000)[digest[0] % 5]
+    mode_roll = int.from_bytes(digest[1:3], "big") % 100
+    mode = "in_person" if mode_roll < 62 else "online" if mode_roll < 75 else "either"
+    return maximum_fee, mode
 
 
 def seed_database(seed: int | None = None, db_path: str | Path | None = None) -> dict[str, int]:
@@ -185,6 +196,18 @@ def seed_database(seed: int | None = None, db_path: str | Path | None = None) ->
                     feedback=_optional(row.feedback),
                 )
                 for row in tables["rsvps"].itertuples(index=False)
+            )
+            session.add_all(
+                MemberSettings(
+                    member_id=row.id,
+                    max_fee_inr=_member_planning_profile(row.id)[0],
+                    mode_preference=_member_planning_profile(row.id)[1],
+                )
+                for row in tables["members"].itertuples(index=False)
+            )
+            session.add_all(
+                MemberSettings(member_id=account["id"], max_fee_inr=100000, mode_preference="either")
+                for account in demo_accounts
             )
             session.flush()
             counts = {

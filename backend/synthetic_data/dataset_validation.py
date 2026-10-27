@@ -88,4 +88,4 @@ def validate_research_tables(tables: dict[str, pd.DataFrame]) -> None:
     counts = attendance.groupby("event_id").agg(registrations=("registered", "sum"), attended_count=("attended", "sum"))
     event_counts = events.set_index("event_id")[["registrations", "attended_count"]]
     require(counts["registrations"].reindex(event_counts.index, fill_value=0).equals(event_counts["registrations"].astype("int64")), "events.registrations must match attendance records")
-    require(counts["attended_count"].reindex(event_counts.index, fill_value=0).equals(event_counts["attended_count"].astype("int64")), "events.attended_count must match attendance records")\n
+    require(counts["attended_count"].reindex(event_counts.index, fill_value=0).equals(event_counts["attended_count"].astype("int64")), "events.attended_count must match attendance records")

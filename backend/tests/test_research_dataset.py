@@ -92,4 +92,4 @@ def test_cli_summary_includes_each_club(capsys):
     assert report["clubs"] == 6
     assert "Per-club summary:" in output
     assert "Campus Club 6:" in output
-    assert "conflict=" in output\n
+    assert "conflict=" in output

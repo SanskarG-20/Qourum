@@ -5,7 +5,7 @@ member evidence without changing or exposing the synthetic latent personas.
 Fees are illustrative planning assumptions, never real prices.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Iterable
 
 from .models import EventType
@@ -19,6 +19,10 @@ class EventFormat:
     estimated_fee_inr: int
     modes: tuple[str, ...]
     duration_minutes: int | None = None
+    category: str = "technical"
+    skill_level: str = "beginner"
+    min_capacity: int = 5
+    max_capacity: int = 100
 
 
 FORMATS = (
@@ -38,6 +42,30 @@ FORMATS = (
     EventFormat("campus-quest", "Campus Quest / Hunter Quest", "Domain Quiz & Trivia", 0, ("in_person",), 120),
     EventFormat("ideathon", "Ideathon", "Hackathon & Build Jam", 0, ("in_person", "online"), 120),
     EventFormat("pitch-challenge", "Pitch Challenge", "Project Showcase & Demo Night", 99, ("in_person", "online"), 120),
+)
+
+_FORMAT_PROFILES = {
+    "workshop": ("technical", "beginner", 10, 60),
+    "lightning-talk": ("learning", "beginner", 8, 150),
+    "hackathon": ("technical", "intermediate", 20, 120),
+    "quiz": ("competitive", "beginner", 10, 100),
+    "social-mixer": ("social", "beginner", 8, 50),
+    "reading-group": ("learning", "intermediate", 5, 40),
+    "portfolio-clinic": ("learning", "beginner", 6, 40),
+    "project-showcase": ("technical", "intermediate", 10, 100),
+    "industry-chat": ("learning", "beginner", 10, 100),
+    "coworking-lab": ("social", "beginner", 5, 40),
+    "mentorship": ("learning", "beginner", 5, 30),
+    "esports": ("competitive", "beginner", 10, 80),
+    "case-competition": ("competitive", "intermediate", 12, 80),
+    "campus-quest": ("social", "beginner", 15, 100),
+    "ideathon": ("technical", "beginner", 12, 80),
+    "pitch-challenge": ("competitive", "intermediate", 10, 60),
+}
+FORMATS = tuple(
+    replace(item, category=_FORMAT_PROFILES[item.id][0], skill_level=_FORMAT_PROFILES[item.id][1],
+            min_capacity=_FORMAT_PROFILES[item.id][2], max_capacity=_FORMAT_PROFILES[item.id][3])
+    for item in FORMATS
 )
 
 FORMAT_BY_ID = {item.id: item for item in FORMATS}

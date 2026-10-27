@@ -80,4 +80,4 @@ def write_csv_tables(tables: dict[str, pd.DataFrame], output_dir: str | Path) ->
     target = Path(output_dir)
     target.mkdir(parents=True, exist_ok=True)
     for name, columns in TABLE_COLUMNS.items():
-        tables[name][list(columns)].to_csv(target / f"{name}.csv", index=False, lineterminator="\n")\n
+        tables[name][list(columns)].to_csv(target / f"{name}.csv", index=False, lineterminator="\n")

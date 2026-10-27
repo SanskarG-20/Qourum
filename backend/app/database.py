@@ -55,6 +55,11 @@ def initialize_schema(engine: Engine) -> None:
             connection.execute(text("ALTER TABLE events ADD COLUMN delivery_mode VARCHAR(20)"))
         if "estimated_fee_inr" not in columns:
             connection.execute(text("ALTER TABLE events ADD COLUMN estimated_fee_inr INTEGER"))
+        settings_columns = {row[1] for row in connection.execute(text("PRAGMA table_info(member_settings)"))}
+        if "max_fee_inr" not in settings_columns:
+            connection.execute(text("ALTER TABLE member_settings ADD COLUMN max_fee_inr INTEGER CHECK(max_fee_inr IS NULL OR max_fee_inr >= 0)"))
+        if "mode_preference" not in settings_columns:
+            connection.execute(text("ALTER TABLE member_settings ADD COLUMN mode_preference VARCHAR(16) CHECK(mode_preference IS NULL OR mode_preference IN ('in_person', 'online', 'either'))"))
         connection.execute(text(
             "UPDATE events SET description = COALESCE((SELECT description FROM event_types "
             "WHERE event_types.id = events.event_type_id), '') WHERE description = ''"

@@ -185,10 +185,16 @@ class MemberSettings(Base):
     """Member-level scheduling dealbreakers used by candidate generation."""
 
     __tablename__ = "member_settings"
-    __table_args__ = (CheckConstraint("latest_start_time IS NULL OR latest_start_time BETWEEN '00:00:00' AND '23:59:59'", name="ck_member_settings_latest_start"),)
+    __table_args__ = (
+        CheckConstraint("latest_start_time IS NULL OR latest_start_time BETWEEN '00:00:00' AND '23:59:59'", name="ck_member_settings_latest_start"),
+        CheckConstraint("max_fee_inr IS NULL OR max_fee_inr >= 0", name="ck_member_settings_max_fee"),
+        CheckConstraint("mode_preference IS NULL OR mode_preference IN ('in_person', 'online', 'either')", name="ck_member_settings_mode_preference"),
+    )
 
     member_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     latest_start_time: Mapped[time | None] = mapped_column(Time)
+    max_fee_inr: Mapped[int | None] = mapped_column(Integer)
+    mode_preference: Mapped[str | None] = mapped_column(String(16))
 
 
 class AcademicCalendar(Base):
