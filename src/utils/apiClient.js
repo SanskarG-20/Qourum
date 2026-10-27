@@ -10,7 +10,11 @@ export async function api(path, options = {}) {
       body = null;
     }
   }
-  if (!response.ok) throw new Error(body?.detail || `Request failed (${response.status})`);
+  if (!response.ok) {
+    const detail = body?.detail;
+    const message = Array.isArray(detail) ? detail.map((item) => item.msg).join('; ') : detail;
+    throw new Error(typeof message === 'string' && message ? message : `Request failed (${response.status})`);
+  }
   return body;
 }
 

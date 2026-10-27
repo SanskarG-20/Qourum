@@ -110,6 +110,9 @@ def assess_candidate(
     eligibility_cache: dict | None = None,
     include_member_details: bool = True,
     selected_format_ids: Sequence[str] | None = None,
+    excluded_format_ids: Sequence[str] | None = None,
+    only_date: date | None = None,
+    only_time_block: str | None = None,
     fee_policy: str = "any",
     fee_cap_inr: int | None = None,
     delivery_mode: str = "any",
@@ -130,6 +133,12 @@ def assess_candidate(
         reasons.append("existing_event_conflict")
     if selected_format_ids and candidate.format_id not in selected_format_ids:
         reasons.append("format_not_selected")
+    if excluded_format_ids and candidate.format_id in excluded_format_ids:
+        reasons.append("format_excluded")
+    if only_date is not None and candidate.event_date != only_date:
+        reasons.append("date_excluded")
+    if only_time_block is not None and candidate.time_block != only_time_block:
+        reasons.append("time_block_excluded")
     if fee_policy == "free" and candidate.fee_inr != 0:
         reasons.append("paid_format_excluded")
     if fee_policy == "paid" and candidate.fee_inr <= 0:

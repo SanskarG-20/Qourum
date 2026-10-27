@@ -57,6 +57,9 @@ REJECTION_REASON_LABELS = {
     "skill_level_excluded": "Experience level doesn't match",
     "existing_event_conflict": "Conflicts with another event",
     "format_not_selected": "Format not selected",
+    "format_excluded": "Format excluded",
+    "date_excluded": "Date excluded",
+    "time_block_excluded": "Time block excluded",
     "paid_format_excluded": "Paid format excluded",
     "free_format_excluded": "Free format excluded",
 }

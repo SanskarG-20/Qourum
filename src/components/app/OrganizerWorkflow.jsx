@@ -5,6 +5,7 @@ import { EventRequirements } from './EventRequirements.jsx';
 import { PlanResultCard } from './PlanResultCard.jsx';
 import { PlanDiagnostics } from './PlanDiagnostics.jsx';
 import { ParetoPlanChart } from './ParetoPlanChart.jsx';
+import { WhatIfPanel } from './WhatIfPanel.jsx';
 
 export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
   const [strategy, setStrategy] = useState('average');
@@ -27,6 +28,8 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
   const [planResult, setPlanResult] = useState(null);
   const [planSweepResult, setPlanSweepResult] = useState(null);
   const [selectedSweepPointId, setSelectedSweepPointId] = useState('');
+  const [selectedWhatIfKey, setSelectedWhatIfKey] = useState('');
+  const [appliedWhatIfFilters, setAppliedWhatIfFilters] = useState({});
   const [events, setEvents] = useState([]);
   const [members, setMembers] = useState([]);
   const [selectedFeedbackEvent, setSelectedFeedbackEvent] = useState('');
@@ -71,13 +74,13 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
       fee_policy: feePolicy, fee_cap_inr: maxFee === '' ? null : Number(maxFee),
       delivery_mode: deliveryMode, skill_level_filter: skillLevelFilter,
       exclude_lab_heavy_days: excludeLabHeavyDays, prefer_short_formats: preferShortFormats,
-      exploration, ...(overrides || {}),
+      exploration, ...appliedWhatIfFilters, ...(overrides || {}),
   });
 
   const runPlan = async (event, overrides = null) => {
     event?.preventDefault();
     const settings = currentPlanSettings(overrides);
-    setBusy(true); setPlanningBusy(true); setPlanResult(null); setError(''); setNotice('');
+    setBusy(true); setPlanningBusy(true); setPlanResult(null); setSelectedWhatIfKey(''); setError(''); setNotice('');
     try {
       const result = await apiWrite(`/api/clubs/${clubId}/plan`, {
         body: settings,
@@ -119,6 +122,10 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
     setExcludeLabHeavyDays(settings.exclude_lab_heavy_days);
     setPreferShortFormats(settings.prefer_short_formats);
     setExploration(settings.exploration);
+    setAppliedWhatIfFilters({
+      excluded_format_ids: settings.excluded_format_ids || [], excluded_member_id: settings.excluded_member_id || null,
+      only_date: settings.only_date || null, only_time_block: settings.only_time_block || null,
+    });
     await runPlan(null, settings);
     window.setTimeout(() => document.getElementById('ranked-plan-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
   };
@@ -137,7 +144,26 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
     setExcludeLabHeavyDays(settings.exclude_lab_heavy_days);
     setPreferShortFormats(settings.prefer_short_formats);
     setExploration(settings.exploration);
-    await runPlan(null, settings);
+    setAppliedWhatIfFilters({});
+    await runPlan(null, { excluded_format_ids: [], excluded_member_id: null, only_date: null, only_time_block: null, ...settings });
+  };
+
+  const applyWhatIf = (after) => {
+    const settings = after.settings;
+    setStrategy(settings.strategy); setFairness(settings.fairness); setDiversity(settings.diversity);
+    setTopN(String(settings.top_k)); setQuorum(String(settings.min_people_available));
+    setHorizon(String(settings.horizon_days)); setSelectedFormatIds(settings.selected_format_ids);
+    setFeePolicy(settings.fee_policy); setMaxFee(settings.fee_cap_inr == null ? '' : String(settings.fee_cap_inr));
+    setDeliveryMode(settings.delivery_mode); setSkillLevelFilter(settings.skill_level_filter);
+    setExcludeLabHeavyDays(settings.exclude_lab_heavy_days); setPreferShortFormats(settings.prefer_short_formats);
+    setExploration(settings.exploration); setActiveRecipe('');
+    setAppliedWhatIfFilters({
+      excluded_format_ids: settings.excluded_format_ids || [], excluded_member_id: settings.excluded_member_id || null,
+      only_date: settings.only_date || null, only_time_block: settings.only_time_block || null,
+      start_date: settings.start_date,
+    });
+    setPlanResult(after); setSelectedWhatIfKey('');
+    setNotice(`Applied the what-if plan with ${after.recommendations.length} event ideas.`);
   };
 
   const accept = async (recommendation, venue) => {
@@ -214,6 +240,7 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
         </div>
       </section>
       <form className="quorum-app__card quorum-app__controls" onSubmit={runPlan}>
+        {Object.entries(appliedWhatIfFilters).some(([key, value]) => key !== 'start_date' && (Array.isArray(value) ? value.length : Boolean(value))) && <div className="quorum-app__applied-what-if"><span>What-if filters are applied to this plan.</span><button type="button" className="quorum-app__quiet" onClick={() => { setAppliedWhatIfFilters({}); setNotice('What-if filters cleared. Run the planner to refresh results.'); }}>Clear filters</button></div>}
         <EventRequirements formats={formats} selectedIds={selectedFormatIds} onSelectedIdsChange={setSelectedFormatIds}
           feePolicy={feePolicy} onFeePolicyChange={setFeePolicy} maxFee={maxFee} onMaxFeeChange={setMaxFee}
           deliveryMode={deliveryMode} onDeliveryModeChange={setDeliveryMode} />
@@ -244,8 +271,13 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
         {planningBusy && <div className="quorum-app__plan-state" role="status"><span className="quorum-app__spinner" aria-hidden="true" />Looking at member availability and event ideas…</div>}
         {!planningBusy && planResult === null && <div className="quorum-app__plan-state"><h3>Ready to find a time?</h3><p>Choose what matters to your club, then select “Find event ideas” to see formats and times that fit.</p></div>}
         {!planningBusy && planResult && planResult.recommendations.length === 0 && <div className="quorum-app__plan-state"><h3>No matching event ideas</h3><p>Try changing the event requirements or giving the club more time options.</p></div>}
-        {!planningBusy && planResult?.recommendations.map((item) => <PlanResultCard key={`${item.format_id}-${item.start}-${item.mode}`} item={item}
-          format={formats.find((format) => format.id === item.format_id)} memberNames={memberNames} venues={pastVenues[item.mode] || []} busy={busy} onAccept={accept} />)}
+        {!planningBusy && planResult?.recommendations.map((item) => {
+          const key = `${item.format_id}-${item.start}-${item.mode}`;
+          return <PlanResultCard key={key} item={item}
+            format={formats.find((format) => format.id === item.format_id)} memberNames={memberNames} venues={pastVenues[item.mode] || []} busy={busy} onAccept={accept}
+            whatIfOpen={selectedWhatIfKey === key} onToggleWhatIf={() => setSelectedWhatIfKey(selectedWhatIfKey === key ? '' : key)}
+            whatIfPanel={<WhatIfPanel clubId={clubId} basePlan={planResult} item={item} formats={formats} members={members} onApply={applyWhatIf} />} />;
+        })}
         {!planningBusy && planSweepResult && <ParetoPlanChart sweep={planSweepResult} memberCount={members.length}
           selectedPointId={selectedSweepPointId} onSelect={loadSweepPoint} />}
         {!planningBusy && planResult && <PlanDiagnostics planResult={planResult} members={members} formats={formats} />}

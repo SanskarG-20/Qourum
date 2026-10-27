@@ -46,6 +46,10 @@ class PlanRequest(BaseModel):
     fairness: bool = False
     seed: int = Field(default=planning_config.DEFAULT_SEED, ge=0, le=2**32 - 1)
     selected_format_ids: list[str] = Field(default_factory=list, max_length=16)
+    excluded_format_ids: list[str] = Field(default_factory=list, max_length=16)
+    excluded_member_id: str | None = None
+    only_date: date | None = None
+    only_time_block: Literal["morning", "midday", "afternoon", "evening", "late_evening"] | None = None
     fee_policy: Literal["any", "free", "paid"] = "any"
     fee_cap_inr: int | None = Field(default=None, ge=0, le=100000)
     delivery_mode: Literal["any", "in_person", "online"] = "any"
@@ -241,7 +245,15 @@ def _plan_context(db: OrmSession, club_id: str, payload: PlanRequest):
     # Beginning tomorrow ensures every generated card can still be scheduled
     # if the organizer requests a plan later in the day.
     start_date = payload.start_date or date.today() + timedelta(days=1)
+    if payload.only_date is not None and not start_date <= payload.only_date < start_date + timedelta(days=payload.horizon_days):
+        raise HTTPException(status_code=422, detail="Selected date must be within the planning horizon.")
     members, formats, observations, preferences, calendar_flags = _plan_inputs(db, club_id, start_date)
+    if payload.excluded_member_id is not None:
+        if payload.excluded_member_id not in {member.member_id for member in members}:
+            raise HTTPException(status_code=422, detail="Excluded member does not belong to this club.")
+        members = [member for member in members if member.member_id != payload.excluded_member_id]
+        observations = [item for item in observations if item.member_id != payload.excluded_member_id]
+        preferences = {key: value for key, value in preferences.items() if key[0] != payload.excluded_member_id}
     if payload.exclude_lab_heavy_days:
         for day_offset in range(payload.horizon_days):
             candidate_day = date.fromordinal(start_date.toordinal() + day_offset)
@@ -270,7 +282,7 @@ def _build_cached_plan(*, club_id, payload: PlanRequest, context):
     )
 
     def build():
-        return build_plan(
+        result = build_plan(
             members=members,
             formats=formats,
             observations=observations,
@@ -286,6 +298,9 @@ def _build_cached_plan(*, club_id, payload: PlanRequest, context):
             diversity=payload.diversity,
             seed=payload.seed,
             selected_format_ids=payload.selected_format_ids,
+            excluded_format_ids=payload.excluded_format_ids,
+            only_date=payload.only_date,
+            only_time_block=payload.only_time_block,
             fee_policy=payload.fee_policy,
             fee_cap_inr=payload.fee_cap_inr,
             delivery_mode=payload.delivery_mode,
@@ -295,6 +310,8 @@ def _build_cached_plan(*, club_id, payload: PlanRequest, context):
             exploration=payload.exploration,
             existing_events=existing_events,
         )
+        result["settings"]["excluded_member_id"] = payload.excluded_member_id
+        return result
 
     result, cache_hit = _plan_result_cache.get_or_build(cache_key, build)
     result["settings_hash"] = cache_key

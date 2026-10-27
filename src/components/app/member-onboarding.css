@@ -158,6 +158,22 @@
 .quorum-app__plan-state { display: grid; justify-items: start; gap: .5rem; padding: 1.4rem; border: 1px dashed var(--color-border-ruler); border-radius: 10px; background: #fff; }
 .quorum-app__plan-state h3,.quorum-app__plan-state p { margin: 0; }
 .quorum-app__plan-state p { max-width: 42rem; }
+.quorum-app__applied-what-if { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .65rem .8rem; background: var(--color-gold-tint); border-left: 3px solid var(--color-gold-primary); font-size: .82rem; }
+.quorum-app__what-if { display: grid; gap: .7rem; padding: 1rem; border: 1px solid var(--color-border-ruler); border-radius: 8px; background: var(--color-bg-card-muted); }
+.quorum-app__what-if h4,.quorum-app__what-if h5,.quorum-app__what-if p { margin: 0; }
+.quorum-app__what-if h4 { font-size: 1rem; }
+.quorum-app__what-if > p,.quorum-app__what-if-result > p { font-size: .82rem; color: var(--color-text-secondary); }
+.quorum-app__what-if-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .8rem; }
+.quorum-app__what-if-fields label { display: grid; gap: .3rem; font-size: .78rem; font-weight: 600; }
+.quorum-app__what-if-fields input,.quorum-app__what-if-fields select { width: 100%; min-width: 0; }
+.quorum-app__what-if-fields > button { justify-self: start; align-self: end; }
+.quorum-app__what-if-result { display: grid; gap: .7rem; padding-top: .8rem; border-top: 1px solid var(--color-border-ruler); }
+.quorum-app__what-if-result h5 { font-size: .9rem; }
+.quorum-app__what-if-columns { display: grid; grid-template-columns: minmax(9rem,1fr) minmax(5rem,.6fr) minmax(8rem,1fr); gap: .5rem; padding: .2rem .5rem; color: var(--color-text-secondary); font-size: .72rem; font-weight: 700; text-transform: uppercase; }
+.quorum-app__what-if-result dl { display: grid; gap: .25rem; margin: 0; }
+.quorum-app__what-if-result dl > div { display: grid; grid-template-columns: minmax(9rem,1fr) minmax(5rem,.6fr) minmax(8rem,1fr); gap: .5rem; padding: .4rem .5rem; background: white; font-size: .8rem; }
+.quorum-app__what-if-result dt { font-weight: 600; }.quorum-app__what-if-result dd { margin: 0; font-variant-numeric: tabular-nums; }
+.quorum-app__what-if-result > button { justify-self: start; }
 .quorum-app__spinner { width: 1.3rem; height: 1.3rem; border: 2px solid var(--color-border-ruler); border-top-color: var(--color-cyan-primary); border-radius: 50%; animation: quorum-spin .8s linear infinite; }
 @keyframes quorum-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .quorum-app__spinner { animation-duration: 1.8s; } }
@@ -183,6 +199,8 @@
 .quorum-app__rsvp-actions button.is-selected { border-color: var(--color-text-primary); background: var(--color-cyan-tint); }
 @media (max-width: 680px) { .quorum-app__rec-head,.quorum-app__event-list li { align-items: flex-start; flex-direction: column; } }
 @media (max-width: 680px) { .quorum-app__satisfaction-list { grid-template-columns: 1fr; } .quorum-app__plan-accept { align-items: stretch; flex-direction: column; } .quorum-app__plan-accept > .quorum-app__button { align-self: flex-start; } }
+@media (max-width: 680px) { .quorum-app__what-if-fields { grid-template-columns: 1fr; } .quorum-app__what-if-result dl > div { grid-template-columns: 1fr 1fr; } .quorum-app__what-if-result dt { grid-column: 1 / -1; } }
+@media (max-width: 680px) { .quorum-app__what-if-columns { grid-template-columns: 1fr 1fr; } .quorum-app__what-if-columns span:first-child { display: none; } }
 @media (max-width: 680px) { .quorum-app__controls { grid-template-columns: 1fr; } .quorum-app__control--strategy,.quorum-app__control-options { grid-column: auto; } }
 @media (max-width: 680px) { .quorum-app__recipe-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 420px) { .quorum-app__recipe-list { grid-template-columns: 1fr; } }

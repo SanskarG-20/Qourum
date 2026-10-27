@@ -7,7 +7,7 @@ function prettyDate(start) {
   });
 }
 
-export function PlanResultCard({ item, format, memberNames, venues, busy, onAccept }) {
+export function PlanResultCard({ item, format, memberNames, venues, busy, onAccept, whatIfOpen, onToggleWhatIf, whatIfPanel }) {
   const view = planCardView(item);
   const [selectedVenue, setSelectedVenue] = useState('');
   const [typedVenue, setTypedVenue] = useState('');
@@ -54,6 +54,8 @@ export function PlanResultCard({ item, format, memberNames, venues, busy, onAcce
       </ul>
     </div>
 
+    {onToggleWhatIf && <button type="button" className="quorum-app__quiet" aria-expanded={Boolean(whatIfOpen)} onClick={onToggleWhatIf}>{whatIfOpen ? 'Close what-if' : 'Try a what-if'}</button>}
+    {whatIfOpen && whatIfPanel}
     <form className="quorum-app__plan-accept" onSubmit={submit}>
       <details className="quorum-app__venue-picker">
         <summary>Venue (optional)</summary>

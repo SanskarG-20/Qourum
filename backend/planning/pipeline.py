@@ -30,7 +30,15 @@ def _build_plan_diagnostics(*, candidates, assessments, rejected, members, avail
     """Summarize rejected candidates and one-hour free-member availability by slot."""
     rejected_by_reason = defaultdict(list)
     rejected_by_slot = defaultdict(set)
-    for item in rejected:
+    candidate_by_key = {
+        (item.format_id, item.event_date.isoformat(), item.time_block, item.mode): item
+        for item in candidates
+    }
+    ordered_rejected = sorted(rejected, key=lambda item: (
+        -item["available_member_count"], item["event_date"], item["time_block"],
+        item["format_id"], item["mode"],
+    ))
+    for item in ordered_rejected:
         slot = (item["event_date"], item["time_block"])
         rejected_by_slot[slot].update(item["reason_codes"])
         for code in item["reason_codes"]:
@@ -45,17 +53,10 @@ def _build_plan_diagnostics(*, candidates, assessments, rejected, members, avail
         "mode_excludes_members": {"mode_mismatch"},
     }
     for code, items in sorted(rejected_by_reason.items(), key=lambda pair: (-len(pair[1]), pair[0])):
-        examples = [dict(item) for item in sorted(items, key=lambda item: (
-            -item["available_member_count"], item["event_date"], item["time_block"],
-            item["format_id"], item["mode"],
-        ))[:3]]
+        examples = [dict(item) for item in items[:3]]
         for example in examples:
-            candidate = next(item for item in candidates if (
-                item.format_id == example["format_id"]
-                and item.event_date.isoformat() == example["event_date"]
-                and item.time_block == example["time_block"]
-                and item.mode == example["mode"]
-            ))
+            candidate = candidate_by_key[(example["format_id"], example["event_date"],
+                                          example["time_block"], example["mode"])]
             blocked_members = []
             if code in member_reason_codes:
                 required_reasons = member_reason_filter.get(code)
@@ -168,6 +169,9 @@ def build_plan(
     diversity: bool = True,
     seed: int = config.DEFAULT_SEED,
     selected_format_ids: Sequence[str] | None = None,
+    excluded_format_ids: Sequence[str] | None = None,
+    only_date: date | None = None,
+    only_time_block: str | None = None,
     fee_policy: str = "any",
     fee_cap_inr: int | None = None,
     delivery_mode: str = "any",
@@ -190,6 +194,10 @@ def build_plan(
         raise ValueError(f"Unknown baseline: {baseline}")
     if not 1 <= top_k <= 50:
         raise ValueError("top_k must be between 1 and 50")
+    if only_date is not None and not start_date <= only_date < date.fromordinal(start_date.toordinal() + horizon_days):
+        raise ValueError("only_date must be within the planning horizon")
+    if only_time_block is not None and only_time_block not in TIME_BLOCKS:
+        raise ValueError("only_time_block is invalid")
     if len({item.member_id for item in members}) != len(members):
         raise ValueError("Member IDs must be unique")
     if len({item.format_id for item in formats}) != len(formats):
@@ -204,7 +212,8 @@ def build_plan(
         assess_candidate(candidate, members, calendar_flags or {}, min_people_available=min_people_available,
                          availability_index=availability_index, schedule_cache=schedule_cache,
                          eligibility_cache=eligibility_cache, include_member_details=False,
-                         selected_format_ids=selected_format_ids, fee_policy=fee_policy,
+                         selected_format_ids=selected_format_ids, excluded_format_ids=excluded_format_ids,
+                         only_date=only_date, only_time_block=only_time_block, fee_policy=fee_policy,
                          fee_cap_inr=fee_cap_inr, delivery_mode=delivery_mode,
                          existing_events=existing_events, skill_level_filter=skill_level_filter,
                          exclude_lab_heavy_days=exclude_lab_heavy_days)
@@ -241,7 +250,10 @@ def build_plan(
                 "start_date": start_date.isoformat(), "horizon_days": horizon_days,
                 "min_people_available": min_people_available, "strategy": strategy,
                 "baseline": baseline, "top_k": top_k, "diversity": diversity, "seed": seed,
-                "selected_format_ids": list(selected_format_ids or []), "fee_policy": fee_policy,
+                "selected_format_ids": list(selected_format_ids or []),
+                "excluded_format_ids": list(excluded_format_ids or []),
+                "only_date": only_date.isoformat() if only_date else None,
+                "only_time_block": only_time_block, "fee_policy": fee_policy,
                 "fee_cap_inr": fee_cap_inr, "delivery_mode": delivery_mode,
                 "fairness": fairness, "effective_strategy": effective_strategy,
                 "skill_level_filter": skill_level_filter,
@@ -380,7 +392,10 @@ def build_plan(
             "start_date": start_date.isoformat(), "horizon_days": horizon_days,
             "min_people_available": min_people_available, "strategy": strategy,
             "baseline": baseline, "top_k": top_k, "diversity": diversity, "seed": seed,
-            "selected_format_ids": list(selected_format_ids or []), "fee_policy": fee_policy,
+            "selected_format_ids": list(selected_format_ids or []),
+            "excluded_format_ids": list(excluded_format_ids or []),
+            "only_date": only_date.isoformat() if only_date else None,
+            "only_time_block": only_time_block, "fee_policy": fee_policy,
             "fee_cap_inr": fee_cap_inr, "delivery_mode": delivery_mode,
             "fairness": fairness, "effective_strategy": effective_strategy,
             "skill_level_filter": skill_level_filter,
