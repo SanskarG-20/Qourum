@@ -85,6 +85,14 @@ python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
 
 ## Evaluation
 
+The newer planning engine has a separate, seeded evaluation page at `/app/evaluation`. Regenerate its JSON, CSV tables, and charts from the repository root with:
+
+```sh
+python -m backend.evaluation.planning_report --seed 42
+```
+
+The command uses a per-club chronological 70/30 split and saves tables in [`results/planning_evaluation`](results/planning_evaluation) and page data/charts in `public/evaluation`. It reports attendance-count MAE and Hit@3 against random, popularity, and repeat-last baselines; group conflict levels for average, least-misery, and fairness-aware ranking; and fairness/diversity ablations. Supply all seven research-schema CSV tables with `--real-csv-dir PATH` to evaluate real records separately. No real records are included, so the real-data section currently reports no results. Hit@3 measures agreement with organizers' past format choices, not recommendation correctness. Group satisfaction for unheld alternatives is estimated, and synthetic results are weak evidence for real clubs.
+
 `backend/evaluation/runner.py` uses chronological 70/15/15 train, validation, and test splits across five seeds; tuning uses validation data only. Metrics include Precision@K, Recall@K, NDCG@K, event-type/slot hit rate, satisfaction, quorum success, Brier score, coverage, and intra-list diversity. Full results are in [`results/evaluation/REPORT.md`](results/evaluation/REPORT.md).
 
 Reproduce the evaluation from the repository root:

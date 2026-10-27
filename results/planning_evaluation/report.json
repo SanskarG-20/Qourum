@@ -1,0 +1,3259 @@
+{
+  "hit_caveat": "Hit@3 measures agreement with organizers' past format choices, not recommendation correctness.",
+  "methodology": "Per-club chronological 70/30 train/test split; model and baselines fit on older events only.",
+  "real": {
+    "reason": "No real club records supplied. No real-data metrics are reported.",
+    "source": "real",
+    "status": "unavailable"
+  },
+  "satisfaction_caveat": "Conflict and ablation satisfaction values are affinity estimates for candidate formats, not observed counterfactual outcomes. The synthetic sweep uses one club per conflict level, so other club differences may affect the trend. Synthetic gains are weak evidence for real clubs.",
+  "seed": 42,
+  "synthetic": {
+    "ablations": [
+      {
+        "category_coverage_at_3": 0.6,
+        "diversity": false,
+        "expected_turnout": 15.8862,
+        "fairness": false,
+        "minimum_satisfaction": 0.359
+      },
+      {
+        "category_coverage_at_3": 1.0,
+        "diversity": true,
+        "expected_turnout": 15.3316,
+        "fairness": false,
+        "minimum_satisfaction": 0.3584
+      },
+      {
+        "category_coverage_at_3": 0.6,
+        "diversity": false,
+        "expected_turnout": 15.8862,
+        "fairness": true,
+        "minimum_satisfaction": 0.359
+      },
+      {
+        "category_coverage_at_3": 1.0,
+        "diversity": true,
+        "expected_turnout": 15.3316,
+        "fairness": true,
+        "minimum_satisfaction": 0.3584
+      }
+    ],
+    "baselines": [
+      {
+        "hit_at_3": 0.1765,
+        "mae_attendance": 3.2646,
+        "method": "model",
+        "test_events": 85
+      },
+      {
+        "hit_at_3": 0.1294,
+        "mae_attendance": 8.4813,
+        "method": "random",
+        "test_events": 85
+      },
+      {
+        "hit_at_3": 0.2,
+        "mae_attendance": 4.1442,
+        "method": "popularity",
+        "test_events": 85
+      },
+      {
+        "hit_at_3": 0.1647,
+        "mae_attendance": 4.4467,
+        "method": "repeat_last",
+        "test_events": 85
+      }
+    ],
+    "conflict_sweep": [
+      {
+        "club": "Campus Club 1",
+        "conflict_level": 0.0,
+        "gini": 0.0859,
+        "minimum_satisfaction": 0.3723,
+        "strategy": "average",
+        "test_events": 17
+      },
+      {
+        "club": "Campus Club 1",
+        "conflict_level": 0.0,
+        "gini": 0.0859,
+        "minimum_satisfaction": 0.3723,
+        "strategy": "fairness_aware",
+        "test_events": 17
+      },
+      {
+        "club": "Campus Club 1",
+        "conflict_level": 0.0,
+        "gini": 0.0876,
+        "minimum_satisfaction": 0.402,
+        "strategy": "least_misery",
+        "test_events": 17
+      },
+      {
+        "club": "Campus Club 2",
+        "conflict_level": 0.25,
+        "gini": 0.1082,
+        "minimum_satisfaction": 0.3598,
+        "strategy": "average",
+        "test_events": 17
+      },
+      {
+        "club": "Campus Club 2",
+        "conflict_level": 0.25,
+        "gini": 0.1082,
+        "minimum_satisfaction": 0.3598,
+        "strategy": "fairness_aware",
+        "test_events": 17
+      },
+      {
+        "club": "Campus Club 2",
+        "conflict_level": 0.25,
+        "gini": 0.0686,
+        "minimum_satisfaction": 0.3656,
+        "strategy": "least_misery",
+        "test_events": 17
+      },
+      {
+        "club": "Campus Club 3",
+        "conflict_level": 0.5,
+        "gini": 0.095,
+        "minimum_satisfaction": 0.35,
+        "strategy": "average",
+        "test_events": 17
+      },
+      {
+        "club": "Campus Club 3",
+        "conflict_level": 0.5,
+        "gini": 0.095,
+        "minimum_satisfaction": 0.35,
+        "strategy": "fairness_aware",
+        "test_events": 17
+      },
+      {
+        "club": "Campus Club 3",
+        "conflict_level": 0.5,
+        "gini": 0.0724,
+        "minimum_satisfaction": 0.35,
+        "strategy": "least_misery",
+        "test_events": 17
+      },
+      {
+        "club": "Campus Club 4",
+        "conflict_level": 0.75,
+        "gini": 0.1194,
+        "minimum_satisfaction": 0.3625,
+        "strategy": "average",
+        "test_events": 17
+      },
+      {
+        "club": "Campus Club 4",
+        "conflict_level": 0.75,
+        "gini": 0.0982,
+        "minimum_satisfaction": 0.3513,
+        "strategy": "fairness_aware",
+        "test_events": 17
+      },
+      {
+        "club": "Campus Club 4",
+        "conflict_level": 0.75,
+        "gini": 0.083,
+        "minimum_satisfaction": 0.3669,
+        "strategy": "least_misery",
+        "test_events": 17
+      },
+      {
+        "club": "Campus Club 5",
+        "conflict_level": 1.0,
+        "gini": 0.1177,
+        "minimum_satisfaction": 0.3537,
+        "strategy": "average",
+        "test_events": 17
+      },
+      {
+        "club": "Campus Club 5",
+        "conflict_level": 1.0,
+        "gini": 0.1177,
+        "minimum_satisfaction": 0.3537,
+        "strategy": "fairness_aware",
+        "test_events": 17
+      },
+      {
+        "club": "Campus Club 5",
+        "conflict_level": 1.0,
+        "gini": 0.1018,
+        "minimum_satisfaction": 0.363,
+        "strategy": "least_misery",
+        "test_events": 17
+      }
+    ],
+    "predictions": [
+      {
+        "actual_attendance": 3,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-04-19",
+        "event_id": "0d449875-f450-5bc6-b03a-3bfb91d56beb",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 13
+      },
+      {
+        "actual_attendance": 3,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-04-19",
+        "event_id": "0d449875-f450-5bc6-b03a-3bfb91d56beb",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 7.570074
+      },
+      {
+        "actual_attendance": 3,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-04-19",
+        "event_id": "0d449875-f450-5bc6-b03a-3bfb91d56beb",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 13
+      },
+      {
+        "actual_attendance": 3,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-04-19",
+        "event_id": "0d449875-f450-5bc6-b03a-3bfb91d56beb",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 10.933633
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-04-27",
+        "event_id": "e727b0a4-c20a-533f-9d3a-727aa4616216",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 7.778256
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-04-27",
+        "event_id": "e727b0a4-c20a-533f-9d3a-727aa4616216",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 10.019054
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-04-27",
+        "event_id": "e727b0a4-c20a-533f-9d3a-727aa4616216",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 23.686849
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-04-27",
+        "event_id": "e727b0a4-c20a-533f-9d3a-727aa4616216",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 10.933633
+      },
+      {
+        "actual_attendance": 5,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-05-18",
+        "event_id": "d6384d32-b3f9-569b-8af0-d18aaf465694",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 7.778256
+      },
+      {
+        "actual_attendance": 5,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-05-18",
+        "event_id": "d6384d32-b3f9-569b-8af0-d18aaf465694",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 10.019054
+      },
+      {
+        "actual_attendance": 5,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-05-18",
+        "event_id": "d6384d32-b3f9-569b-8af0-d18aaf465694",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 22.570253
+      },
+      {
+        "actual_attendance": 5,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-05-18",
+        "event_id": "d6384d32-b3f9-569b-8af0-d18aaf465694",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 10.933633
+      },
+      {
+        "actual_attendance": 3,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-05-20",
+        "event_id": "4dada59f-bbd9-525b-b6f2-28dd1c430b31",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 5.709049
+      },
+      {
+        "actual_attendance": 3,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-05-20",
+        "event_id": "4dada59f-bbd9-525b-b6f2-28dd1c430b31",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 10.019054
+      },
+      {
+        "actual_attendance": 3,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-05-20",
+        "event_id": "4dada59f-bbd9-525b-b6f2-28dd1c430b31",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 23.078393
+      },
+      {
+        "actual_attendance": 3,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-05-20",
+        "event_id": "4dada59f-bbd9-525b-b6f2-28dd1c430b31",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 10.933633
+      },
+      {
+        "actual_attendance": 13,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-06-13",
+        "event_id": "3b7fef83-f72d-5877-bb4f-5ce53454c75a",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 8.324713
+      },
+      {
+        "actual_attendance": 13,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-06-13",
+        "event_id": "3b7fef83-f72d-5877-bb4f-5ce53454c75a",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 8.368954
+      },
+      {
+        "actual_attendance": 13,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-06-13",
+        "event_id": "3b7fef83-f72d-5877-bb4f-5ce53454c75a",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 24.33331
+      },
+      {
+        "actual_attendance": 13,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-06-13",
+        "event_id": "3b7fef83-f72d-5877-bb4f-5ce53454c75a",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 10.933633
+      },
+      {
+        "actual_attendance": 7,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-07-03",
+        "event_id": "d4134fea-2172-58bf-ae27-b6c47d520ff1",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 5.84905
+      },
+      {
+        "actual_attendance": 7,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-07-03",
+        "event_id": "d4134fea-2172-58bf-ae27-b6c47d520ff1",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 10.019054
+      },
+      {
+        "actual_attendance": 7,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-07-03",
+        "event_id": "d4134fea-2172-58bf-ae27-b6c47d520ff1",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 22.811195
+      },
+      {
+        "actual_attendance": 7,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-07-03",
+        "event_id": "d4134fea-2172-58bf-ae27-b6c47d520ff1",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 10.933633
+      },
+      {
+        "actual_attendance": 11,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-07-07",
+        "event_id": "81290f51-55ff-5397-b9b2-f474b283af1d",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 11.679176
+      },
+      {
+        "actual_attendance": 11,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-07-07",
+        "event_id": "81290f51-55ff-5397-b9b2-f474b283af1d",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 10.50447
+      },
+      {
+        "actual_attendance": 11,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-07-07",
+        "event_id": "81290f51-55ff-5397-b9b2-f474b283af1d",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 21
+      },
+      {
+        "actual_attendance": 11,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-07-07",
+        "event_id": "81290f51-55ff-5397-b9b2-f474b283af1d",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 7.666817
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-07-13",
+        "event_id": "d42612c2-f757-577f-a436-4d6c2ce6876e",
+        "hit_at_3": 1,
+        "method": "model",
+        "predicted_attendance": 17.811494
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-07-13",
+        "event_id": "d42612c2-f757-577f-a436-4d6c2ce6876e",
+        "hit_at_3": 1,
+        "method": "popularity",
+        "predicted_attendance": 17.717345
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-07-13",
+        "event_id": "d42612c2-f757-577f-a436-4d6c2ce6876e",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 24.32207
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-07-13",
+        "event_id": "d42612c2-f757-577f-a436-4d6c2ce6876e",
+        "hit_at_3": 1,
+        "method": "repeat_last",
+        "predicted_attendance": 10.933633
+      },
+      {
+        "actual_attendance": 9,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-07-15",
+        "event_id": "5d3f0200-bf22-5969-be10-1a0020ae90a6",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 9.056763
+      },
+      {
+        "actual_attendance": 9,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-07-15",
+        "event_id": "5d3f0200-bf22-5969-be10-1a0020ae90a6",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 10.50447
+      },
+      {
+        "actual_attendance": 9,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-07-15",
+        "event_id": "5d3f0200-bf22-5969-be10-1a0020ae90a6",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 23.305181
+      },
+      {
+        "actual_attendance": 9,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-07-15",
+        "event_id": "5d3f0200-bf22-5969-be10-1a0020ae90a6",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 7.666817
+      },
+      {
+        "actual_attendance": 17,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-07-26",
+        "event_id": "8fcdff5e-08b9-5714-bd3f-410a50f3e041",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 17.109241
+      },
+      {
+        "actual_attendance": 17,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-07-26",
+        "event_id": "8fcdff5e-08b9-5714-bd3f-410a50f3e041",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 12.917345
+      },
+      {
+        "actual_attendance": 17,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-07-26",
+        "event_id": "8fcdff5e-08b9-5714-bd3f-410a50f3e041",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 23.646004
+      },
+      {
+        "actual_attendance": 17,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-07-26",
+        "event_id": "8fcdff5e-08b9-5714-bd3f-410a50f3e041",
+        "hit_at_3": 1,
+        "method": "repeat_last",
+        "predicted_attendance": 10.933633
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-08-04",
+        "event_id": "a3f19d93-5625-5009-ac93-85dc14afd172",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 13.514535
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-08-04",
+        "event_id": "a3f19d93-5625-5009-ac93-85dc14afd172",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 10.50447
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-08-04",
+        "event_id": "a3f19d93-5625-5009-ac93-85dc14afd172",
+        "hit_at_3": 1,
+        "method": "random",
+        "predicted_attendance": 25.621369
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-08-04",
+        "event_id": "a3f19d93-5625-5009-ac93-85dc14afd172",
+        "hit_at_3": 1,
+        "method": "repeat_last",
+        "predicted_attendance": 10.933633
+      },
+      {
+        "actual_attendance": 6,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-08-08",
+        "event_id": "965a448c-27b0-5d7c-8143-63e6539e21db",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 3.066702
+      },
+      {
+        "actual_attendance": 6,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-08-08",
+        "event_id": "965a448c-27b0-5d7c-8143-63e6539e21db",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 7.71142
+      },
+      {
+        "actual_attendance": 6,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-08-08",
+        "event_id": "965a448c-27b0-5d7c-8143-63e6539e21db",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 13
+      },
+      {
+        "actual_attendance": 6,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-08-08",
+        "event_id": "965a448c-27b0-5d7c-8143-63e6539e21db",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 10.933633
+      },
+      {
+        "actual_attendance": 11,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-08-25",
+        "event_id": "087b31f5-bd9f-53b3-8d4f-355417984146",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 6.677965
+      },
+      {
+        "actual_attendance": 11,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-08-25",
+        "event_id": "087b31f5-bd9f-53b3-8d4f-355417984146",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 8.117345
+      },
+      {
+        "actual_attendance": 11,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-08-25",
+        "event_id": "087b31f5-bd9f-53b3-8d4f-355417984146",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 12
+      },
+      {
+        "actual_attendance": 11,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-08-25",
+        "event_id": "087b31f5-bd9f-53b3-8d4f-355417984146",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 10.933633
+      },
+      {
+        "actual_attendance": 8,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-09-01",
+        "event_id": "814db4c8-3739-5702-914b-1c74bf110113",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 6.768181
+      },
+      {
+        "actual_attendance": 8,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-09-01",
+        "event_id": "814db4c8-3739-5702-914b-1c74bf110113",
+        "hit_at_3": 1,
+        "method": "popularity",
+        "predicted_attendance": 13.877345
+      },
+      {
+        "actual_attendance": 8,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-09-01",
+        "event_id": "814db4c8-3739-5702-914b-1c74bf110113",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 23.627569
+      },
+      {
+        "actual_attendance": 8,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-09-01",
+        "event_id": "814db4c8-3739-5702-914b-1c74bf110113",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 10.933633
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-09-04",
+        "event_id": "131f9ae7-2835-53be-ab19-10da8bae2425",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 15.751404
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-09-04",
+        "event_id": "131f9ae7-2835-53be-ab19-10da8bae2425",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 7.570074
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-09-04",
+        "event_id": "131f9ae7-2835-53be-ab19-10da8bae2425",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 16
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-09-04",
+        "event_id": "131f9ae7-2835-53be-ab19-10da8bae2425",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 10.933633
+      },
+      {
+        "actual_attendance": 11,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-09-17",
+        "event_id": "c3887e53-65ba-5bff-b506-07f5f718ec1f",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 6.013409
+      },
+      {
+        "actual_attendance": 11,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-09-17",
+        "event_id": "c3887e53-65ba-5bff-b506-07f5f718ec1f",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 7.71142
+      },
+      {
+        "actual_attendance": 11,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-09-17",
+        "event_id": "c3887e53-65ba-5bff-b506-07f5f718ec1f",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 13
+      },
+      {
+        "actual_attendance": 11,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-09-17",
+        "event_id": "c3887e53-65ba-5bff-b506-07f5f718ec1f",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 10.933633
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-10-24",
+        "event_id": "7d310e04-ec3b-51d6-b88e-5e13e4a070d0",
+        "hit_at_3": 1,
+        "method": "model",
+        "predicted_attendance": 13.860346
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-10-24",
+        "event_id": "7d310e04-ec3b-51d6-b88e-5e13e4a070d0",
+        "hit_at_3": 1,
+        "method": "popularity",
+        "predicted_attendance": 14.917013
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-10-24",
+        "event_id": "7d310e04-ec3b-51d6-b88e-5e13e4a070d0",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 25.198799
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "00a5d216-0fa7-55b3-8c61-1af845ec7ddd",
+        "date": "2026-10-24",
+        "event_id": "7d310e04-ec3b-51d6-b88e-5e13e4a070d0",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 10.933633
+      },
+      {
+        "actual_attendance": 8,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-06-13",
+        "event_id": "142637c0-f104-5bbb-b8b1-564697541943",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 5.993205
+      },
+      {
+        "actual_attendance": 8,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-06-13",
+        "event_id": "142637c0-f104-5bbb-b8b1-564697541943",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 10.484901
+      },
+      {
+        "actual_attendance": 8,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-06-13",
+        "event_id": "142637c0-f104-5bbb-b8b1-564697541943",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 28.755263
+      },
+      {
+        "actual_attendance": 8,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-06-13",
+        "event_id": "142637c0-f104-5bbb-b8b1-564697541943",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 9.639344
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-06-15",
+        "event_id": "b53fc0a0-f2b0-505c-9ab7-efc25c18924b",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 10.026453
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-06-15",
+        "event_id": "b53fc0a0-f2b0-505c-9ab7-efc25c18924b",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 9.639344
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-06-15",
+        "event_id": "b53fc0a0-f2b0-505c-9ab7-efc25c18924b",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 27.141828
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-06-15",
+        "event_id": "b53fc0a0-f2b0-505c-9ab7-efc25c18924b",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 9.639344
+      },
+      {
+        "actual_attendance": 9,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-06-18",
+        "event_id": "1e91f131-7500-5507-a1c3-47beecaf6cb0",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 11.802715
+      },
+      {
+        "actual_attendance": 9,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-06-18",
+        "event_id": "1e91f131-7500-5507-a1c3-47beecaf6cb0",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 9.749021
+      },
+      {
+        "actual_attendance": 9,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-06-18",
+        "event_id": "1e91f131-7500-5507-a1c3-47beecaf6cb0",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 18
+      },
+      {
+        "actual_attendance": 9,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-06-18",
+        "event_id": "1e91f131-7500-5507-a1c3-47beecaf6cb0",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 9.639344
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-06-26",
+        "event_id": "e29e0ac8-aae6-5957-8e60-270b4abca524",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 11.925003
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-06-26",
+        "event_id": "e29e0ac8-aae6-5957-8e60-270b4abca524",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 9.749021
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-06-26",
+        "event_id": "e29e0ac8-aae6-5957-8e60-270b4abca524",
+        "hit_at_3": 1,
+        "method": "random",
+        "predicted_attendance": 30.736569
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-06-26",
+        "event_id": "e29e0ac8-aae6-5957-8e60-270b4abca524",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 9.639344
+      },
+      {
+        "actual_attendance": 10,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-07-03",
+        "event_id": "27e5be82-c864-57d0-b9ab-9ec4a74d846b",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 6.88391
+      },
+      {
+        "actual_attendance": 10,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-07-03",
+        "event_id": "27e5be82-c864-57d0-b9ab-9ec4a74d846b",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 9.749021
+      },
+      {
+        "actual_attendance": 10,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-07-03",
+        "event_id": "27e5be82-c864-57d0-b9ab-9ec4a74d846b",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 26.121933
+      },
+      {
+        "actual_attendance": 10,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-07-03",
+        "event_id": "27e5be82-c864-57d0-b9ab-9ec4a74d846b",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 9.639344
+      },
+      {
+        "actual_attendance": 23,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-07-05",
+        "event_id": "a72618ed-9661-5fa9-a039-94e620dddd10",
+        "hit_at_3": 1,
+        "method": "model",
+        "predicted_attendance": 13.816271
+      },
+      {
+        "actual_attendance": 23,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-07-05",
+        "event_id": "a72618ed-9661-5fa9-a039-94e620dddd10",
+        "hit_at_3": 1,
+        "method": "popularity",
+        "predicted_attendance": 12.884115
+      },
+      {
+        "actual_attendance": 23,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-07-05",
+        "event_id": "a72618ed-9661-5fa9-a039-94e620dddd10",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 26.862673
+      },
+      {
+        "actual_attendance": 23,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-07-05",
+        "event_id": "a72618ed-9661-5fa9-a039-94e620dddd10",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 9.639344
+      },
+      {
+        "actual_attendance": 16,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-07-11",
+        "event_id": "6b3523f9-8ba4-50ad-9ba9-30ce2684ed5e",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 12.761863
+      },
+      {
+        "actual_attendance": 16,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-07-11",
+        "event_id": "6b3523f9-8ba4-50ad-9ba9-30ce2684ed5e",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 9.993673
+      },
+      {
+        "actual_attendance": 16,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-07-11",
+        "event_id": "6b3523f9-8ba4-50ad-9ba9-30ce2684ed5e",
+        "hit_at_3": 1,
+        "method": "random",
+        "predicted_attendance": 25
+      },
+      {
+        "actual_attendance": 16,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-07-11",
+        "event_id": "6b3523f9-8ba4-50ad-9ba9-30ce2684ed5e",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 7.519672
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-07-24",
+        "event_id": "07e836a9-3a1a-5bc0-a251-8579f8dd549c",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 11.802715
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-07-24",
+        "event_id": "07e836a9-3a1a-5bc0-a251-8579f8dd549c",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 9.749021
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-07-24",
+        "event_id": "07e836a9-3a1a-5bc0-a251-8579f8dd549c",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 25.341776
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-07-24",
+        "event_id": "07e836a9-3a1a-5bc0-a251-8579f8dd549c",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 9.639344
+      },
+      {
+        "actual_attendance": 22,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-07-30",
+        "event_id": "dac58161-84b2-55dc-a53b-89c7b2d03ddc",
+        "hit_at_3": 1,
+        "method": "model",
+        "predicted_attendance": 12.003891
+      },
+      {
+        "actual_attendance": 22,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-07-30",
+        "event_id": "dac58161-84b2-55dc-a53b-89c7b2d03ddc",
+        "hit_at_3": 1,
+        "method": "popularity",
+        "predicted_attendance": 12.884115
+      },
+      {
+        "actual_attendance": 22,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-07-30",
+        "event_id": "dac58161-84b2-55dc-a53b-89c7b2d03ddc",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 29.33825
+      },
+      {
+        "actual_attendance": 22,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-07-30",
+        "event_id": "dac58161-84b2-55dc-a53b-89c7b2d03ddc",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 9.639344
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-08-05",
+        "event_id": "134b89b9-9931-5746-8dd6-54eb42a9c2a6",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 9.465439
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-08-05",
+        "event_id": "134b89b9-9931-5746-8dd6-54eb42a9c2a6",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 9.639344
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-08-05",
+        "event_id": "134b89b9-9931-5746-8dd6-54eb42a9c2a6",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 22
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-08-05",
+        "event_id": "134b89b9-9931-5746-8dd6-54eb42a9c2a6",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 9.639344
+      },
+      {
+        "actual_attendance": 21,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-08-13",
+        "event_id": "d287e070-abf4-5e1e-881c-137cb4fc121b",
+        "hit_at_3": 1,
+        "method": "model",
+        "predicted_attendance": 20.349836
+      },
+      {
+        "actual_attendance": 21,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-08-13",
+        "event_id": "d287e070-abf4-5e1e-881c-137cb4fc121b",
+        "hit_at_3": 1,
+        "method": "popularity",
+        "predicted_attendance": 15.88841
+      },
+      {
+        "actual_attendance": 21,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-08-13",
+        "event_id": "d287e070-abf4-5e1e-881c-137cb4fc121b",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 25.626074
+      },
+      {
+        "actual_attendance": 21,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-08-13",
+        "event_id": "d287e070-abf4-5e1e-881c-137cb4fc121b",
+        "hit_at_3": 1,
+        "method": "repeat_last",
+        "predicted_attendance": 9.639344
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-08-28",
+        "event_id": "c7de5502-39d3-5c88-b631-2c2c9ea1cdf3",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 12.761863
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-08-28",
+        "event_id": "c7de5502-39d3-5c88-b631-2c2c9ea1cdf3",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 9.993673
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-08-28",
+        "event_id": "c7de5502-39d3-5c88-b631-2c2c9ea1cdf3",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 21
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-08-28",
+        "event_id": "c7de5502-39d3-5c88-b631-2c2c9ea1cdf3",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 7.519672
+      },
+      {
+        "actual_attendance": 11,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-09-01",
+        "event_id": "ace580f6-2210-53d8-9f86-4e70db328e47",
+        "hit_at_3": 1,
+        "method": "model",
+        "predicted_attendance": 11.297376
+      },
+      {
+        "actual_attendance": 11,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-09-01",
+        "event_id": "ace580f6-2210-53d8-9f86-4e70db328e47",
+        "hit_at_3": 1,
+        "method": "popularity",
+        "predicted_attendance": 12
+      },
+      {
+        "actual_attendance": 11,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-09-01",
+        "event_id": "ace580f6-2210-53d8-9f86-4e70db328e47",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 12
+      },
+      {
+        "actual_attendance": 11,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-09-01",
+        "event_id": "ace580f6-2210-53d8-9f86-4e70db328e47",
+        "hit_at_3": 1,
+        "method": "repeat_last",
+        "predicted_attendance": 9.639344
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-09-20",
+        "event_id": "722a64b8-ab94-57e4-83bd-dd3f75caacd5",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 8.233176
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-09-20",
+        "event_id": "722a64b8-ab94-57e4-83bd-dd3f75caacd5",
+        "hit_at_3": 1,
+        "method": "popularity",
+        "predicted_attendance": 13.432269
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-09-20",
+        "event_id": "722a64b8-ab94-57e4-83bd-dd3f75caacd5",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 28.584493
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-09-20",
+        "event_id": "722a64b8-ab94-57e4-83bd-dd3f75caacd5",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 9.639344
+      },
+      {
+        "actual_attendance": 10,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-09-25",
+        "event_id": "49ab53f6-1c68-5a01-a91a-44faf1525c93",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 5.916804
+      },
+      {
+        "actual_attendance": 10,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-09-25",
+        "event_id": "49ab53f6-1c68-5a01-a91a-44faf1525c93",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 9.253446
+      },
+      {
+        "actual_attendance": 10,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-09-25",
+        "event_id": "49ab53f6-1c68-5a01-a91a-44faf1525c93",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 29.938391
+      },
+      {
+        "actual_attendance": 10,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-09-25",
+        "event_id": "49ab53f6-1c68-5a01-a91a-44faf1525c93",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 9.639344
+      },
+      {
+        "actual_attendance": 6,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-10-04",
+        "event_id": "5877cf3b-c79f-51ec-b868-58b78d0dd91b",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 4.69652
+      },
+      {
+        "actual_attendance": 6,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-10-04",
+        "event_id": "5877cf3b-c79f-51ec-b868-58b78d0dd91b",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 9.253446
+      },
+      {
+        "actual_attendance": 6,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-10-04",
+        "event_id": "5877cf3b-c79f-51ec-b868-58b78d0dd91b",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 29.461753
+      },
+      {
+        "actual_attendance": 6,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-10-04",
+        "event_id": "5877cf3b-c79f-51ec-b868-58b78d0dd91b",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 9.639344
+      },
+      {
+        "actual_attendance": 13,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-10-21",
+        "event_id": "d45bf6f6-7bdf-5830-b190-155be478e459",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 12.761863
+      },
+      {
+        "actual_attendance": 13,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-10-21",
+        "event_id": "d45bf6f6-7bdf-5830-b190-155be478e459",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 9.993673
+      },
+      {
+        "actual_attendance": 13,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-10-21",
+        "event_id": "d45bf6f6-7bdf-5830-b190-155be478e459",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 25.577241
+      },
+      {
+        "actual_attendance": 13,
+        "club_id": "52038e25-c0cb-57cf-a1b4-429a8a6ec8e9",
+        "date": "2026-10-21",
+        "event_id": "d45bf6f6-7bdf-5830-b190-155be478e459",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 7.519672
+      },
+      {
+        "actual_attendance": 7,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-04-21",
+        "event_id": "031dc1b4-beea-5517-b648-72eddfe0fd18",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 11.175765
+      },
+      {
+        "actual_attendance": 7,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-04-21",
+        "event_id": "031dc1b4-beea-5517-b648-72eddfe0fd18",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 11.992261
+      },
+      {
+        "actual_attendance": 7,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-04-21",
+        "event_id": "031dc1b4-beea-5517-b648-72eddfe0fd18",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 16.079755
+      },
+      {
+        "actual_attendance": 7,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-04-21",
+        "event_id": "031dc1b4-beea-5517-b648-72eddfe0fd18",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 11.551136
+      },
+      {
+        "actual_attendance": 17,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-05-03",
+        "event_id": "ec7fda7f-33f6-5163-aa7c-40a281ecab71",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 13.096523
+      },
+      {
+        "actual_attendance": 17,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-05-03",
+        "event_id": "ec7fda7f-33f6-5163-aa7c-40a281ecab71",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 11.664675
+      },
+      {
+        "actual_attendance": 17,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-05-03",
+        "event_id": "ec7fda7f-33f6-5163-aa7c-40a281ecab71",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 20.206056
+      },
+      {
+        "actual_attendance": 17,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-05-03",
+        "event_id": "ec7fda7f-33f6-5163-aa7c-40a281ecab71",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 11.551136
+      },
+      {
+        "actual_attendance": 7,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-05-10",
+        "event_id": "322a29cc-e52f-5e92-b2d4-efaf7de9a89c",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 11.436529
+      },
+      {
+        "actual_attendance": 7,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-05-10",
+        "event_id": "322a29cc-e52f-5e92-b2d4-efaf7de9a89c",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 10.760404
+      },
+      {
+        "actual_attendance": 7,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-05-10",
+        "event_id": "322a29cc-e52f-5e92-b2d4-efaf7de9a89c",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 13
+      },
+      {
+        "actual_attendance": 7,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-05-10",
+        "event_id": "322a29cc-e52f-5e92-b2d4-efaf7de9a89c",
+        "hit_at_3": 1,
+        "method": "repeat_last",
+        "predicted_attendance": 11.551136
+      },
+      {
+        "actual_attendance": 6,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-05-17",
+        "event_id": "74fa65b4-bed7-5c85-bc81-7bd1658824ab",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 7.723172
+      },
+      {
+        "actual_attendance": 6,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-05-17",
+        "event_id": "74fa65b4-bed7-5c85-bc81-7bd1658824ab",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 9.127557
+      },
+      {
+        "actual_attendance": 6,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-05-17",
+        "event_id": "74fa65b4-bed7-5c85-bc81-7bd1658824ab",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 15.248115
+      },
+      {
+        "actual_attendance": 6,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-05-17",
+        "event_id": "74fa65b4-bed7-5c85-bc81-7bd1658824ab",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 11.551136
+      },
+      {
+        "actual_attendance": 19,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-05-22",
+        "event_id": "24104815-f75f-53c3-ab15-2b94cd0764d9",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 15.783846
+      },
+      {
+        "actual_attendance": 19,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-05-22",
+        "event_id": "24104815-f75f-53c3-ab15-2b94cd0764d9",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 13.630192
+      },
+      {
+        "actual_attendance": 19,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-05-22",
+        "event_id": "24104815-f75f-53c3-ab15-2b94cd0764d9",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 20.317407
+      },
+      {
+        "actual_attendance": 19,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-05-22",
+        "event_id": "24104815-f75f-53c3-ab15-2b94cd0764d9",
+        "hit_at_3": 1,
+        "method": "repeat_last",
+        "predicted_attendance": 12.175568
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-05-31",
+        "event_id": "9ff051c8-1529-51b3-83f9-8684cf6b8a18",
+        "hit_at_3": 1,
+        "method": "model",
+        "predicted_attendance": 14.212544
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-05-31",
+        "event_id": "9ff051c8-1529-51b3-83f9-8684cf6b8a18",
+        "hit_at_3": 1,
+        "method": "popularity",
+        "predicted_attendance": 16.373106
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-05-31",
+        "event_id": "9ff051c8-1529-51b3-83f9-8684cf6b8a18",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 15.493447
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-05-31",
+        "event_id": "9ff051c8-1529-51b3-83f9-8684cf6b8a18",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 11.551136
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-06-26",
+        "event_id": "4757df6c-8f47-51fe-a3a0-00739c5e1b08",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 9.67705
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-06-26",
+        "event_id": "4757df6c-8f47-51fe-a3a0-00739c5e1b08",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 10.760404
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-06-26",
+        "event_id": "4757df6c-8f47-51fe-a3a0-00739c5e1b08",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 18.574423
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-06-26",
+        "event_id": "4757df6c-8f47-51fe-a3a0-00739c5e1b08",
+        "hit_at_3": 1,
+        "method": "repeat_last",
+        "predicted_attendance": 11.551136
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-08-07",
+        "event_id": "385a9821-0562-5894-a715-4e76d02ade22",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 9.67705
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-08-07",
+        "event_id": "385a9821-0562-5894-a715-4e76d02ade22",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 10.760404
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-08-07",
+        "event_id": "385a9821-0562-5894-a715-4e76d02ade22",
+        "hit_at_3": 1,
+        "method": "random",
+        "predicted_attendance": 16
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-08-07",
+        "event_id": "385a9821-0562-5894-a715-4e76d02ade22",
+        "hit_at_3": 1,
+        "method": "repeat_last",
+        "predicted_attendance": 11.551136
+      },
+      {
+        "actual_attendance": 16,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-08-08",
+        "event_id": "bccac8dc-9be0-5f6e-bd67-be2c0f808800",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 11.50182
+      },
+      {
+        "actual_attendance": 16,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-08-08",
+        "event_id": "bccac8dc-9be0-5f6e-bd67-be2c0f808800",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 11.664675
+      },
+      {
+        "actual_attendance": 16,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-08-08",
+        "event_id": "bccac8dc-9be0-5f6e-bd67-be2c0f808800",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 19.133608
+      },
+      {
+        "actual_attendance": 16,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-08-08",
+        "event_id": "bccac8dc-9be0-5f6e-bd67-be2c0f808800",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 11.551136
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-08-13",
+        "event_id": "86de46f5-a38a-572d-bbb2-328c849c703b",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 11.472021
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-08-13",
+        "event_id": "86de46f5-a38a-572d-bbb2-328c849c703b",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 8.578234
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-08-13",
+        "event_id": "86de46f5-a38a-572d-bbb2-328c849c703b",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 18.109008
+      },
+      {
+        "actual_attendance": 14,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-08-13",
+        "event_id": "86de46f5-a38a-572d-bbb2-328c849c703b",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 11.551136
+      },
+      {
+        "actual_attendance": 9,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-08-16",
+        "event_id": "d63e9b4e-6d62-5c96-b5b5-673f6bcb3fce",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 10
+      },
+      {
+        "actual_attendance": 9,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-08-16",
+        "event_id": "d63e9b4e-6d62-5c96-b5b5-673f6bcb3fce",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 10
+      },
+      {
+        "actual_attendance": 9,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-08-16",
+        "event_id": "d63e9b4e-6d62-5c96-b5b5-673f6bcb3fce",
+        "hit_at_3": 1,
+        "method": "random",
+        "predicted_attendance": 10
+      },
+      {
+        "actual_attendance": 9,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-08-16",
+        "event_id": "d63e9b4e-6d62-5c96-b5b5-673f6bcb3fce",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 10
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-09-03",
+        "event_id": "44857195-c83f-5744-9699-3ef401fc0f0e",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 9.997196
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-09-03",
+        "event_id": "44857195-c83f-5744-9699-3ef401fc0f0e",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 9.127557
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-09-03",
+        "event_id": "44857195-c83f-5744-9699-3ef401fc0f0e",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 19.157812
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-09-03",
+        "event_id": "44857195-c83f-5744-9699-3ef401fc0f0e",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 11.551136
+      },
+      {
+        "actual_attendance": 21,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-09-15",
+        "event_id": "e3eead81-7622-5325-8a06-f9f047978c10",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 10.6873
+      },
+      {
+        "actual_attendance": 21,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-09-15",
+        "event_id": "e3eead81-7622-5325-8a06-f9f047978c10",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 9.422408
+      },
+      {
+        "actual_attendance": 21,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-09-15",
+        "event_id": "e3eead81-7622-5325-8a06-f9f047978c10",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 18.212207
+      },
+      {
+        "actual_attendance": 21,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-09-15",
+        "event_id": "e3eead81-7622-5325-8a06-f9f047978c10",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 11.551136
+      },
+      {
+        "actual_attendance": 13,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-09-26",
+        "event_id": "d00b3223-8f7c-5bbe-b0eb-c2b86c46d7a4",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 10.441318
+      },
+      {
+        "actual_attendance": 13,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-09-26",
+        "event_id": "d00b3223-8f7c-5bbe-b0eb-c2b86c46d7a4",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 11.203658
+      },
+      {
+        "actual_attendance": 13,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-09-26",
+        "event_id": "d00b3223-8f7c-5bbe-b0eb-c2b86c46d7a4",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 19
+      },
+      {
+        "actual_attendance": 13,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-09-26",
+        "event_id": "d00b3223-8f7c-5bbe-b0eb-c2b86c46d7a4",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 11.551136
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-10-01",
+        "event_id": "310dc867-8ec4-568b-b0eb-c359288f31af",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 10.766327
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-10-01",
+        "event_id": "310dc867-8ec4-568b-b0eb-c359288f31af",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 8.578234
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-10-01",
+        "event_id": "310dc867-8ec4-568b-b0eb-c359288f31af",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 20.374974
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-10-01",
+        "event_id": "310dc867-8ec4-568b-b0eb-c359288f31af",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 11.551136
+      },
+      {
+        "actual_attendance": 10,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-10-02",
+        "event_id": "eecca43c-1082-5ca7-9ced-536da5914c8e",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 13.086283
+      },
+      {
+        "actual_attendance": 10,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-10-02",
+        "event_id": "eecca43c-1082-5ca7-9ced-536da5914c8e",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 10.077557
+      },
+      {
+        "actual_attendance": 10,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-10-02",
+        "event_id": "eecca43c-1082-5ca7-9ced-536da5914c8e",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 18.513655
+      },
+      {
+        "actual_attendance": 10,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-10-02",
+        "event_id": "eecca43c-1082-5ca7-9ced-536da5914c8e",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 11.551136
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-10-11",
+        "event_id": "1d7a205b-b438-5230-950b-5dc5efea7f83",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 12.069352
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-10-11",
+        "event_id": "1d7a205b-b438-5230-950b-5dc5efea7f83",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 8.177557
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-10-11",
+        "event_id": "1d7a205b-b438-5230-950b-5dc5efea7f83",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 19.871007
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "b245a3a7-fd97-55a3-960a-f4bc11c23819",
+        "date": "2026-10-11",
+        "event_id": "1d7a205b-b438-5230-950b-5dc5efea7f83",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 11.551136
+      },
+      {
+        "actual_attendance": 5,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-04-13",
+        "event_id": "07ca3965-dd59-56ea-ac3d-ac787bb3ad2e",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 12.838072
+      },
+      {
+        "actual_attendance": 5,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-04-13",
+        "event_id": "07ca3965-dd59-56ea-ac3d-ac787bb3ad2e",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 12.505144
+      },
+      {
+        "actual_attendance": 5,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-04-13",
+        "event_id": "07ca3965-dd59-56ea-ac3d-ac787bb3ad2e",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 21.941754
+      },
+      {
+        "actual_attendance": 5,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-04-13",
+        "event_id": "07ca3965-dd59-56ea-ac3d-ac787bb3ad2e",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 12.741784
+      },
+      {
+        "actual_attendance": 17,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-04-22",
+        "event_id": "9d562c83-311e-5290-829c-261c761fc703",
+        "hit_at_3": 1,
+        "method": "model",
+        "predicted_attendance": 18.164078
+      },
+      {
+        "actual_attendance": 17,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-04-22",
+        "event_id": "9d562c83-311e-5290-829c-261c761fc703",
+        "hit_at_3": 1,
+        "method": "popularity",
+        "predicted_attendance": 16.420038
+      },
+      {
+        "actual_attendance": 17,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-04-22",
+        "event_id": "9d562c83-311e-5290-829c-261c761fc703",
+        "hit_at_3": 1,
+        "method": "random",
+        "predicted_attendance": 27.977721
+      },
+      {
+        "actual_attendance": 17,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-04-22",
+        "event_id": "9d562c83-311e-5290-829c-261c761fc703",
+        "hit_at_3": 1,
+        "method": "repeat_last",
+        "predicted_attendance": 12.741784
+      },
+      {
+        "actual_attendance": 25,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-04-28",
+        "event_id": "4cd99ee4-de51-55f8-8e1f-5b2790b1f66f",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 15.144536
+      },
+      {
+        "actual_attendance": 25,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-04-28",
+        "event_id": "4cd99ee4-de51-55f8-8e1f-5b2790b1f66f",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 13.653454
+      },
+      {
+        "actual_attendance": 25,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-04-28",
+        "event_id": "4cd99ee4-de51-55f8-8e1f-5b2790b1f66f",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 23.698954
+      },
+      {
+        "actual_attendance": 25,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-04-28",
+        "event_id": "4cd99ee4-de51-55f8-8e1f-5b2790b1f66f",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 12.741784
+      },
+      {
+        "actual_attendance": 6,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-04-30",
+        "event_id": "52600566-d36d-501b-8b11-f78f12711c1b",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 12.780351
+      },
+      {
+        "actual_attendance": 6,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-04-30",
+        "event_id": "52600566-d36d-501b-8b11-f78f12711c1b",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 12.505144
+      },
+      {
+        "actual_attendance": 6,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-04-30",
+        "event_id": "52600566-d36d-501b-8b11-f78f12711c1b",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 23.729492
+      },
+      {
+        "actual_attendance": 6,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-04-30",
+        "event_id": "52600566-d36d-501b-8b11-f78f12711c1b",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 12.741784
+      },
+      {
+        "actual_attendance": 6,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-05-16",
+        "event_id": "d6e35d5e-737e-5e3c-b0ca-d027683857a5",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 12.757304
+      },
+      {
+        "actual_attendance": 6,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-05-16",
+        "event_id": "d6e35d5e-737e-5e3c-b0ca-d027683857a5",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 15.864241
+      },
+      {
+        "actual_attendance": 6,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-05-16",
+        "event_id": "d6e35d5e-737e-5e3c-b0ca-d027683857a5",
+        "hit_at_3": 1,
+        "method": "random",
+        "predicted_attendance": 23
+      },
+      {
+        "actual_attendance": 6,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-05-16",
+        "event_id": "d6e35d5e-737e-5e3c-b0ca-d027683857a5",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 12.741784
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-05-26",
+        "event_id": "57aa713c-ee31-536a-a2d3-f4cd01ece262",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 9.633499
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-05-26",
+        "event_id": "57aa713c-ee31-536a-a2d3-f4cd01ece262",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 9.079612
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-05-26",
+        "event_id": "57aa713c-ee31-536a-a2d3-f4cd01ece262",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 19
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-05-26",
+        "event_id": "57aa713c-ee31-536a-a2d3-f4cd01ece262",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 12.741784
+      },
+      {
+        "actual_attendance": 17,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-06-04",
+        "event_id": "8cd653d5-f213-5361-95b4-2d937a90e42f",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 12.233513
+      },
+      {
+        "actual_attendance": 17,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-06-04",
+        "event_id": "8cd653d5-f213-5361-95b4-2d937a90e42f",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 11.266041
+      },
+      {
+        "actual_attendance": 17,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-06-04",
+        "event_id": "8cd653d5-f213-5361-95b4-2d937a90e42f",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 23.233305
+      },
+      {
+        "actual_attendance": 17,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-06-04",
+        "event_id": "8cd653d5-f213-5361-95b4-2d937a90e42f",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 12.741784
+      },
+      {
+        "actual_attendance": 5,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-06-29",
+        "event_id": "d2ec2ca4-c9eb-5496-9147-f054dab1dd73",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 9.155909
+      },
+      {
+        "actual_attendance": 5,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-06-29",
+        "event_id": "d2ec2ca4-c9eb-5496-9147-f054dab1dd73",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 9.079612
+      },
+      {
+        "actual_attendance": 5,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-06-29",
+        "event_id": "d2ec2ca4-c9eb-5496-9147-f054dab1dd73",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 21.394745
+      },
+      {
+        "actual_attendance": 5,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-06-29",
+        "event_id": "d2ec2ca4-c9eb-5496-9147-f054dab1dd73",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 12.741784
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-07-15",
+        "event_id": "785dc692-10ac-55c5-a5bc-5e5f23b35596",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 13.425556
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-07-15",
+        "event_id": "785dc692-10ac-55c5-a5bc-5e5f23b35596",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 13.483868
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-07-15",
+        "event_id": "785dc692-10ac-55c5-a5bc-5e5f23b35596",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 23.057868
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-07-15",
+        "event_id": "785dc692-10ac-55c5-a5bc-5e5f23b35596",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 12.741784
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-07-17",
+        "event_id": "13025bb4-8f58-5b4a-87da-296386605890",
+        "hit_at_3": 1,
+        "method": "model",
+        "predicted_attendance": 18.159862
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-07-17",
+        "event_id": "13025bb4-8f58-5b4a-87da-296386605890",
+        "hit_at_3": 1,
+        "method": "popularity",
+        "predicted_attendance": 16.420038
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-07-17",
+        "event_id": "13025bb4-8f58-5b4a-87da-296386605890",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 23.359963
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-07-17",
+        "event_id": "13025bb4-8f58-5b4a-87da-296386605890",
+        "hit_at_3": 1,
+        "method": "repeat_last",
+        "predicted_attendance": 12.741784
+      },
+      {
+        "actual_attendance": 19,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-07-31",
+        "event_id": "5cf1bcef-e7bf-5f74-936a-c43b80715d3f",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 10.829234
+      },
+      {
+        "actual_attendance": 19,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-07-31",
+        "event_id": "5cf1bcef-e7bf-5f74-936a-c43b80715d3f",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 9.568974
+      },
+      {
+        "actual_attendance": 19,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-07-31",
+        "event_id": "5cf1bcef-e7bf-5f74-936a-c43b80715d3f",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 22.698737
+      },
+      {
+        "actual_attendance": 19,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-07-31",
+        "event_id": "5cf1bcef-e7bf-5f74-936a-c43b80715d3f",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 12.741784
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-08-13",
+        "event_id": "2ce44f79-ad68-558b-b8a0-7ffa92f9193a",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 12.399499
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-08-13",
+        "event_id": "2ce44f79-ad68-558b-b8a0-7ffa92f9193a",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 15.864241
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-08-13",
+        "event_id": "2ce44f79-ad68-558b-b8a0-7ffa92f9193a",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 23
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-08-13",
+        "event_id": "2ce44f79-ad68-558b-b8a0-7ffa92f9193a",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 12.741784
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-08-14",
+        "event_id": "222cf4ea-140f-5e3c-901e-e2f019c607b8",
+        "hit_at_3": 1,
+        "method": "model",
+        "predicted_attendance": 16.081657
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-08-14",
+        "event_id": "222cf4ea-140f-5e3c-901e-e2f019c607b8",
+        "hit_at_3": 1,
+        "method": "popularity",
+        "predicted_attendance": 19.697574
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-08-14",
+        "event_id": "222cf4ea-140f-5e3c-901e-e2f019c607b8",
+        "hit_at_3": 1,
+        "method": "random",
+        "predicted_attendance": 26.719935
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-08-14",
+        "event_id": "222cf4ea-140f-5e3c-901e-e2f019c607b8",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 12.741784
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-08-31",
+        "event_id": "a2ccf5e3-3e55-5733-968c-652d4b4c0e93",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 13.4274
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-08-31",
+        "event_id": "a2ccf5e3-3e55-5733-968c-652d4b4c0e93",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 13.483868
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-08-31",
+        "event_id": "a2ccf5e3-3e55-5733-968c-652d4b4c0e93",
+        "hit_at_3": 1,
+        "method": "random",
+        "predicted_attendance": 25.19644
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-08-31",
+        "event_id": "a2ccf5e3-3e55-5733-968c-652d4b4c0e93",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 12.741784
+      },
+      {
+        "actual_attendance": 17,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-09-18",
+        "event_id": "0c5120a0-4508-55ad-8c9a-296861f1f93d",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 13.659456
+      },
+      {
+        "actual_attendance": 17,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-09-18",
+        "event_id": "0c5120a0-4508-55ad-8c9a-296861f1f93d",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 12.5026
+      },
+      {
+        "actual_attendance": 17,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-09-18",
+        "event_id": "0c5120a0-4508-55ad-8c9a-296861f1f93d",
+        "hit_at_3": 1,
+        "method": "random",
+        "predicted_attendance": 25.623229
+      },
+      {
+        "actual_attendance": 17,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-09-18",
+        "event_id": "0c5120a0-4508-55ad-8c9a-296861f1f93d",
+        "hit_at_3": 1,
+        "method": "repeat_last",
+        "predicted_attendance": 12.741784
+      },
+      {
+        "actual_attendance": 9,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-09-30",
+        "event_id": "aea8f655-30f0-5101-a423-384413bfda89",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 8.71225
+      },
+      {
+        "actual_attendance": 9,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-09-30",
+        "event_id": "aea8f655-30f0-5101-a423-384413bfda89",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 12.741784
+      },
+      {
+        "actual_attendance": 9,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-09-30",
+        "event_id": "aea8f655-30f0-5101-a423-384413bfda89",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 21.571834
+      },
+      {
+        "actual_attendance": 9,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-09-30",
+        "event_id": "aea8f655-30f0-5101-a423-384413bfda89",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 12.741784
+      },
+      {
+        "actual_attendance": 8,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-10-04",
+        "event_id": "5bdb9eb1-f789-5433-99f0-2df58df8fadc",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 12.261421
+      },
+      {
+        "actual_attendance": 8,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-10-04",
+        "event_id": "5bdb9eb1-f789-5433-99f0-2df58df8fadc",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 12.505144
+      },
+      {
+        "actual_attendance": 8,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-10-04",
+        "event_id": "5bdb9eb1-f789-5433-99f0-2df58df8fadc",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 23.635402
+      },
+      {
+        "actual_attendance": 8,
+        "club_id": "d3e88a9a-1c41-58f8-a9be-4e3750fb8d3f",
+        "date": "2026-10-04",
+        "event_id": "5bdb9eb1-f789-5433-99f0-2df58df8fadc",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 12.741784
+      },
+      {
+        "actual_attendance": 22,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-05-01",
+        "event_id": "a10ffc06-f064-53aa-ad73-028cc637bc61",
+        "hit_at_3": 1,
+        "method": "model",
+        "predicted_attendance": 24.820633
+      },
+      {
+        "actual_attendance": 22,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-05-01",
+        "event_id": "a10ffc06-f064-53aa-ad73-028cc637bc61",
+        "hit_at_3": 1,
+        "method": "popularity",
+        "predicted_attendance": 27.665936
+      },
+      {
+        "actual_attendance": 22,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-05-01",
+        "event_id": "a10ffc06-f064-53aa-ad73-028cc637bc61",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 25.349438
+      },
+      {
+        "actual_attendance": 22,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-05-01",
+        "event_id": "a10ffc06-f064-53aa-ad73-028cc637bc61",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 18.98027
+      },
+      {
+        "actual_attendance": 9,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-05-02",
+        "event_id": "fd6bdf4c-f77a-5874-a182-6cff11f4eefd",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 11.447976
+      },
+      {
+        "actual_attendance": 9,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-05-02",
+        "event_id": "fd6bdf4c-f77a-5874-a182-6cff11f4eefd",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 12
+      },
+      {
+        "actual_attendance": 9,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-05-02",
+        "event_id": "fd6bdf4c-f77a-5874-a182-6cff11f4eefd",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 12
+      },
+      {
+        "actual_attendance": 9,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-05-02",
+        "event_id": "fd6bdf4c-f77a-5874-a182-6cff11f4eefd",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 12
+      },
+      {
+        "actual_attendance": 3,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-05-20",
+        "event_id": "9cb50296-cd12-51e8-a7b8-c26827ecb3ed",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 12.496637
+      },
+      {
+        "actual_attendance": 3,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-05-20",
+        "event_id": "9cb50296-cd12-51e8-a7b8-c26827ecb3ed",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 16.523622
+      },
+      {
+        "actual_attendance": 3,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-05-20",
+        "event_id": "9cb50296-cd12-51e8-a7b8-c26827ecb3ed",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 25.687719
+      },
+      {
+        "actual_attendance": 3,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-05-20",
+        "event_id": "9cb50296-cd12-51e8-a7b8-c26827ecb3ed",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 18.98027
+      },
+      {
+        "actual_attendance": 13,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-06-15",
+        "event_id": "06996885-1754-543b-bc54-87af9d1f6fb8",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 13.407764
+      },
+      {
+        "actual_attendance": 13,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-06-15",
+        "event_id": "06996885-1754-543b-bc54-87af9d1f6fb8",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 16.523622
+      },
+      {
+        "actual_attendance": 13,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-06-15",
+        "event_id": "06996885-1754-543b-bc54-87af9d1f6fb8",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 26.254237
+      },
+      {
+        "actual_attendance": 13,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-06-15",
+        "event_id": "06996885-1754-543b-bc54-87af9d1f6fb8",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 18.98027
+      },
+      {
+        "actual_attendance": 24,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-06-17",
+        "event_id": "54a889f6-5a8f-58d5-a80d-82dbb5f619ad",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 24.017571
+      },
+      {
+        "actual_attendance": 24,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-06-17",
+        "event_id": "54a889f6-5a8f-58d5-a80d-82dbb5f619ad",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 19.328864
+      },
+      {
+        "actual_attendance": 24,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-06-17",
+        "event_id": "54a889f6-5a8f-58d5-a80d-82dbb5f619ad",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 24.4772
+      },
+      {
+        "actual_attendance": 24,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-06-17",
+        "event_id": "54a889f6-5a8f-58d5-a80d-82dbb5f619ad",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 18.98027
+      },
+      {
+        "actual_attendance": 22,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-06-22",
+        "event_id": "f069ae91-3241-5523-a6b0-304928471dd3",
+        "hit_at_3": 1,
+        "method": "model",
+        "predicted_attendance": 26.422085
+      },
+      {
+        "actual_attendance": 22,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-06-22",
+        "event_id": "f069ae91-3241-5523-a6b0-304928471dd3",
+        "hit_at_3": 1,
+        "method": "popularity",
+        "predicted_attendance": 25.867552
+      },
+      {
+        "actual_attendance": 22,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-06-22",
+        "event_id": "f069ae91-3241-5523-a6b0-304928471dd3",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 29.974105
+      },
+      {
+        "actual_attendance": 22,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-06-22",
+        "event_id": "f069ae91-3241-5523-a6b0-304928471dd3",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 18.98027
+      },
+      {
+        "actual_attendance": 11,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-06-29",
+        "event_id": "5ea7e971-7a70-5dcc-b5ea-36ceda2d778c",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 12
+      },
+      {
+        "actual_attendance": 11,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-06-29",
+        "event_id": "5ea7e971-7a70-5dcc-b5ea-36ceda2d778c",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 12
+      },
+      {
+        "actual_attendance": 11,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-06-29",
+        "event_id": "5ea7e971-7a70-5dcc-b5ea-36ceda2d778c",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 12
+      },
+      {
+        "actual_attendance": 11,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-06-29",
+        "event_id": "5ea7e971-7a70-5dcc-b5ea-36ceda2d778c",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 12
+      },
+      {
+        "actual_attendance": 24,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-07-03",
+        "event_id": "b935ae57-0fcd-58fd-81f9-9e4ee3536009",
+        "hit_at_3": 1,
+        "method": "model",
+        "predicted_attendance": 24.138574
+      },
+      {
+        "actual_attendance": 24,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-07-03",
+        "event_id": "b935ae57-0fcd-58fd-81f9-9e4ee3536009",
+        "hit_at_3": 1,
+        "method": "popularity",
+        "predicted_attendance": 24.69505
+      },
+      {
+        "actual_attendance": 24,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-07-03",
+        "event_id": "b935ae57-0fcd-58fd-81f9-9e4ee3536009",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 24.971385
+      },
+      {
+        "actual_attendance": 24,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-07-03",
+        "event_id": "b935ae57-0fcd-58fd-81f9-9e4ee3536009",
+        "hit_at_3": 1,
+        "method": "repeat_last",
+        "predicted_attendance": 18.98027
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-07-25",
+        "event_id": "afa74c25-1395-525a-87a3-98e390a29306",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 15.369578
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-07-25",
+        "event_id": "afa74c25-1395-525a-87a3-98e390a29306",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 11.150571
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-07-25",
+        "event_id": "afa74c25-1395-525a-87a3-98e390a29306",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 21
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-07-25",
+        "event_id": "afa74c25-1395-525a-87a3-98e390a29306",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 18.98027
+      },
+      {
+        "actual_attendance": 25,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-08-04",
+        "event_id": "def1d2e6-b8b2-5407-908d-32527191ea43",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 19.47254
+      },
+      {
+        "actual_attendance": 25,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-08-04",
+        "event_id": "def1d2e6-b8b2-5407-908d-32527191ea43",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 18.670636
+      },
+      {
+        "actual_attendance": 25,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-08-04",
+        "event_id": "def1d2e6-b8b2-5407-908d-32527191ea43",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 27.14666
+      },
+      {
+        "actual_attendance": 25,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-08-04",
+        "event_id": "def1d2e6-b8b2-5407-908d-32527191ea43",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 18.98027
+      },
+      {
+        "actual_attendance": 27,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-08-14",
+        "event_id": "4f4bef6b-1059-5488-97ea-a65e7ba74b60",
+        "hit_at_3": 1,
+        "method": "model",
+        "predicted_attendance": 26.422085
+      },
+      {
+        "actual_attendance": 27,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-08-14",
+        "event_id": "4f4bef6b-1059-5488-97ea-a65e7ba74b60",
+        "hit_at_3": 1,
+        "method": "popularity",
+        "predicted_attendance": 25.867552
+      },
+      {
+        "actual_attendance": 27,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-08-14",
+        "event_id": "4f4bef6b-1059-5488-97ea-a65e7ba74b60",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 25.283348
+      },
+      {
+        "actual_attendance": 27,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-08-14",
+        "event_id": "4f4bef6b-1059-5488-97ea-a65e7ba74b60",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 18.98027
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-08-30",
+        "event_id": "a5837e2e-b9b1-57f7-979c-d2f151356d60",
+        "hit_at_3": 1,
+        "method": "model",
+        "predicted_attendance": 12
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-08-30",
+        "event_id": "a5837e2e-b9b1-57f7-979c-d2f151356d60",
+        "hit_at_3": 1,
+        "method": "popularity",
+        "predicted_attendance": 12
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-08-30",
+        "event_id": "a5837e2e-b9b1-57f7-979c-d2f151356d60",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 12
+      },
+      {
+        "actual_attendance": 12,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-08-30",
+        "event_id": "a5837e2e-b9b1-57f7-979c-d2f151356d60",
+        "hit_at_3": 1,
+        "method": "repeat_last",
+        "predicted_attendance": 12
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-10-06",
+        "event_id": "a3928f44-ca6b-5990-88bb-dd84697d91ae",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 17.528311
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-10-06",
+        "event_id": "a3928f44-ca6b-5990-88bb-dd84697d91ae",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 15.379497
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-10-06",
+        "event_id": "a3928f44-ca6b-5990-88bb-dd84697d91ae",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 24.224842
+      },
+      {
+        "actual_attendance": 18,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-10-06",
+        "event_id": "a3928f44-ca6b-5990-88bb-dd84697d91ae",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 18.98027
+      },
+      {
+        "actual_attendance": 16,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-10-08",
+        "event_id": "8c0abc08-60ad-53df-8760-55e0e342fe48",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 9.05694
+      },
+      {
+        "actual_attendance": 16,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-10-08",
+        "event_id": "8c0abc08-60ad-53df-8760-55e0e342fe48",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 11.150571
+      },
+      {
+        "actual_attendance": 16,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-10-08",
+        "event_id": "8c0abc08-60ad-53df-8760-55e0e342fe48",
+        "hit_at_3": 1,
+        "method": "random",
+        "predicted_attendance": 26
+      },
+      {
+        "actual_attendance": 16,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-10-08",
+        "event_id": "8c0abc08-60ad-53df-8760-55e0e342fe48",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 18.98027
+      },
+      {
+        "actual_attendance": 29,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-10-11",
+        "event_id": "727a27e1-230f-5ffc-99d8-df7afa9d2ac6",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 24.017571
+      },
+      {
+        "actual_attendance": 29,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-10-11",
+        "event_id": "727a27e1-230f-5ffc-99d8-df7afa9d2ac6",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 19.328864
+      },
+      {
+        "actual_attendance": 29,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-10-11",
+        "event_id": "727a27e1-230f-5ffc-99d8-df7afa9d2ac6",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 27.226007
+      },
+      {
+        "actual_attendance": 29,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-10-11",
+        "event_id": "727a27e1-230f-5ffc-99d8-df7afa9d2ac6",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 18.98027
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-10-16",
+        "event_id": "a12491bb-2a5e-5ae1-9754-387d52788df6",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 11.176662
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-10-16",
+        "event_id": "a12491bb-2a5e-5ae1-9754-387d52788df6",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 15.379497
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-10-16",
+        "event_id": "a12491bb-2a5e-5ae1-9754-387d52788df6",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 26.826711
+      },
+      {
+        "actual_attendance": 15,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-10-16",
+        "event_id": "a12491bb-2a5e-5ae1-9754-387d52788df6",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 18.98027
+      },
+      {
+        "actual_attendance": 24,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-10-17",
+        "event_id": "128a6e27-29f3-5d87-8ec4-6dfb93dbd667",
+        "hit_at_3": 0,
+        "method": "model",
+        "predicted_attendance": 25.069479
+      },
+      {
+        "actual_attendance": 24,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-10-17",
+        "event_id": "128a6e27-29f3-5d87-8ec4-6dfb93dbd667",
+        "hit_at_3": 0,
+        "method": "popularity",
+        "predicted_attendance": 21.452458
+      },
+      {
+        "actual_attendance": 24,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-10-17",
+        "event_id": "128a6e27-29f3-5d87-8ec4-6dfb93dbd667",
+        "hit_at_3": 0,
+        "method": "random",
+        "predicted_attendance": 26.508996
+      },
+      {
+        "actual_attendance": 24,
+        "club_id": "ff8de9cb-24f7-58c9-8ca4-09e494751e98",
+        "date": "2026-10-17",
+        "event_id": "128a6e27-29f3-5d87-8ec4-6dfb93dbd667",
+        "hit_at_3": 0,
+        "method": "repeat_last",
+        "predicted_attendance": 18.98027
+      }
+    ],
+    "source": "synthetic",
+    "status": "available",
+    "test_events": 85,
+    "test_start": "2026-04-13",
+    "train_end": "2026-06-11",
+    "train_events": 185
+  }
+}

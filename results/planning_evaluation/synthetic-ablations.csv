@@ -1,0 +1,5 @@
+fairness,diversity,minimum_satisfaction,expected_turnout,category_coverage_at_3
+False,False,0.359,15.8862,0.6
+False,True,0.3584,15.3316,1.0
+True,False,0.359,15.8862,0.6
+True,True,0.3584,15.3316,1.0

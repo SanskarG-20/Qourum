@@ -201,7 +201,7 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
   };
 
   return <main className="quorum-app">
-    <header className="quorum-app__header"><a href="/" className="quorum-app__brand">QUORUM<span> / ORGANIZER</span></a><button type="button" className="quorum-app__quiet" onClick={onLogout}>Log out</button></header>
+    <header className="quorum-app__header"><a href="/" className="quorum-app__brand">QUORUM<span> / ORGANIZER</span></a><a href="/app/evaluation" className="quorum-app__quiet">Evaluation</a><button type="button" className="quorum-app__quiet" onClick={onLogout}>Log out</button></header>
     <section className="quorum-app__content">
       <p className="quorum-app__eyebrow">{clubName}</p><h1>Plan the next club event</h1><p className="quorum-app__intro">Choose how to balance members’ preferences, set a few practical limits, then find event ideas the club can attend.</p>
       {error && <p role="alert" className="quorum-app__error">{error}</p>}{notice && <p role="status" className="quorum-app__notice">{notice}</p>}

@@ -1,0 +1,16 @@
+club,conflict_level,strategy,minimum_satisfaction,gini,test_events
+Campus Club 1,0.0,average,0.3723,0.0859,17
+Campus Club 1,0.0,fairness_aware,0.3723,0.0859,17
+Campus Club 1,0.0,least_misery,0.402,0.0876,17
+Campus Club 2,0.25,average,0.3598,0.1082,17
+Campus Club 2,0.25,fairness_aware,0.3598,0.1082,17
+Campus Club 2,0.25,least_misery,0.3656,0.0686,17
+Campus Club 3,0.5,average,0.35,0.095,17
+Campus Club 3,0.5,fairness_aware,0.35,0.095,17
+Campus Club 3,0.5,least_misery,0.35,0.0724,17
+Campus Club 4,0.75,average,0.3625,0.1194,17
+Campus Club 4,0.75,fairness_aware,0.3513,0.0982,17
+Campus Club 4,0.75,least_misery,0.3669,0.083,17
+Campus Club 5,1.0,average,0.3537,0.1177,17
+Campus Club 5,1.0,fairness_aware,0.3537,0.1177,17
+Campus Club 5,1.0,least_misery,0.363,0.1018,17
