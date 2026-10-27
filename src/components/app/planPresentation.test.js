@@ -97,3 +97,50 @@ test('organizer results use the plan endpoint and retain loading and empty state
   assert.match(source, /Ready to find a time/);
   assert.match(source, /No matching event ideas/);
 });
+
+test('diagnostics render grouped rejection details and a filtered availability heatmap', async () => {
+  const vite = await createServer({
+    configFile: './vite.config.js',
+    appType: 'custom',
+    logLevel: 'silent',
+    server: { middlewareMode: true },
+  });
+  try {
+    const { PlanDiagnostics } = await vite.ssrLoadModule('/src/components/app/PlanDiagnostics.jsx');
+    const blocks = ['morning', 'midday', 'afternoon', 'evening', 'late_evening'];
+    const planResult = {
+      candidate_count: 20, feasible_count: 5, rejected_candidate_count: 15,
+      rejection_groups: [{
+        reason_code: 'min_people_available', label: 'Not enough members free', count: 3,
+        examples: [{
+          format_id: 'hackathon', event_date: '2026-11-04', time_block: 'evening',
+          mode: 'in_person', fee_inr: 0, available_member_count: 5, member_count: 14,
+          blocked_members: [{ member_id: 'm1', reason_codes: ['not_available'] }],
+        }],
+      }],
+      availability_heatmap: {
+        window_minutes: 60,
+        cells: blocks.map((time_block, index) => ({
+          date: '2026-11-04', weekday: 'Wed', time_block, free_count: 7, member_count: 14,
+          availability_percent: 50, filtered_out: index === 0,
+          filter_reason_codes: index === 0 ? ['exam_week'] : [],
+        })),
+      },
+    };
+    const markup = renderToStaticMarkup(React.createElement(PlanDiagnostics, {
+      planResult,
+      members: [{ id: 'm1', name: 'Aarav' }],
+      formats: [{ id: 'hackathon', name: 'Campus Hackathon' }],
+    }));
+    assert.match(markup, /Checked 20 possibilities: 5 passed the filters and 15 were rejected/);
+    assert.match(markup, /Not enough members free/);
+    assert.match(markup, /aria-expanded="false"/);
+    assert.match(markup, /Filtered/);
+    assert.equal((markup.match(/class="quorum-app__heat-cell/g) || []).length, 5);
+    const componentSource = await readFile(new URL('./PlanDiagnostics.jsx', import.meta.url), 'utf8');
+    assert.match(componentSource, /group\.examples\.map/);
+    assert.match(componentSource, /blocked_members/);
+  } finally {
+    await vite.close();
+  }
+});

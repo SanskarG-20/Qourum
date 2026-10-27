@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
+from dataclasses import replace
 from datetime import date, datetime
 from math import sqrt
 from typing import Mapping, Sequence
@@ -13,11 +15,95 @@ from .affinity import build_format_affinities, confidence_label
 from .aggregation import STRATEGIES
 from .attendance_model import LogisticAttendanceModel
 from .baselines import popularity_baseline, random_baseline, repeat_last_baseline
-from .candidates import assess_candidate, build_availability_index, generate_candidates, member_unavailability_reasons
+from .candidates import (
+    assess_candidate, available_member_ids_for_slot, build_availability_index,
+    generate_candidates, member_unavailability_reasons,
+)
 from .diversity import rerank_diverse
-from .models import PlanFormat, PlanMember, PlanObservation
+from .models import PlanFormat, PlanMember, PlanObservation, TIME_BLOCKS
 
 BASELINES = ("model", "random", "popularity", "repeat_last")
+
+
+def _build_plan_diagnostics(*, candidates, assessments, rejected, members, availability_index,
+                            horizon_days, start_date):
+    """Summarize rejected candidates and one-hour free-member availability by slot."""
+    rejected_by_reason = defaultdict(list)
+    rejected_by_slot = defaultdict(set)
+    for item in rejected:
+        slot = (item["event_date"], item["time_block"])
+        rejected_by_slot[slot].update(item["reason_codes"])
+        for code in item["reason_codes"]:
+            rejected_by_reason[code].append(item)
+
+    reason_groups = []
+    member_reason_codes = {
+        "min_people_available", "fee_excludes_members", "mode_excludes_members",
+    }
+    member_reason_filter = {
+        "fee_excludes_members": {"fee_above_member_max"},
+        "mode_excludes_members": {"mode_mismatch"},
+    }
+    for code, items in sorted(rejected_by_reason.items(), key=lambda pair: (-len(pair[1]), pair[0])):
+        examples = [dict(item) for item in sorted(items, key=lambda item: (
+            -item["available_member_count"], item["event_date"], item["time_block"],
+            item["format_id"], item["mode"],
+        ))[:3]]
+        for example in examples:
+            candidate = next(item for item in candidates if (
+                item.format_id == example["format_id"]
+                and item.event_date.isoformat() == example["event_date"]
+                and item.time_block == example["time_block"]
+                and item.mode == example["mode"]
+            ))
+            blocked_members = []
+            if code in member_reason_codes:
+                required_reasons = member_reason_filter.get(code)
+                for member in members:
+                    reasons = member_unavailability_reasons(member, candidate, availability_index)
+                    if required_reasons:
+                        reasons = tuple(reason for reason in reasons if reason in required_reasons)
+                    if reasons:
+                        blocked_members.append({"member_id": member.member_id, "reason_codes": list(reasons)})
+            example["blocked_members"] = blocked_members
+        reason_groups.append({
+            "reason_code": code,
+            "label": config.REJECTION_REASON_LABELS.get(code, code.replace("_", " ").capitalize()),
+            "count": len(items),
+            "examples": examples,
+        })
+
+    accepted_slots = {
+        (item.candidate.event_date.isoformat(), item.candidate.time_block)
+        for item in assessments if item.accepted
+    }
+    representatives = {}
+    for candidate in candidates:
+        representatives.setdefault((candidate.event_date.isoformat(), candidate.time_block), candidate)
+    cells = []
+    for day_offset in range(horizon_days):
+        event_date = date.fromordinal(start_date.toordinal() + day_offset)
+        iso_date = event_date.isoformat()
+        for block in TIME_BLOCKS:
+            candidate = representatives[(iso_date, block)]
+            one_hour_candidate = replace(candidate, duration_minutes=60)
+            free_count = len(available_member_ids_for_slot(members, one_hour_candidate, availability_index))
+            slot = (iso_date, block)
+            cells.append({
+                "date": iso_date,
+                "weekday": event_date.strftime("%a"),
+                "time_block": block,
+                "free_count": free_count,
+                "member_count": len(members),
+                "availability_percent": round(100 * free_count / len(members), 1),
+                "filtered_out": slot not in accepted_slots,
+                "filter_reason_codes": sorted(rejected_by_slot.get(slot, ())) if slot not in accepted_slots else [],
+            })
+    return {
+        "rejection_groups": reason_groups,
+        "rejected_candidate_count": len(rejected),
+        "availability_heatmap": {"window_minutes": 60, "cells": cells},
+    }
 
 
 def _candidate_record(candidate, assessment, available_scores, confidence, group_score, summary, interval):
@@ -141,9 +227,14 @@ def build_plan(
                 "fee_inr": candidate.fee_inr,
                 "reason_codes": list(assessment.reason_codes),
                 "available_member_count": len(assessment.available_member_ids),
+                "member_count": len(members),
                 "unavailable_member_counts": dict(assessment.unavailable_reason_counts),
             })
     accepted_candidates = [item.candidate for item in accepted_assessments]
+    diagnostics = _build_plan_diagnostics(
+        candidates=candidates, assessments=assessments, rejected=rejected, members=members,
+        availability_index=availability_index, horizon_days=horizon_days, start_date=start_date,
+    )
     if not accepted_assessments:
         return {
             "settings": {
@@ -159,6 +250,7 @@ def build_plan(
             },
             "candidate_count": len(candidates), "feasible_count": 0,
             "recommendations": [], "rejected_candidates": rejected,
+            **diagnostics,
             "model_trained": False,
             "interval_method": "normal approximation to the Poisson-binomial attendance sum (95%)",
         }
@@ -299,6 +391,7 @@ def build_plan(
         "feasible_count": len(accepted_assessments),
         "recommendations": results,
         "rejected_candidates": rejected,
+        **diagnostics,
         "model_trained": model.is_trained,
         "interval_method": "normal approximation to the Poisson-binomial attendance sum (95%)",
     }

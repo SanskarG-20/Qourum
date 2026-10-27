@@ -30,6 +30,23 @@ SHORT_FORMAT_SCORE_WEIGHT = 0.08
 FEE_FEATURE_SCALE_INR = 1000.0
 RATING_SCALE_MAX = 5.0
 LAB_HEAVY_WEEKDAYS = (1, 3)  # Tuesday and Thursday, matching the synthetic calendar.
+REJECTION_REASON_LABELS = {
+    "min_people_available": "Not enough members free",
+    "below_format_min_capacity": "Below the format's minimum size",
+    "format_capacity_exceeded": "Over the format's capacity",
+    "exam_week": "Exam week",
+    "holiday": "Holiday",
+    "lab_heavy_day": "Lab-heavy day",
+    "fee_above_club_cap": "Over fee cap",
+    "fee_excludes_members": "Above members' fee limits",
+    "mode_excludes_members": "Mode mismatch",
+    "delivery_mode_excluded": "Mode not selected",
+    "skill_level_excluded": "Experience level doesn't match",
+    "existing_event_conflict": "Conflicts with another event",
+    "format_not_selected": "Format not selected",
+    "paid_format_excluded": "Paid format excluded",
+    "free_format_excluded": "Free format excluded",
+}
 TIME_BLOCK_STARTS = {
     "morning": time(9), "midday": time(12), "afternoon": time(15),
     "evening": time(18), "late_evening": time(20, 30),

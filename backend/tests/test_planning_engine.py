@@ -209,6 +209,36 @@ def test_pipeline_marks_unavailable_members_and_returns_rejections():
     assert output["per_member_satisfaction"]["m3"]["satisfaction"] is None
     assert len(output["expected_attendance_interval_95"]) == 2
     assert output["why_line_inputs"]["strategy"] == "average"
+    assert result["candidate_count"] == result["rejected_candidate_count"] + result["feasible_count"]
+    grouped_counts = {group["reason_code"]: group["count"] for group in result["rejection_groups"]}
+    for code, count in grouped_counts.items():
+        assert count == sum(code in item["reason_codes"] for item in result["rejected_candidates"])
+    min_people_example = next(group for group in result["rejection_groups"]
+                              if group["reason_code"] == "min_people_available")["examples"][0]
+    assert min_people_example["member_count"] == len(members)
+    assert min_people_example["blocked_members"]
+    fee_group = next(group for group in result["rejection_groups"]
+                     if group["reason_code"] == "fee_excludes_members")
+    fee_blockers = fee_group["examples"][0]["blocked_members"]
+    assert all(blocker["reason_codes"] == ["fee_above_member_max"] for blocker in fee_blockers), fee_blockers
+    heatmap = result["availability_heatmap"]
+    assert heatmap["window_minutes"] == 60
+    assert len(heatmap["cells"]) == 5
+    assert all(cell["free_count"] == 2 and cell["availability_percent"] == 66.7
+               for cell in heatmap["cells"])
+
+
+def test_diagnostics_are_returned_when_every_candidate_is_rejected():
+    result = build_plan(
+        members=[_member("m1")], formats=[_format("f1")], observations=[],
+        start_date=DAY, horizon_days=1, min_people_available=1,
+        skill_level_filter="advanced",
+    )
+    assert result["recommendations"] == []
+    assert result["candidate_count"] == result["rejected_candidate_count"]
+    assert result["feasible_count"] == 0
+    assert result["rejection_groups"][0]["reason_code"] == "skill_level_excluded"
+    assert all(cell["filtered_out"] for cell in result["availability_heatmap"]["cells"])
 
 
 def test_two_hundred_member_twenty_one_day_plan_under_two_seconds():

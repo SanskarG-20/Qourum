@@ -69,6 +69,12 @@ def test_plan_endpoint_returns_results_rejections_and_requires_organizer(seeded_
             body = response.json()
             assert body["candidate_count"] > 0
             assert body["rejected_candidates"]
+            assert body["candidate_count"] == body["rejected_candidate_count"] + body["feasible_count"]
+            assert body["availability_heatmap"]["cells"]
+            assert body["rejection_groups"]
+            assert all(group["count"] == sum(
+                group["reason_code"] in item["reason_codes"] for item in body["rejected_candidates"]
+            ) for group in body["rejection_groups"])
             assert body["settings"]["strategy"] == "average"
             if body["recommendations"]:
                 item = body["recommendations"][0]

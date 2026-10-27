@@ -75,6 +75,16 @@ def _member_available(member: PlanMember, candidate: PlanCandidate, availability
     return any(window.is_available and _window_match(candidate, window) for window in weekly)
 
 
+def available_member_ids_for_slot(
+    members: Sequence[PlanMember], candidate: PlanCandidate, availability_index=None,
+) -> tuple[str, ...]:
+    """Return members free for the candidate's scheduled duration, ignoring other filters."""
+    return tuple(sorted(
+        member.member_id for member in members
+        if _member_available(member, candidate, availability_index)
+    ))
+
+
 def member_unavailability_reasons(member: PlanMember, candidate: PlanCandidate, availability_index=None) -> tuple[str, ...]:
     """Return every member-specific hard-filter reason for one candidate."""
     reasons = []

@@ -3,6 +3,7 @@ import './member-onboarding.css';
 import { api, apiWrite } from '../../utils/apiClient.js';
 import { EventRequirements } from './EventRequirements.jsx';
 import { PlanResultCard } from './PlanResultCard.jsx';
+import { PlanDiagnostics } from './PlanDiagnostics.jsx';
 
 export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
   const [strategy, setStrategy] = useState('average');
@@ -198,6 +199,7 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
         {!planningBusy && planResult && planResult.recommendations.length === 0 && <div className="quorum-app__plan-state"><h3>No matching event ideas</h3><p>Try changing the event requirements or giving the club more time options.</p></div>}
         {!planningBusy && planResult?.recommendations.map((item) => <PlanResultCard key={`${item.format_id}-${item.start}-${item.mode}`} item={item}
           format={formats.find((format) => format.id === item.format_id)} memberNames={memberNames} venues={pastVenues[item.mode] || []} busy={busy} onAccept={accept} />)}
+        {!planningBusy && planResult && <PlanDiagnostics planResult={planResult} members={members} formats={formats} />}
       </section>
 
       <section className="quorum-app__card"><h2>Scheduled events</h2>{events.filter((event) => event.status === 'scheduled').length === 0 ? <p>No scheduled events yet.</p> : <ul className="quorum-app__event-list">{events.filter((event) => event.status === 'scheduled').map((event) => <li key={event.id}><div><strong>{event.title}</strong><span>{new Date(event.start_time).toLocaleString()}{event.venue ? ` · ${event.venue}` : ''}{event.delivery_mode ? ` · ${event.delivery_mode === 'online' ? 'Online' : 'In person'}` : ''}{event.estimated_fee_inr != null ? ` · ${event.estimated_fee_inr === 0 ? 'Free' : `Estimated ₹${event.estimated_fee_inr} per person`}` : ''}</span>{event.planning_snapshot && <span title="Saved when this event was scheduled">Predicted turnout: {Math.round(event.planning_snapshot.expected_attendance)} ± {Math.round(Math.max(event.planning_snapshot.expected_attendance - event.planning_snapshot.expected_attendance_interval_95[0], event.planning_snapshot.expected_attendance_interval_95[1] - event.planning_snapshot.expected_attendance))} of {event.planning_snapshot.available_member_count}</span>}</div>{new Date(event.start_time) > new Date() && <button type="button" className="quorum-app__quiet" disabled={busy} onClick={() => cancel(event)}>Cancel event</button>}</li>)}</ul>}</section>
