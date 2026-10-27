@@ -1,0 +1,2 @@
+event_id,member_id,registered,attended,rating
+sample-event-001,sample-member-001,True,True,5

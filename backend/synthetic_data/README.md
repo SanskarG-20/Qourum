@@ -1,13 +1,8 @@
-# Synthetic research data
+# Synthetic data
 
-This package generates entirely synthetic collegiate club data for testing and research. It simulates three clubs, 124 members, twelve event types, and approximately eighteen months of club activity. The generator uses hidden personas, slot preferences, exam periods, repeat-event fatigue, interest drift, and seeded noise to produce observable preferences, availability, attendance, and ratings.
+This package contains two independent generators:
 
-Hidden generation traits are internal only. Exported feature tables are checked to prevent latent or ground-truth fields from leaking into recommender inputs.
+- The app seed generator (`SyntheticDatasetGenerator`) creates app-compatible clubs, event types, events, preferences, availability, and RSVPs.
+- The research generator (`ResearchDatasetGenerator`) creates the expanded 16-format dataset and supports validated CSV overlays.
 
-Generate and summarize data reproducibly with:
-
-```sh
-python -m backend.synthetic_data.cli --seed 42
-```
-
-The same seed produces the same generated data. These data are simulated and must not be described as collected from real students or clubs.
+See [`docs/data.md`](../../docs/data.md) for the research table schema, CLI commands, CSV merge rules, and every synthetic behavior assumption. All generated values are synthetic.

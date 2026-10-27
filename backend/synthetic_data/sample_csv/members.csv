@@ -1,0 +1,2 @@
+member_id,club_id,year,branch,role,join_month,max_fee,mode_pref,commute_type,engagement_level
+sample-member-001,sample-club-001,2,"Computer Science",regular,2026-08,250,either,transit,medium

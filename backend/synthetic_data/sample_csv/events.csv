@@ -1,0 +1,2 @@
+event_id,club_id,format_id,date,time_block,mode,fee,capacity,registrations,attended_count
+sample-event-001,sample-club-001,sample-format-001,2026-10-20,evening,in_person,0,30,1,1

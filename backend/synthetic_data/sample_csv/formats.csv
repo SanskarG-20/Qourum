@@ -1,0 +1,2 @@
+format_id,name,category,duration_hrs,typical_fee,team_based,skill_level,prep_days,min_capacity,max_capacity
+sample-format-001,Community Hack Day,technical,6,0,True,beginner,4,5,40
