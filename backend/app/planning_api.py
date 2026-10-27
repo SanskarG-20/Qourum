@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from datetime import date, datetime, time, timedelta
+from copy import deepcopy
+from statistics import median
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -40,6 +42,39 @@ class PlanRequest(BaseModel):
     fee_policy: Literal["any", "free", "paid"] = "any"
     fee_cap_inr: int | None = Field(default=None, ge=0, le=100000)
     delivery_mode: Literal["any", "in_person", "online"] = "any"
+    skill_level_filter: Literal["any", "beginner", "intermediate", "advanced"] = "any"
+    exclude_lab_heavy_days: bool = False
+    prefer_short_formats: bool = False
+    exploration: bool = False
+
+
+@router.get("/{club_id}/plan-presets")
+def club_plan_presets(
+    club_id: str,
+    _organizer: ClubAccess = Depends(require_club_organizer),
+    db: OrmSession = Depends(get_db),
+) -> dict[str, object]:
+    """Return config-defined planning recipes, resolving the club's fee median."""
+    member_fees = [int(value) for value in db.scalars(
+        select(MemberSettings.max_fee_inr)
+        .join(ClubMember, ClubMember.member_id == MemberSettings.member_id)
+        .where(ClubMember.club_id == club_id, MemberSettings.max_fee_inr.is_not(None))
+    )]
+    median_fee = int(round(median(member_fees))) if member_fees else None
+    recipes = []
+    for recipe in planning_config.PLAN_RECIPES:
+        settings = deepcopy(recipe["settings"])
+        if recipe.get("fee_cap_rule") == "median_member_max_fee":
+            settings["fee_cap_inr"] = median_fee
+        recipes.append({
+            "id": recipe["id"], "label": recipe["label"],
+            "technical_name": recipe["technical_name"], "settings": settings,
+        })
+    return {
+        "recipes": recipes,
+        "lab_heavy_weekdays": list(planning_config.LAB_HEAVY_WEEKDAYS),
+        "median_member_max_fee": median_fee,
+    }
 
 
 def _time_block(value: time) -> str:
@@ -201,6 +236,11 @@ def club_plan(
     # if the organizer requests a plan later in the day.
     start_date = payload.start_date or date.today() + timedelta(days=1)
     members, formats, observations, preferences, calendar_flags = _plan_inputs(db, club_id, start_date)
+    if payload.exclude_lab_heavy_days:
+        for day_offset in range(payload.horizon_days):
+            candidate_day = date.fromordinal(start_date.toordinal() + day_offset)
+            if candidate_day.weekday() in planning_config.LAB_HEAVY_WEEKDAYS:
+                calendar_flags.setdefault(candidate_day, []).append("lab_heavy_day")
     if payload.min_people_available > len(members):
         raise HTTPException(status_code=422, detail="Minimum available people cannot exceed club membership.")
     return build_plan(
@@ -222,6 +262,10 @@ def club_plan(
         fee_policy=payload.fee_policy,
         fee_cap_inr=payload.fee_cap_inr,
         delivery_mode=payload.delivery_mode,
+        skill_level_filter=payload.skill_level_filter,
+        exclude_lab_heavy_days=payload.exclude_lab_heavy_days,
+        prefer_short_formats=payload.prefer_short_formats,
+        exploration=payload.exploration,
         existing_events=[
             (event.start_time, event.start_time + timedelta(minutes=event.duration_minutes))
             for event in db.scalars(select(Event).where(

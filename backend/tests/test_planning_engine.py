@@ -11,6 +11,7 @@ from backend.planning.affinity import build_format_affinities
 from backend.planning.attendance_model import LogisticAttendanceModel
 from backend.planning.baselines import popularity_baseline, random_baseline, repeat_last_baseline
 from backend.planning.candidates import assess_candidate, generate_candidates
+from backend.planning import config as planning_config
 from backend.planning.diversity import rerank_diverse
 from backend.planning.models import AvailabilityWindow, PlanCandidate, PlanFormat, PlanMember, PlanObservation
 from backend.planning.pipeline import build_plan
@@ -72,6 +73,78 @@ def test_hard_filter_reasons_cover_fee_mode_availability_dates_and_capacity():
                              "in_person", 0, 2, 1, "technical", "beginner", 60)
     capacity_decision = assess_candidate(too_many, [_member(f"m{i}") for i in range(3)], {}, min_people_available=1)
     assert "format_capacity_exceeded" in capacity_decision.reason_codes
+
+
+def test_recipe_filters_report_beginner_and_lab_heavy_reasons():
+    candidate = PlanCandidate("f1", "event", DAY, "evening", datetime.combine(DAY, time(18)),
+                              "in_person", 0, 100, 1, "technical", "advanced", 60)
+    beginner = assess_candidate(candidate, [_member("m1")], {}, min_people_available=1,
+                                skill_level_filter="beginner")
+    lab_heavy = assess_candidate(candidate, [_member("m1")], {DAY: ("lab_heavy_day",)},
+                                 min_people_available=1, exclude_lab_heavy_days=True)
+    assert "skill_level_excluded" in beginner.reason_codes
+    assert "lab_heavy_day" in lab_heavy.reason_codes
+
+
+def test_each_recipe_changes_a_conflicting_club_ranking():
+    from backend.planning.models import PlanObservation
+
+    formats = [
+        _format("f1", "technical", 0, 60),
+        PlanFormat("f2", "Social sprint", "f2", "social", "beginner", 90, 20, ("in_person",), 1, 100),
+        PlanFormat("f3", "Advanced challenge", "f3", "competitive", "advanced", 180, 100, ("in_person",), 1, 100),
+        PlanFormat("f4", "Learning lab", "f4", "learning", "beginner", 120, 40, ("in_person",), 1, 100),
+        PlanFormat("f5", "Team tournament", "f5", "competitive", "intermediate", 240, 50, ("in_person",), 1, 100),
+        PlanFormat("f6", "Quick workshop", "f6", "learning", "intermediate", 45, 80, ("in_person",), 1, 100),
+    ]
+    members = [_member("m1", dissatisfaction=1.0), _member("m2"), _member("m3"), _member("m4")]
+    preference_rows = {
+        "m1": [0.98, 0.10, 0.20, 0.55, 0.35, 0.25],
+        "m2": [0.92, 0.18, 0.95, 0.52, 0.78, 0.32],
+        "m3": [0.12, 0.85, 0.10, 0.42, 0.55, 0.92],
+        "m4": [0.18, 0.98, 0.25, 0.50, 0.62, 0.82],
+    }
+    preferences = {
+        (member_id, event_format.format_id): values[index]
+        for member_id, values in preference_rows.items()
+        for index, event_format in enumerate(formats)
+    }
+    observations = [
+        PlanObservation(f"history-{index}", "f1", "evening", 0, "in_person", True,
+                        timestamp=datetime(2026, 1, 1) + timedelta(days=index))
+        for index in range(16)
+    ] + [
+        PlanObservation("history-f2", "f2", "evening", 20, "in_person", True),
+        PlanObservation("history-f3", "f3", "evening", 100, "in_person", True),
+    ]
+    flags = {date(2026, 11, 3): ("lab_heavy_day",), date(2026, 11, 5): ("lab_heavy_day",)}
+    signatures = {}
+    for recipe in planning_config.PLAN_RECIPES:
+        settings = dict(recipe["settings"])
+        if recipe.get("fee_cap_rule"):
+            settings["fee_cap_inr"] = 45
+        result = build_plan(
+            members=members, formats=formats, observations=observations,
+            explicit_preferences=preferences, calendar_flags=flags,
+            start_date=DAY, horizon_days=7, min_people_available=3,
+            top_k=8, seed=42, **settings,
+        )
+        assert result["recommendations"], recipe["id"]
+        signatures[recipe["id"]] = tuple(
+            (item["format_id"], item["event_date"], item["time_block"])
+            for item in result["recommendations"]
+        )
+        if recipe["id"] == "beginner_friendly":
+            assert all(item["why_line_inputs"]["skill_level"] == "beginner"
+                       for item in result["recommendations"])
+        if recipe["id"] == "exam_season_light":
+            assert all(item["event_date"] not in {day.isoformat() for day in flags}
+                       for item in result["recommendations"])
+    baseline = signatures["max_turnout"]
+    assert all(signatures[recipe["id"]] != baseline for recipe in planning_config.PLAN_RECIPES
+               if recipe["id"] != "max_turnout"), {
+        recipe_id: result[0] for recipe_id, result in signatures.items()
+    }
 
 
 def test_logistic_model_and_all_three_baselines_return_bounded_probabilities():

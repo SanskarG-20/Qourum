@@ -86,11 +86,20 @@ def build_plan(
     fee_cap_inr: int | None = None,
     delivery_mode: str = "any",
     existing_events: Sequence[tuple[datetime, datetime]] = (),
+    skill_level_filter: str = "any",
+    exclude_lab_heavy_days: bool = False,
+    prefer_short_formats: bool = False,
+    exploration: bool = False,
 ) -> dict[str, object]:
     """Build a ranked plan with complete candidate rejection and member evidence."""
     if strategy not in STRATEGIES:
         raise ValueError(f"Unknown aggregation strategy: {strategy}")
-    effective_strategy = "fairness_aware" if fairness else strategy
+    effective_strategy = (
+        "fairness_aware" if strategy == "fairness_aware"
+        else "least_misery + fairness" if fairness and strategy == "least_misery"
+        else "fairness_aware" if fairness
+        else strategy
+    )
     if baseline not in BASELINES:
         raise ValueError(f"Unknown baseline: {baseline}")
     if not 1 <= top_k <= 50:
@@ -111,7 +120,8 @@ def build_plan(
                          eligibility_cache=eligibility_cache, include_member_details=False,
                          selected_format_ids=selected_format_ids, fee_policy=fee_policy,
                          fee_cap_inr=fee_cap_inr, delivery_mode=delivery_mode,
-                         existing_events=existing_events)
+                         existing_events=existing_events, skill_level_filter=skill_level_filter,
+                         exclude_lab_heavy_days=exclude_lab_heavy_days)
         for candidate in candidates
     ]
     rejected = []
@@ -143,6 +153,9 @@ def build_plan(
                 "selected_format_ids": list(selected_format_ids or []), "fee_policy": fee_policy,
                 "fee_cap_inr": fee_cap_inr, "delivery_mode": delivery_mode,
                 "fairness": fairness, "effective_strategy": effective_strategy,
+                "skill_level_filter": skill_level_filter,
+                "exclude_lab_heavy_days": exclude_lab_heavy_days,
+                "prefer_short_formats": prefer_short_formats, "exploration": exploration,
             },
             "candidate_count": len(candidates), "feasible_count": 0,
             "recommendations": [], "rejected_candidates": rejected,
@@ -179,14 +192,45 @@ def build_plan(
     group_means = np.nanmean(masked_values, axis=1)
     group_minima = np.nanmin(masked_values, axis=1)
     group_stds = np.nanstd(masked_values, axis=1)
-    if effective_strategy == "average":
+    weights = np.asarray([1 + dissatisfaction[member_id] for member_id in member_ids], dtype=np.float64)
+    weighted = np.sum(probability_matrix * available_matrix * weights[None, :], axis=1)
+    fairness_mean = weighted / np.sum(available_matrix * weights[None, :], axis=1)
+    if strategy == "average":
         group_scores = group_means
-    elif effective_strategy == "least_misery":
+    elif strategy == "least_misery":
         group_scores = group_minima
     else:
-        weights = np.asarray([1 + dissatisfaction[member_id] for member_id in member_ids], dtype=np.float64)
-        weighted = np.sum(probability_matrix * available_matrix * weights[None, :], axis=1)
-        group_scores = weighted / np.sum(available_matrix * weights[None, :], axis=1)
+        group_scores = fairness_mean
+    if fairness and strategy != "fairness_aware":
+        if strategy == "average":
+            group_scores = fairness_mean
+        else:
+            group_scores = (
+                (1 - config.FAIRNESS_LEAST_MISERY_BLEND) * group_minima
+                + config.FAIRNESS_LEAST_MISERY_BLEND * fairness_mean
+            )
+    format_history: dict[str, int] = {}
+    for observation in observations:
+        format_history[observation.format_id] = format_history.get(observation.format_id, 0) + 1
+    rarity = {format_id: 1.0 / np.sqrt(1 + format_history.get(format_id, 0)) for format_id in format_by_id}
+    rarity_values = list(rarity.values())
+    rarity_min = min(rarity_values, default=0.0)
+    rarity_span = max(rarity_values, default=0.0) - rarity_min
+    novelty = {
+        format_id: ((value - rarity_min) / rarity_span if rarity_span > 0 else 0.0)
+        for format_id, value in rarity.items()
+    }
+    duration_fit = {
+        format_id: max(0.0, (config.SHORT_FORMAT_TARGET_MINUTES - event_format.duration_minutes)
+                       / config.SHORT_FORMAT_TARGET_MINUTES)
+        for format_id, event_format in format_by_id.items()
+    }
+    group_scores = np.clip(
+        group_scores
+        + (config.EXPLORATION_SCORE_WEIGHT * np.asarray([novelty[item.candidate.format_id] for item in accepted_assessments]) if exploration else 0)
+        + (config.SHORT_FORMAT_SCORE_WEIGHT * np.asarray([duration_fit[item.candidate.format_id] for item in accepted_assessments]) if prefer_short_formats else 0),
+        0.0, 1.0,
+    )
     ranked = []
     for candidate_index, assessment in enumerate(accepted_assessments):
         group_score = float(group_scores[candidate_index])
@@ -234,6 +278,8 @@ def build_plan(
         else:
             record["confidence"] = "low"
         record["why_line_inputs"]["strategy"] = effective_strategy
+        record["why_line_inputs"]["novelty_score"] = round(novelty[candidate.format_id], 4)
+        record["why_line_inputs"]["short_format_fit"] = round(duration_fit[candidate.format_id], 4)
         record["why_line_inputs"]["baseline"] = baseline
         record["why_line_inputs"]["confidence"] = record["confidence"]
         results.append(record)
@@ -245,6 +291,9 @@ def build_plan(
             "selected_format_ids": list(selected_format_ids or []), "fee_policy": fee_policy,
             "fee_cap_inr": fee_cap_inr, "delivery_mode": delivery_mode,
             "fairness": fairness, "effective_strategy": effective_strategy,
+            "skill_level_filter": skill_level_filter,
+            "exclude_lab_heavy_days": exclude_lab_heavy_days,
+            "prefer_short_formats": prefer_short_formats, "exploration": exploration,
         },
         "candidate_count": len(candidates),
         "feasible_count": len(accepted_assessments),

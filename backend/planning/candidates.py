@@ -104,6 +104,8 @@ def assess_candidate(
     fee_cap_inr: int | None = None,
     delivery_mode: str = "any",
     existing_events: Sequence[tuple[datetime, datetime]] = (),
+    skill_level_filter: str = "any",
+    exclude_lab_heavy_days: bool = False,
 ) -> CandidateAssessment:
     """Apply global dates, per-member fee/mode/availability, and capacity filters."""
     if not members:
@@ -112,6 +114,8 @@ def assess_candidate(
         raise ValueError("min_people_available must be between one and club size")
 
     reasons: list[str] = []
+    if skill_level_filter != "any" and candidate.skill_level != skill_level_filter:
+        reasons.append("skill_level_excluded")
     if any(start < candidate.end and candidate.start < end for start, end in existing_events):
         reasons.append("existing_event_conflict")
     if selected_format_ids and candidate.format_id not in selected_format_ids:
@@ -129,6 +133,8 @@ def assess_candidate(
         reasons.append("exam_week")
     if "holiday" in flags:
         reasons.append("holiday")
+    if exclude_lab_heavy_days and "lab_heavy_day" in flags:
+        reasons.append("lab_heavy_day")
 
     schedule_key = (candidate.event_date, candidate.time_block, candidate.duration_minutes)
     schedule_available = schedule_cache.get(schedule_key) if schedule_cache is not None else None

@@ -32,6 +32,15 @@
 .quorum-app__intro,.quorum-app__card p,.quorum-app__login p { color: var(--color-text-secondary); line-height: 1.55; }
 .quorum-app__stack { display: grid; gap: 1rem; margin-top: 1.5rem; }
 .quorum-app__card { padding: clamp(1rem, 3vw, 1.5rem); border: 1px solid var(--color-border-subtle); border-radius: 12px; background: #fff; }
+.quorum-app__recipes { display: grid; gap: .85rem; margin: 1.4rem 0 1rem; }
+.quorum-app__recipes h2 { margin: 0; font-size: 1.15rem; }
+.quorum-app__recipes p { margin: .3rem 0 0; color: var(--color-text-secondary); font-size: .9rem; }
+.quorum-app__recipe-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; }
+.quorum-app__recipe { display: grid; justify-items: start; gap: .5rem; min-height: 4.6rem; padding: .75rem; border: 1px solid var(--color-border-ruler); border-radius: 8px; background: #fff; color: inherit; text-align: left; cursor: pointer; transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease; }
+.quorum-app__recipe:hover:not(:disabled) { transform: translateY(-2px); border-color: var(--color-text-primary); }
+.quorum-app__recipe.is-active { border-color: var(--color-text-primary); background: var(--color-cyan-tint); }
+.quorum-app__recipe:disabled { opacity: .6; cursor: wait; }
+.quorum-app__recipe code { padding: .15rem .35rem; border-radius: 4px; background: var(--color-bg-card-muted); color: var(--color-text-muted); font: .65rem var(--font-mono); }
 .quorum-app__card h2 { margin: 0; font-size: 1.2rem; }
 .quorum-app__ratings { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: .8rem; margin-top: 1rem; }
 .quorum-app__ratings label,.quorum-app__stack label { display: grid; gap: .4rem; font-size: .9rem; }
@@ -126,4 +135,6 @@
 @media (max-width: 680px) { .quorum-app__rec-head,.quorum-app__event-list li { align-items: flex-start; flex-direction: column; } }
 @media (max-width: 680px) { .quorum-app__satisfaction-list { grid-template-columns: 1fr; } .quorum-app__plan-accept { align-items: stretch; flex-direction: column; } .quorum-app__plan-accept > .quorum-app__button { align-self: flex-start; } }
 @media (max-width: 680px) { .quorum-app__controls { grid-template-columns: 1fr; } .quorum-app__control--strategy,.quorum-app__control-options { grid-column: auto; } }
+@media (max-width: 680px) { .quorum-app__recipe-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 420px) { .quorum-app__recipe-list { grid-template-columns: 1fr; } }
 @media (max-width: 680px) { .quorum-app__requirements-fields { grid-template-columns: 1fr; } .quorum-app__requirements { grid-column: auto; } }

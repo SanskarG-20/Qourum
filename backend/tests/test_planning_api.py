@@ -49,6 +49,18 @@ def test_plan_endpoint_returns_results_rejections_and_requires_organizer(seeded_
             club_id = organizer["user"]["clubs"][0]["id"]
             csrf = client.get("/api/auth/csrf").json()["csrf_token"]
             headers = {"X-CSRF-Token": csrf}
+            presets_response = client.get(f"/api/clubs/{club_id}/plan-presets")
+            assert presets_response.status_code == 200, presets_response.text
+            preset_body = presets_response.json()
+            presets = {item["id"]: item for item in preset_body["recipes"]}
+            assert set(presets) == {
+                "max_turnout", "nobody_left_out", "budget_friendly",
+                "try_something_new", "beginner_friendly", "exam_season_light",
+            }
+            assert presets["nobody_left_out"]["settings"]["strategy"] == "least_misery"
+            assert presets["nobody_left_out"]["settings"]["fairness"] is True
+            assert presets["budget_friendly"]["settings"]["fee_cap_inr"] == preset_body["median_member_max_fee"]
+            assert preset_body["lab_heavy_weekdays"] == [1, 3]
             response = client.post(f"/api/clubs/{club_id}/plan", json={
                 "start_date": date(2027, 2, 1).isoformat(),
                 "horizon_days": 1, "min_people_available": 2, "strategy": "average", "top_k": 2,
@@ -76,6 +88,8 @@ def test_plan_endpoint_returns_results_rejections_and_requires_organizer(seeded_
             forbidden = client.post(f"/api/clubs/{member_club}/plan", json={},
                                     headers={"X-CSRF-Token": member_csrf})
             assert forbidden.status_code == 403
+            hidden_presets = client.get(f"/api/clubs/{member_club}/plan-presets")
+            assert hidden_presets.status_code == 403
     finally:
         if previous_path is None:
             os.environ.pop("QUORUM_DB_PATH", None)

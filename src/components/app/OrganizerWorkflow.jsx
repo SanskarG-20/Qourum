@@ -6,15 +6,22 @@ import { PlanResultCard } from './PlanResultCard.jsx';
 
 export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
   const [strategy, setStrategy] = useState('average');
+  const [fairness, setFairness] = useState(false);
   const [topN, setTopN] = useState(10);
   const [quorum, setQuorum] = useState('');
   const [horizon, setHorizon] = useState(21);
   const [diversity, setDiversity] = useState(true);
   const [formats, setFormats] = useState([]);
+  const [recipes, setRecipes] = useState([]);
+  const [activeRecipe, setActiveRecipe] = useState('');
   const [selectedFormatIds, setSelectedFormatIds] = useState([]);
   const [feePolicy, setFeePolicy] = useState('any');
   const [maxFee, setMaxFee] = useState('');
   const [deliveryMode, setDeliveryMode] = useState('any');
+  const [skillLevelFilter, setSkillLevelFilter] = useState('any');
+  const [excludeLabHeavyDays, setExcludeLabHeavyDays] = useState(false);
+  const [preferShortFormats, setPreferShortFormats] = useState(false);
+  const [exploration, setExploration] = useState(false);
   const [planResult, setPlanResult] = useState(null);
   const [events, setEvents] = useState([]);
   const [members, setMembers] = useState([]);
@@ -35,7 +42,6 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
   const strategyOptions = [
     ['average', 'Balance member interest', 'Give available members equal weight.'],
     ['least_misery', 'Raise the lowest interest', 'Choose ideas with a stronger score for the least interested member.'],
-    ['fairness_aware', 'Help less satisfied members', 'Give extra weight to members who have been less satisfied recently.'],
   ];
 
   const loadEvents = async () => setEvents(await api(`/api/clubs/${clubId}/events`));
@@ -44,36 +50,53 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
       api(`/api/clubs/${clubId}/events`),
       api(`/api/clubs/${clubId}/members`),
       api(`/api/clubs/${clubId}/event-formats`),
-    ]).then(([loadedEvents, loadedMembers, catalog]) => {
+      api(`/api/clubs/${clubId}/plan-presets`),
+    ]).then(([loadedEvents, loadedMembers, catalog, presetCatalog]) => {
       setEvents(loadedEvents);
       setMembers(loadedMembers);
       setFormats(catalog.formats);
+      setRecipes(presetCatalog.recipes);
     }).catch((reason) => setError(reason.message));
   }, [clubId]);
 
-  const runPlan = async (event) => {
-    event.preventDefault();
+  const runPlan = async (event, overrides = null) => {
+    event?.preventDefault();
+    const settings = {
+      strategy, fairness, diversity, top_k: Number(topN),
+      min_people_available: quorum ? Number(quorum) : defaultQuorum,
+      horizon_days: Number(horizon), selected_format_ids: selectedFormatIds,
+      fee_policy: feePolicy, fee_cap_inr: maxFee === '' ? null : Number(maxFee),
+      delivery_mode: deliveryMode, skill_level_filter: skillLevelFilter,
+      exclude_lab_heavy_days: excludeLabHeavyDays, prefer_short_formats: preferShortFormats,
+      exploration, ...(overrides || {}),
+    };
     setBusy(true); setPlanningBusy(true); setPlanResult(null); setError(''); setNotice('');
     try {
       const result = await apiWrite(`/api/clubs/${clubId}/plan`, {
-        body: {
-          strategy,
-          fairness: strategy === 'fairness_aware',
-          top_k: Number(topN),
-          min_people_available: quorum ? Number(quorum) : defaultQuorum,
-          horizon_days: Number(horizon),
-          diversity,
-          selected_format_ids: selectedFormatIds,
-          fee_policy: feePolicy,
-          fee_cap_inr: maxFee === '' ? null : Number(maxFee),
-          delivery_mode: deliveryMode,
-        },
+        body: settings,
       });
       setPlanResult(result);
       if (!result.recommendations.length) setNotice('No event ideas fit these choices. Try a lower minimum, a higher fee limit, or a longer search window.');
       else setNotice(`Found ${result.recommendations.length} event ideas that fit your choices.`);
     } catch (reason) { setError(reason.message); }
     finally { setBusy(false); setPlanningBusy(false); }
+  };
+
+  const applyRecipe = async (recipe) => {
+    const settings = recipe.settings;
+    setActiveRecipe(recipe.id);
+    setStrategy(settings.strategy);
+    setFairness(settings.fairness);
+    setDiversity(settings.diversity);
+    setSelectedFormatIds(settings.selected_format_ids);
+    setFeePolicy(settings.fee_policy);
+    setMaxFee(settings.fee_cap_inr == null ? '' : String(settings.fee_cap_inr));
+    setDeliveryMode(settings.delivery_mode);
+    setSkillLevelFilter(settings.skill_level_filter);
+    setExcludeLabHeavyDays(settings.exclude_lab_heavy_days);
+    setPreferShortFormats(settings.prefer_short_formats);
+    setExploration(settings.exploration);
+    await runPlan(null, settings);
   };
 
   const accept = async (recommendation, venue) => {
@@ -95,7 +118,7 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
             available_member_count: recommendation.available_member_ids.length,
             confidence: recommendation.confidence,
             settings: {
-              strategy: settings.effective_strategy || settings.strategy,
+              strategy: settings.strategy,
               fairness: Boolean(settings.fairness),
               diversity: Boolean(settings.diversity),
               fee_cap_inr: settings.fee_cap_inr,
@@ -141,16 +164,29 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
     <section className="quorum-app__content">
       <p className="quorum-app__eyebrow">{clubName}</p><h1>Plan the next club event</h1><p className="quorum-app__intro">Choose how to balance members’ preferences, set a few practical limits, then find event ideas the club can attend.</p>
       {error && <p role="alert" className="quorum-app__error">{error}</p>}{notice && <p role="status" className="quorum-app__notice">{notice}</p>}
+      <section className="quorum-app__recipes" aria-labelledby="recipe-heading">
+        <div><h2 id="recipe-heading">Start with a recipe</h2><p>Pick a starting point. You can change any setting afterward.</p></div>
+        <div className="quorum-app__recipe-list">
+          {recipes.map((recipe) => <button className={`quorum-app__recipe${activeRecipe === recipe.id ? ' is-active' : ''}`} type="button" key={recipe.id} disabled={busy} onClick={() => applyRecipe(recipe)}>
+            <strong>{recipe.label}</strong><code title="Planning engine settings">{recipe.technical_name}</code>
+          </button>)}
+        </div>
+      </section>
       <form className="quorum-app__card quorum-app__controls" onSubmit={runPlan}>
         <EventRequirements formats={formats} selectedIds={selectedFormatIds} onSelectedIdsChange={setSelectedFormatIds}
           feePolicy={feePolicy} onFeePolicyChange={setFeePolicy} maxFee={maxFee} onMaxFeeChange={setMaxFee}
           deliveryMode={deliveryMode} onDeliveryModeChange={setDeliveryMode} />
-        <label className="quorum-app__control quorum-app__control--strategy"><span>How should we balance member preferences?</span><select value={strategy} onChange={(event) => setStrategy(event.target.value)}>{strategyOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><small>{strategyOptions.find(([value]) => value === strategy)?.[2]}</small></label>
+        <label className="quorum-app__control quorum-app__control--strategy"><span>How should we balance member preferences?</span><select value={strategy} onChange={(event) => { setStrategy(event.target.value); setActiveRecipe(''); }}>{strategyOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><small>{strategyOptions.find(([value]) => value === strategy)?.[2]}</small></label>
         <label className="quorum-app__control"><span>How many ideas should we show?</span><input type="number" min="1" max="50" value={topN} onChange={(event) => setTopN(event.target.value)} /><small>Show up to this many suggestions.</small></label>
         <label className="quorum-app__control"><span>Minimum people needed</span><input type="number" min="1" max={members.length || 60} placeholder={`Club default: ${defaultQuorum}`} value={quorum} onChange={(event) => setQuorum(event.target.value)} /><small>Leave blank to use the club default ({defaultQuorum} people).</small></label>
         <label className="quorum-app__control"><span>How far ahead should we look?</span><input type="number" min="1" max="30" value={horizon} onChange={(event) => setHorizon(event.target.value)} /><small>Number of days from today.</small></label>
+        <label className="quorum-app__control"><span>Experience level</span><select value={skillLevelFilter} onChange={(event) => { setSkillLevelFilter(event.target.value); setActiveRecipe(''); }}><option value="any">Any level</option><option value="beginner">Beginner-friendly formats only</option></select></label>
         <fieldset className="quorum-app__control-options"><legend>Fine-tune suggestions</legend>
-          <label className="quorum-app__check"><input type="checkbox" checked={diversity} onChange={(event) => setDiversity(event.target.checked)} /><span>Include a mix of event types</span></label>
+          <label className="quorum-app__check"><input type="checkbox" checked={fairness} onChange={(event) => { setFairness(event.target.checked); setActiveRecipe(''); }} /><span>Give more weight to members who have been less satisfied</span></label>
+          <label className="quorum-app__check"><input type="checkbox" checked={diversity} onChange={(event) => { setDiversity(event.target.checked); setActiveRecipe(''); }} /><span>Include a mix of event types</span></label>
+          <label className="quorum-app__check"><input type="checkbox" checked={exploration} onChange={(event) => { setExploration(event.target.checked); setActiveRecipe(''); }} /><span>Boost formats the club has tried less often</span></label>
+          <label className="quorum-app__check"><input type="checkbox" checked={excludeLabHeavyDays} onChange={(event) => { setExcludeLabHeavyDays(event.target.checked); setActiveRecipe(''); }} /><span>Avoid lab-heavy days <small>(Tuesday and Thursday; exam weeks are always excluded)</small></span></label>
+          <label className="quorum-app__check"><input type="checkbox" checked={preferShortFormats} onChange={(event) => { setPreferShortFormats(event.target.checked); setActiveRecipe(''); }} /><span>Prefer shorter events</span></label>
         </fieldset>
         <button className="quorum-app__button" disabled={busy}>{planningBusy ? 'Finding ideas…' : 'Find event ideas'}</button>
       </form>
