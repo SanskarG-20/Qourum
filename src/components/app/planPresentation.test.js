@@ -89,15 +89,58 @@ test('the rendered card contains engine-derived turnout and all 14 member bars',
   }
 });
 
-test('organizer results use the plan endpoint and retain loading and empty states', async () => {
+test('organizer results use the plan endpoint and show diagnosis instead of a dead-end empty state', async () => {
   const source = await readFile(new URL('./OrganizerWorkflow.jsx', import.meta.url), 'utf8');
   assert.match(source, /\/api\/clubs\/\$\{clubId\}\/plan/);
   assert.doesNotMatch(source, /\/api\/clubs\/\$\{clubId\}\/recommendations/);
   assert.match(source, /planningBusy &&/);
   assert.match(source, /Ready to find a time/);
-  assert.match(source, /No matching event ideas/);
+  assert.match(source, /PlanRecoverySummary/);
+  assert.match(source, /Closest matches/);
+  assert.doesNotMatch(source, /No matching event ideas/);
   assert.match(source, /onSelect=\{loadSweepPoint\}/);
   assert.match(source, /await runPlan\(null, settings\)/);
+});
+
+test('strict-empty recovery shows counted diagnosis and exact one-change chip impacts', async () => {
+  const vite = await createServer({ configFile: './vite.config.js', appType: 'custom', logLevel: 'silent', server: { middlewareMode: true } });
+  try {
+    const { PlanRecoverySummary } = await vite.ssrLoadModule('/src/components/app/PlanRecoverySummary.jsx');
+    const markup = renderToStaticMarkup(React.createElement(PlanRecoverySummary, {
+      plan: { tier: 'closest', strict_count: 0,
+        diagnosis: [{ code: 'availability_profiles', count: 5, required: 14, label: 'Members with available time set' }],
+        fix_chips: [{ code: 'minimum_people', label: 'Need only 5 people', idea_count: 3, settings_updates: { min_people_available: 5 } }],
+      }, onApplyFix: () => {},
+    }));
+    assert.match(markup, /0 exact matches/);
+    assert.match(markup, /Closest matches/);
+    assert.match(markup, /5 \/ 14/);
+    assert.match(markup, /Need only 5 people/);
+    assert.match(markup, /3 ideas/);
+    assert.doesNotMatch(markup, /No matching event ideas/);
+  } finally { await vite.close(); }
+});
+
+test('closest result shows every relaxation and the affected member in cards and what-if', async () => {
+  const vite = await createServer({ configFile: './vite.config.js', appType: 'custom', logLevel: 'silent', server: { middlewareMode: true } });
+  try {
+    const { RelaxationEvidence } = await vite.ssrLoadModule('/src/components/app/PlanRecoverySummary.jsx');
+    const markup = renderToStaticMarkup(React.createElement(RelaxationEvidence, {
+      item: { relaxations_applied: [
+        { code: 'horizon', from: 21, to: 28 },
+        { code: 'minimum_people', from: 14, to: 8 },
+      ], affected_members: [{ member_id: 'member-1', reasons: ['not_available'] }] },
+      memberNames: { 'member-1': 'Student One' },
+    }));
+    assert.match(markup, /horizon: 21 → 28/);
+    assert.match(markup, /minimum people: 14 → 8/);
+    assert.match(markup, /1 members affected/);
+    assert.match(markup, /Student One/);
+  } finally { await vite.close(); }
+  const card = await readFile(new URL('./PlanResultCard.jsx', import.meta.url), 'utf8');
+  const whatIf = await readFile(new URL('./WhatIfPanel.jsx', import.meta.url), 'utf8');
+  assert.match(card, /RelaxationEvidence item=\{item\}/);
+  assert.match(whatIf, /RelaxationEvidence item=\{preview\.comparison\.afterMetrics\}/);
 });
 
 test('diagnostics render grouped rejection details and a filtered availability heatmap', async () => {

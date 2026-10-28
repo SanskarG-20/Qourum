@@ -38,6 +38,12 @@ export default function EvaluationPage() {
       {error && <p role="alert">{error}</p>}
       {!report && !error && <p role="status">Loading saved results…</p>}
       {report && <><p>{report.methodology} Seed: {report.seed}.</p><p className="evaluation__caveat">{report.hit_caveat} {report.satisfaction_caveat}</p>
+        {report.reliability && <section className="evaluation__panel" aria-labelledby="reliability-heading">
+          <h2 id="reliability-heading">Planning reliability proof</h2>
+          <p>Seeded synthetic sweep across 5, 14, and 60 members; conflict levels 0, 0.5, and 1; and three planning settings ({report.reliability.total} runs).</p>
+          <div className="evaluation__scroll"><table><thead><tr><th scope="col">Outcome</th><th scope="col">Runs</th><th scope="col">Share</th></tr></thead><tbody>{['exact', 'closest', 'none'].map((tier) => <tr key={tier}><th scope="row">{tier}</th><td>{report.reliability.counts[tier]}</td><td>{report.reliability.percentages[tier].toFixed(1)}%</td></tr>)}</tbody></table></div>
+          <p className="evaluation__caveat">{report.reliability.caveat} “None” cases include counted blocking reasons; closest matches list every relaxation.</p>
+        </section>}
         <ResultsSection title="Synthetic data" section={report.synthetic} prefix="synthetic" />
         <ResultsSection title="Real data" section={report.real} prefix="real" />
       </>}

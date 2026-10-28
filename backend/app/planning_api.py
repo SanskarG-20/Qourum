@@ -21,12 +21,14 @@ if (__package__ or "").partition(".")[0] == "app":
     from planning.pareto import pareto_front_ids
     from planning.plan_cache import PlanResultCache, settings_hash
     from planning.pipeline import build_plan
+    from planning.relaxation import recover_plan
 else:
     from backend.planning import config as planning_config
     from backend.planning.models import AvailabilityWindow, PlanFormat, PlanMember, PlanObservation
     from backend.planning.pareto import pareto_front_ids
     from backend.planning.plan_cache import PlanResultCache, settings_hash
     from backend.planning.pipeline import build_plan
+    from backend.planning.relaxation import recover_plan
 
 router = APIRouter(prefix="/api/clubs", tags=["planning"])
 _plan_result_cache = PlanResultCache(planning_config.PLAN_RESULT_CACHE_MAX_ENTRIES)
@@ -270,6 +272,26 @@ def _plan_context(db: OrmSession, club_id: str, payload: PlanRequest):
     return start_date, members, formats, observations, preferences, calendar_flags, existing_events
 
 
+def _engine_settings(payload: PlanRequest, context) -> dict:
+    start_date, members, formats, observations, preferences, calendar_flags, existing_events = context
+    return dict(
+        members=members, formats=formats, observations=observations,
+        explicit_preferences=preferences, calendar_flags=calendar_flags,
+        start_date=start_date, horizon_days=payload.horizon_days,
+        min_people_available=payload.min_people_available, strategy=payload.strategy,
+        fairness=payload.fairness, baseline=payload.baseline, top_k=payload.top_k,
+        diversity=payload.diversity, seed=payload.seed,
+        selected_format_ids=payload.selected_format_ids,
+        excluded_format_ids=payload.excluded_format_ids,
+        only_date=payload.only_date, only_time_block=payload.only_time_block,
+        fee_policy=payload.fee_policy, fee_cap_inr=payload.fee_cap_inr,
+        delivery_mode=payload.delivery_mode, skill_level_filter=payload.skill_level_filter,
+        exclude_lab_heavy_days=payload.exclude_lab_heavy_days,
+        prefer_short_formats=payload.prefer_short_formats,
+        exploration=payload.exploration, existing_events=existing_events,
+    )
+
+
 def _build_cached_plan(*, club_id, payload: PlanRequest, context):
     start_date, members, formats, observations, preferences, calendar_flags, existing_events = context
     request_settings = payload.model_dump()
@@ -282,34 +304,7 @@ def _build_cached_plan(*, club_id, payload: PlanRequest, context):
     )
 
     def build():
-        result = build_plan(
-            members=members,
-            formats=formats,
-            observations=observations,
-            explicit_preferences=preferences,
-            calendar_flags=calendar_flags,
-            start_date=start_date,
-            horizon_days=payload.horizon_days,
-            min_people_available=payload.min_people_available,
-            strategy=payload.strategy,
-            fairness=payload.fairness,
-            baseline=payload.baseline,
-            top_k=payload.top_k,
-            diversity=payload.diversity,
-            seed=payload.seed,
-            selected_format_ids=payload.selected_format_ids,
-            excluded_format_ids=payload.excluded_format_ids,
-            only_date=payload.only_date,
-            only_time_block=payload.only_time_block,
-            fee_policy=payload.fee_policy,
-            fee_cap_inr=payload.fee_cap_inr,
-            delivery_mode=payload.delivery_mode,
-            skill_level_filter=payload.skill_level_filter,
-            exclude_lab_heavy_days=payload.exclude_lab_heavy_days,
-            prefer_short_formats=payload.prefer_short_formats,
-            exploration=payload.exploration,
-            existing_events=existing_events,
-        )
+        result = build_plan(**_engine_settings(payload, context))
         result["settings"]["excluded_member_id"] = payload.excluded_member_id
         return result
 
@@ -329,7 +324,11 @@ def club_plan(
 ) -> dict[str, object]:
     """Return ranked plan candidates and all candidates rejected by hard filters."""
     context = _plan_context(db, club_id, payload)
-    return _build_cached_plan(club_id=club_id, payload=payload, context=context)
+    strict = _build_cached_plan(club_id=club_id, payload=payload, context=context)
+    result = recover_plan(strict, _engine_settings(payload, context), excluded_member_id=payload.excluded_member_id)
+    result["settings"]["excluded_member_id"] = payload.excluded_member_id
+    result["requested_settings"]["excluded_member_id"] = payload.excluded_member_id
+    return result
 
 
 @router.post("/{club_id}/plan-sweep")

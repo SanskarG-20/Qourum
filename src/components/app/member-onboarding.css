@@ -158,6 +158,21 @@
 .quorum-app__plan-state { display: grid; justify-items: start; gap: .5rem; padding: 1.4rem; border: 1px dashed var(--color-border-ruler); border-radius: 10px; background: #fff; }
 .quorum-app__plan-state h3,.quorum-app__plan-state p { margin: 0; }
 .quorum-app__plan-state p { max-width: 42rem; }
+.quorum-app__recovery { display: grid; gap: .6rem; padding: 1rem; border: 1px solid var(--color-gold-primary); border-radius: 8px; background: var(--color-gold-tint); color: var(--color-text-primary); }
+.quorum-app__recovery h3,.quorum-app__recovery h4,.quorum-app__recovery p { margin: 0; }
+.quorum-app__recovery h4 { font-size: .9rem; }
+.quorum-app__recovery p,.quorum-app__diagnosis-list { font-size: .82rem; }
+.quorum-app__diagnosis-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: .3rem .9rem; margin: 0; padding-left: 1.2rem; }
+.quorum-app__fix-chips { display: flex; flex-wrap: wrap; gap: .45rem; }
+.quorum-app__fix-chips button { display: inline-flex; align-items: center; gap: .45rem; padding: .4rem .6rem; border: 1px solid var(--color-border-ruler); border-radius: 999px; background: #fff; color: inherit; cursor: pointer; font: inherit; font-size: .76rem; }
+.quorum-app__fix-chips button:hover { border-color: var(--color-text-primary); }
+.quorum-app__fix-chips button:disabled { opacity: .5; cursor: wait; }
+.quorum-app__fix-chips strong { font-family: var(--font-mono); }
+.quorum-app__closest-heading { margin: .2rem 0 0; font-size: 1.25rem; }
+.quorum-app__relaxation-evidence { display: grid; gap: .45rem; padding: .7rem; border-left: 3px solid var(--color-gold-primary); background: var(--color-gold-tint); font-size: .78rem; }
+.quorum-app__relaxation-evidence > div { display: flex; flex-wrap: wrap; gap: .35rem; }
+.quorum-app__relaxation-badge { padding: .2rem .4rem; border: 1px solid var(--color-gold-primary); border-radius: 4px; background: #fff; }
+.quorum-app__relaxation-evidence details { margin: 0; }.quorum-app__relaxation-evidence ul { max-height: 150px; overflow: auto; margin: .35rem 0 0; }
 .quorum-app__applied-what-if { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .65rem .8rem; background: var(--color-gold-tint); border-left: 3px solid var(--color-gold-primary); font-size: .82rem; }
 .quorum-app__what-if { display: grid; gap: .7rem; padding: 1rem; border: 1px solid var(--color-border-ruler); border-radius: 8px; background: var(--color-bg-card-muted); }
 .quorum-app__what-if h4,.quorum-app__what-if h5,.quorum-app__what-if p { margin: 0; }

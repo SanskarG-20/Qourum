@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { planCardView } from './planPresentation.js';
+import { RelaxationEvidence } from './PlanRecoverySummary.jsx';
 
 function prettyDate(start) {
   return new Date(start).toLocaleString(undefined, {
@@ -33,6 +34,8 @@ export function PlanResultCard({ item, format, memberNames, venues, busy, onAcce
       <span>{item.fee_inr === 0 ? 'Free' : `₹${Number(item.fee_inr).toLocaleString('en-IN')} per person`}</span>
       <span title="Expected attendance with the engine's 95% prediction interval">Expected turnout: <strong>{view.turnout}</strong></span>
     </div>
+
+    <RelaxationEvidence item={item} memberNames={memberNames} />
 
     <p className="quorum-app__plan-why"><strong>Why this?</strong> {view.why}</p>
 

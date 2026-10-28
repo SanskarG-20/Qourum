@@ -28,6 +28,7 @@ from backend.planning.diversity import rerank_diverse
 from backend.planning.models import PlanCandidate, PlanFormat, PlanMember, PlanObservation
 from backend.synthetic_data.dataset_validation import TABLE_COLUMNS, validate_research_tables
 from backend.synthetic_data.research_dataset import ResearchDatasetGenerator, ResearchGenerationConfig
+from backend.evaluation.plan_reliability import reliability_sweep
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFLICT_LEVELS = (0.0, 0.25, 0.5, 0.75, 1.0)
@@ -252,15 +253,17 @@ def generate_report(seed: int, output_dir: Path, public_dir: Path, real_csv_dir:
     """Regenerate JSON, CSV tables, and PNG charts with a fixed seed."""
     config = ResearchGenerationConfig(seed=seed, num_clubs=5, club_conflict_levels=CONFLICT_LEVELS)
     synthetic = evaluate_tables(ResearchDatasetGenerator(config).generate(), seed, "synthetic")
+    reliability = reliability_sweep(seed)
     real = evaluate_tables(_read_real_csv(real_csv_dir), seed, "real") if real_csv_dir else {
         "source": "real", "status": "unavailable", "reason": "No real club records supplied. No real-data metrics are reported."
     }
     result = {"seed": seed, "methodology": "Per-club chronological 70/30 train/test split; model and baselines fit on older events only.",
               "hit_caveat": "Hit@3 measures agreement with organizers' past format choices, not recommendation correctness.",
               "satisfaction_caveat": "Conflict and ablation satisfaction values are affinity estimates for candidate formats, not observed counterfactual outcomes. The synthetic sweep uses one club per conflict level, so other club differences may affect the trend. Synthetic gains are weak evidence for real clubs.",
-              "synthetic": synthetic, "real": real}
+              "synthetic": synthetic, "real": real, "reliability": reliability}
     output_dir.mkdir(parents=True, exist_ok=True)
     public_dir.mkdir(parents=True, exist_ok=True)
+    _write_csv(output_dir / "synthetic-reliability-sweep.csv", reliability["cases"])
     for name, section in (("synthetic", synthetic), ("real", real)):
         if section["status"] == "available":
             for table in ("baselines", "conflict_sweep", "ablations", "predictions"):

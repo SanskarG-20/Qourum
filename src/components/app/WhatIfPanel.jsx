@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { apiWrite } from '../../utils/apiClient.js';
 import { compareWhatIf, whatIfSettings } from './whatIfComparison.js';
+import { PlanRecoverySummary, RelaxationEvidence } from './PlanRecoverySummary.jsx';
 
 const BLOCKS = ['morning', 'midday', 'afternoon', 'evening', 'late_evening'];
 const signed = (value, suffix = '') => `${value > 0 ? '+' : ''}${value}${suffix}`;
@@ -21,15 +22,16 @@ export function WhatIfPanel({ clubId, basePlan, item, formats, members, onApply 
   end.setDate(start.getDate() + Number(base.horizon_days) - 1);
   const lastDate = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
 
-  const runPreview = async (event) => {
-    event.preventDefault(); setBusy(true); setError(''); setPreview(null);
+  const previewSettings = async (settings) => {
+    setBusy(true); setError(''); setPreview(null);
     try {
-      const settings = whatIfSettings(base, draft);
       const after = await apiWrite(`/api/clubs/${clubId}/plan`, { body: settings });
       setPreview({ after, comparison: compareWhatIf(basePlan, after, item, draft) });
     } catch (reason) { setError(reason.message); }
     finally { setBusy(false); }
   };
+  const runPreview = (event) => { event.preventDefault(); return previewSettings(whatIfSettings(base, draft)); };
+  const applyFixChip = (chip) => previewSettings({ ...preview.after.requested_settings, ...chip.settings_updates });
 
   return <section className="quorum-app__what-if" aria-label="What-if preview">
     <h4>What if we change this plan?</h4>
@@ -45,6 +47,8 @@ export function WhatIfPanel({ clubId, basePlan, item, formats, members, onApply 
     </form>
     {error && <p role="alert" className="quorum-app__error">{error}</p>}
     {preview && <div className="quorum-app__what-if-result" role="status">
+      <PlanRecoverySummary plan={preview.after} onApplyFix={applyFixChip} busy={busy} />
+      <RelaxationEvidence item={preview.comparison.afterMetrics} memberNames={Object.fromEntries(members.map((member) => [member.id, member.name]))} />
       <h5>Before / after</h5>
       {preview.comparison.isReplacement && <p>After figures show the highest-ranked replacement idea because the selected idea is not in the new results.</p>}
       <div className="quorum-app__what-if-columns"><span>Measure</span><span>Before</span><span>After</span></div>
@@ -54,7 +58,7 @@ export function WhatIfPanel({ clubId, basePlan, item, formats, members, onApply 
         <div><dt>Least-happy member</dt><dd>{Math.round(item.group_summary.minimum * 100)}%</dd><dd>{preview.comparison.afterMetrics ? `${Math.round(preview.comparison.afterMetrics.group_summary.minimum * 100)}% (${signed(Math.round(preview.comparison.minimumChange * 100), '%')})` : 'No feasible idea'}</dd></div>
       </dl>
       <p><strong>New rejection reasons:</strong> {preview.comparison.newlyRejectedReasons.length ? preview.comparison.newlyRejectedReasons.map((reason) => reason.replaceAll('_', ' ')).join(', ') : 'None for this idea'}</p>
-      <button type="button" className="quorum-app__button" onClick={() => onApply(preview.after)}>Apply this plan</button>
+      <button type="button" className="quorum-app__button" disabled={!preview.after.recommendations.length} onClick={() => onApply(preview.after)}>Apply this plan</button>
     </div>}
   </section>;
 }

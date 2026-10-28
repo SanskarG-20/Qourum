@@ -6,6 +6,7 @@ import { PlanResultCard } from './PlanResultCard.jsx';
 import { PlanDiagnostics } from './PlanDiagnostics.jsx';
 import { ParetoPlanChart } from './ParetoPlanChart.jsx';
 import { WhatIfPanel } from './WhatIfPanel.jsx';
+import { PlanRecoverySummary } from './PlanRecoverySummary.jsx';
 
 export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
   const [strategy, setStrategy] = useState('average');
@@ -86,8 +87,7 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
         body: settings,
       });
       setPlanResult(result);
-      if (!result.recommendations.length) setNotice('No event ideas fit these choices. Try a lower minimum, a higher fee limit, or a longer search window.');
-      else setNotice(`Found ${result.recommendations.length} event ideas that fit your choices.`);
+      if (result.tier === 'exact') setNotice(`Found ${result.recommendations.length} event ideas that fit every requirement.`);
     } catch (reason) { setError(reason.message); }
     finally { setBusy(false); setPlanningBusy(false); }
   };
@@ -163,7 +163,26 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
       start_date: settings.start_date,
     });
     setPlanResult(after); setSelectedWhatIfKey('');
-    setNotice(`Applied the what-if plan with ${after.recommendations.length} event ideas.`);
+    setNotice(after.tier === 'exact' ? `Applied a plan with ${after.recommendations.length} exact ideas.` : '');
+  };
+
+  const applyFixChip = async (chip) => {
+    const settings = { ...planResult.requested_settings, ...chip.settings_updates };
+    if ('horizon_days' in chip.settings_updates) setHorizon(String(settings.horizon_days));
+    if ('min_people_available' in chip.settings_updates) setQuorum(String(settings.min_people_available));
+    if ('fee_cap_inr' in chip.settings_updates) setMaxFee(settings.fee_cap_inr == null ? '' : String(settings.fee_cap_inr));
+    if ('delivery_mode' in chip.settings_updates) setDeliveryMode(settings.delivery_mode);
+    if ('selected_format_ids' in chip.settings_updates) setSelectedFormatIds(settings.selected_format_ids);
+    if ('fee_policy' in chip.settings_updates) setFeePolicy(settings.fee_policy);
+    if ('skill_level_filter' in chip.settings_updates) setSkillLevelFilter(settings.skill_level_filter);
+    if ('exclude_lab_heavy_days' in chip.settings_updates) setExcludeLabHeavyDays(settings.exclude_lab_heavy_days);
+    setAppliedWhatIfFilters({
+      excluded_format_ids: settings.excluded_format_ids || [], excluded_member_id: settings.excluded_member_id || null,
+      only_date: settings.only_date || null, only_time_block: settings.only_time_block || null,
+      start_date: settings.start_date,
+    });
+    setActiveRecipe('');
+    await runPlan(null, settings);
   };
 
   const accept = async (recommendation, venue) => {
@@ -247,7 +266,7 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
         <label className="quorum-app__control quorum-app__control--strategy"><span>How should we balance member preferences?</span><select value={strategy} onChange={(event) => { setStrategy(event.target.value); setActiveRecipe(''); }}>{strategyOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><small>{strategyOptions.find(([value]) => value === strategy)?.[2]}</small></label>
         <label className="quorum-app__control"><span>How many ideas should we show?</span><input type="number" min="1" max="50" value={topN} onChange={(event) => setTopN(event.target.value)} /><small>Show up to this many suggestions.</small></label>
         <label className="quorum-app__control"><span>Minimum people needed</span><input type="number" min="1" max={members.length || 60} placeholder={`Club default: ${defaultQuorum}`} value={quorum} onChange={(event) => setQuorum(event.target.value)} /><small>Leave blank to use the club default ({defaultQuorum} people).</small></label>
-        <label className="quorum-app__control"><span>How far ahead should we look?</span><input type="number" min="1" max="30" value={horizon} onChange={(event) => setHorizon(event.target.value)} /><small>Number of days from today.</small></label>
+        <label className="quorum-app__control"><span>How far ahead should we look?</span><input type="number" min="1" max="60" value={horizon} onChange={(event) => setHorizon(event.target.value)} /><small>Number of days from today.</small></label>
         <label className="quorum-app__control"><span>Experience level</span><select value={skillLevelFilter} onChange={(event) => { setSkillLevelFilter(event.target.value); setActiveRecipe(''); }}><option value="any">Any level</option><option value="beginner">Beginner-friendly formats only</option></select></label>
         <fieldset className="quorum-app__control-options"><legend>Fine-tune suggestions</legend>
           <label className="quorum-app__check"><input type="checkbox" checked={fairness} onChange={(event) => { setFairness(event.target.checked); setActiveRecipe(''); }} /><span>Give more weight to members who have been less satisfied</span></label>
@@ -270,7 +289,8 @@ export function OrganizerWorkflow({ clubId, clubName, onLogout }) {
         <h2 id="plan-results-heading">Event ideas</h2>
         {planningBusy && <div className="quorum-app__plan-state" role="status"><span className="quorum-app__spinner" aria-hidden="true" />Looking at member availability and event ideas…</div>}
         {!planningBusy && planResult === null && <div className="quorum-app__plan-state"><h3>Ready to find a time?</h3><p>Choose what matters to your club, then select “Find event ideas” to see formats and times that fit.</p></div>}
-        {!planningBusy && planResult && planResult.recommendations.length === 0 && <div className="quorum-app__plan-state"><h3>No matching event ideas</h3><p>Try changing the event requirements or giving the club more time options.</p></div>}
+        {!planningBusy && planResult && <PlanRecoverySummary plan={planResult} onApplyFix={applyFixChip} busy={busy} />}
+        {!planningBusy && planResult?.tier === 'closest' && <h3 className="quorum-app__closest-heading">Closest matches</h3>}
         {!planningBusy && planResult?.recommendations.map((item) => {
           const key = `${item.format_id}-${item.start}-${item.mode}`;
           return <PlanResultCard key={key} item={item}

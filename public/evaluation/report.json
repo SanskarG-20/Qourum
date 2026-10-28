@@ -6,6 +6,267 @@
     "source": "real",
     "status": "unavailable"
   },
+  "reliability": {
+    "cases": [
+      {
+        "club_size": 5,
+        "conflict_level": 0.0,
+        "diagnosis_count": 0,
+        "returned_count": 3,
+        "setting_case": "open",
+        "strict_count": 3,
+        "tier": "exact"
+      },
+      {
+        "club_size": 5,
+        "conflict_level": 0.0,
+        "diagnosis_count": 10,
+        "returned_count": 3,
+        "setting_case": "fee_limited",
+        "strict_count": 0,
+        "tier": "closest"
+      },
+      {
+        "club_size": 5,
+        "conflict_level": 0.0,
+        "diagnosis_count": 7,
+        "returned_count": 0,
+        "setting_case": "hard_calendar",
+        "strict_count": 0,
+        "tier": "none"
+      },
+      {
+        "club_size": 5,
+        "conflict_level": 0.5,
+        "diagnosis_count": 0,
+        "returned_count": 3,
+        "setting_case": "open",
+        "strict_count": 5,
+        "tier": "exact"
+      },
+      {
+        "club_size": 5,
+        "conflict_level": 0.5,
+        "diagnosis_count": 10,
+        "returned_count": 3,
+        "setting_case": "fee_limited",
+        "strict_count": 0,
+        "tier": "closest"
+      },
+      {
+        "club_size": 5,
+        "conflict_level": 0.5,
+        "diagnosis_count": 7,
+        "returned_count": 0,
+        "setting_case": "hard_calendar",
+        "strict_count": 0,
+        "tier": "none"
+      },
+      {
+        "club_size": 5,
+        "conflict_level": 1.0,
+        "diagnosis_count": 8,
+        "returned_count": 0,
+        "setting_case": "open",
+        "strict_count": 0,
+        "tier": "none"
+      },
+      {
+        "club_size": 5,
+        "conflict_level": 1.0,
+        "diagnosis_count": 10,
+        "returned_count": 0,
+        "setting_case": "fee_limited",
+        "strict_count": 0,
+        "tier": "none"
+      },
+      {
+        "club_size": 5,
+        "conflict_level": 1.0,
+        "diagnosis_count": 7,
+        "returned_count": 0,
+        "setting_case": "hard_calendar",
+        "strict_count": 0,
+        "tier": "none"
+      },
+      {
+        "club_size": 14,
+        "conflict_level": 0.0,
+        "diagnosis_count": 0,
+        "returned_count": 3,
+        "setting_case": "open",
+        "strict_count": 3,
+        "tier": "exact"
+      },
+      {
+        "club_size": 14,
+        "conflict_level": 0.0,
+        "diagnosis_count": 10,
+        "returned_count": 3,
+        "setting_case": "fee_limited",
+        "strict_count": 0,
+        "tier": "closest"
+      },
+      {
+        "club_size": 14,
+        "conflict_level": 0.0,
+        "diagnosis_count": 7,
+        "returned_count": 0,
+        "setting_case": "hard_calendar",
+        "strict_count": 0,
+        "tier": "none"
+      },
+      {
+        "club_size": 14,
+        "conflict_level": 0.5,
+        "diagnosis_count": 0,
+        "returned_count": 3,
+        "setting_case": "open",
+        "strict_count": 5,
+        "tier": "exact"
+      },
+      {
+        "club_size": 14,
+        "conflict_level": 0.5,
+        "diagnosis_count": 10,
+        "returned_count": 3,
+        "setting_case": "fee_limited",
+        "strict_count": 0,
+        "tier": "closest"
+      },
+      {
+        "club_size": 14,
+        "conflict_level": 0.5,
+        "diagnosis_count": 7,
+        "returned_count": 0,
+        "setting_case": "hard_calendar",
+        "strict_count": 0,
+        "tier": "none"
+      },
+      {
+        "club_size": 14,
+        "conflict_level": 1.0,
+        "diagnosis_count": 8,
+        "returned_count": 0,
+        "setting_case": "open",
+        "strict_count": 0,
+        "tier": "none"
+      },
+      {
+        "club_size": 14,
+        "conflict_level": 1.0,
+        "diagnosis_count": 10,
+        "returned_count": 0,
+        "setting_case": "fee_limited",
+        "strict_count": 0,
+        "tier": "none"
+      },
+      {
+        "club_size": 14,
+        "conflict_level": 1.0,
+        "diagnosis_count": 7,
+        "returned_count": 0,
+        "setting_case": "hard_calendar",
+        "strict_count": 0,
+        "tier": "none"
+      },
+      {
+        "club_size": 60,
+        "conflict_level": 0.0,
+        "diagnosis_count": 0,
+        "returned_count": 3,
+        "setting_case": "open",
+        "strict_count": 3,
+        "tier": "exact"
+      },
+      {
+        "club_size": 60,
+        "conflict_level": 0.0,
+        "diagnosis_count": 10,
+        "returned_count": 3,
+        "setting_case": "fee_limited",
+        "strict_count": 0,
+        "tier": "closest"
+      },
+      {
+        "club_size": 60,
+        "conflict_level": 0.0,
+        "diagnosis_count": 7,
+        "returned_count": 0,
+        "setting_case": "hard_calendar",
+        "strict_count": 0,
+        "tier": "none"
+      },
+      {
+        "club_size": 60,
+        "conflict_level": 0.5,
+        "diagnosis_count": 0,
+        "returned_count": 3,
+        "setting_case": "open",
+        "strict_count": 5,
+        "tier": "exact"
+      },
+      {
+        "club_size": 60,
+        "conflict_level": 0.5,
+        "diagnosis_count": 10,
+        "returned_count": 3,
+        "setting_case": "fee_limited",
+        "strict_count": 0,
+        "tier": "closest"
+      },
+      {
+        "club_size": 60,
+        "conflict_level": 0.5,
+        "diagnosis_count": 7,
+        "returned_count": 0,
+        "setting_case": "hard_calendar",
+        "strict_count": 0,
+        "tier": "none"
+      },
+      {
+        "club_size": 60,
+        "conflict_level": 1.0,
+        "diagnosis_count": 7,
+        "returned_count": 0,
+        "setting_case": "open",
+        "strict_count": 0,
+        "tier": "none"
+      },
+      {
+        "club_size": 60,
+        "conflict_level": 1.0,
+        "diagnosis_count": 9,
+        "returned_count": 0,
+        "setting_case": "fee_limited",
+        "strict_count": 0,
+        "tier": "none"
+      },
+      {
+        "club_size": 60,
+        "conflict_level": 1.0,
+        "diagnosis_count": 6,
+        "returned_count": 0,
+        "setting_case": "hard_calendar",
+        "strict_count": 0,
+        "tier": "none"
+      }
+    ],
+    "caveat": "This seeded settings sweep uses generated availability and calendar patterns; it does not measure performance on real clubs.",
+    "counts": {
+      "closest": 6,
+      "exact": 6,
+      "none": 15
+    },
+    "percentages": {
+      "closest": 22.22,
+      "exact": 22.22,
+      "none": 55.56
+    },
+    "seed": 42,
+    "source": "synthetic",
+    "total": 27
+  },
   "satisfaction_caveat": "Conflict and ablation satisfaction values are affinity estimates for candidate formats, not observed counterfactual outcomes. The synthetic sweep uses one club per conflict level, so other club differences may affect the trend. Synthetic gains are weak evidence for real clubs.",
   "seed": 42,
   "synthetic": {
